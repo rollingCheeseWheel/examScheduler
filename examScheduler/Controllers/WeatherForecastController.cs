@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace examScheduler.Controllers;
+namespace ExamScheduler.Controllers;
 
 [ApiController]
 [Route("[controller]")]
