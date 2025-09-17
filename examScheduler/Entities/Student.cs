@@ -4,6 +4,7 @@ public class Student
 {
 	public int Id { get; set; }
 	public string RegisterUsername { get; set; } = default!;
+	public Uri RegisterUri { get; set; } = default!;
 	public string Name { get; set; } = default!;
 	public string Surname { get; set; } = default!;
 	public string DisplayName { get; set; } = default!;
@@ -16,6 +17,6 @@ public class Student
 	// e.g. Permission.Read | Permission.Write = 3
 	public Permission Permissions { get; set; } = default!;
 
-	// Foreign Keys
+	// Navigation Properties
 	public Classroom Classroom { get; set; } = default!;
 }

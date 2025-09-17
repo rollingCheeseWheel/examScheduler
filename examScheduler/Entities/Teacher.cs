@@ -6,7 +6,7 @@ public class Teacher
 	public string Name { get; set; } = default!;
 	public DateTime CreatedAt { get; set; }
 
-	// Foreign Keys
+	// Navigation Properties
 	public Timetable Timetable { get; set; } = default!;
 	public ICollection<Classroom> Classrooms { get; set; } = [];
 	public ICollection<Subject> Subjects { get; set; } = [];

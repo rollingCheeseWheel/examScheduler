@@ -7,6 +7,7 @@ public enum AutoLockIn
 	TimeBeforeExamination = 2,
 }
 
+[Flags]
 public enum Permission
 {
 	None = 0,
