@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ExamScheduler.Entities;
+namespace examScheduler.Entities;
 
 public class Classroom
 {

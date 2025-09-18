@@ -1,4 +1,4 @@
-namespace ExamScheduler;
+namespace examScheduler;
 
 public class WeatherForecast
 {

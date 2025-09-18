@@ -1,4 +1,4 @@
-﻿namespace ExamScheduler.Entities;
+﻿namespace examScheduler.Entities;
 
 public class Student
 {

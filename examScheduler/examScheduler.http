@@ -1,6 +1,9 @@
-@examScheduler_HostAddress = http://localhost:5299
+@examScheduler_HostAddress = https://localhost:7235
 
 GET {{examScheduler_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+GET {{examScheduler_HostAddress}}/api/auth/login
 
 ###
