@@ -12,8 +12,6 @@ public static class IdentityHelper
 	public const string ClassroomIdClaimName = "classroomId";
 	public const string StudentIdClaimName = "studentId";
 
-
-
 	public static JwtSecurityToken GetJWT(
 		this IConfiguration config,
 		int classroomId,

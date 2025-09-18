@@ -1,4 +1,4 @@
-﻿namespace examScheduler.Models.Auth;
+﻿namespace examScheduler.Digitales_Register_API.Models;
 
 public class LoginRequest
 {
@@ -8,6 +8,5 @@ public class LoginRequest
 
 public class LoginResponse
 {
-	public required string Token { get; set; }
-	public required string RefreshToken { get; set; }
+
 }

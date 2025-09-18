@@ -27,8 +27,4 @@
     <ProjectReference Include="..\examScheduler.ServiceDefaults\examScheduler.ServiceDefaults.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Models\Digitales Register API\" />
-  </ItemGroup>
-
 </Project>

@@ -1,3 +1,4 @@
+using examScheduler;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -5,6 +6,8 @@ using System.Text;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("config.json", true, true);
 
 builder.AddServiceDefaults();
 
@@ -37,10 +40,12 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers()
 	.AddJsonOptions(options =>
 	{
+		// remember to also change the settings in Constants.SerializerOptions
 		options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 		options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 		options.JsonSerializerOptions.AllowTrailingCommas = true;
 	});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
