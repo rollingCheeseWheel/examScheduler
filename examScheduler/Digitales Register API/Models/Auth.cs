@@ -8,5 +8,6 @@ public class LoginRequest
 
 public class LoginResponse
 {
-
+	public required object? Error { get; set; }
+	public required bool LoggedIn { get; set; }
 }

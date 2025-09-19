@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
+using System.Text.Json;
 
 namespace examScheduler.Digitales_Register_API;
 
@@ -8,15 +10,13 @@ public class RegisterClient : IDisposable
 
 	private HttpClientHandler _httpClientHandler;
 	private HttpClient _httpClient;
-	private CookieContainer _cookieContainer = new();
 
-	private readonly string _registerUsername;
-	private readonly string _registerPassword;
+	private string? _registerUsername;
+	private string? _registerPassword;
 	public readonly Uri RegisterURI;
 
 	private bool _loggedIn = false;
-	private DateTime _loginExpiration = default;
-	private string? sessionId;
+	private DateTime _cookieExpiration = DateTime.MaxValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
@@ -27,7 +27,7 @@ public class RegisterClient : IDisposable
 		_httpClientHandler = new HttpClientHandler()
 		{
 			UseCookies = true,
-			CookieContainer = _cookieContainer,
+			CookieContainer = new(),
 		};
 
 		_httpClient = new HttpClient(_httpClientHandler)
@@ -36,11 +36,69 @@ public class RegisterClient : IDisposable
 		};
 	}
 
-	public RegisterClient(
-		string registerUsername,
-		string registerPassword,
-		string registerURI
-	) : this(registerUsername, registerPassword, new Uri(registerURI)) { }
+	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
+		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
+
+	private async Task<bool> Login(CancellationToken ct = default)
+	{
+		if (_registerPassword is null || _registerUsername is null) return true;
+
+		var credentials = new Models.LoginRequest
+		{
+			Password = _registerPassword,
+			Username = _registerUsername
+		};
+
+		var request = new HttpRequestMessage(HttpMethod.Post, RegisterURI)
+		{
+			Content = new StringContent(JsonSerializer.Serialize(credentials, Constants.SerializerOptions))
+			{
+				Headers = { ContentType = new("application/json") }
+			}
+		};
+
+		try
+		{
+			var response = await _httpClient.SendAsync(request, ct);
+
+			var content = await response.Content.ReadAsStringAsync(ct);
+
+			var parsedResponse = JsonSerializer.Deserialize<Models.LoginResponse>(content, Constants.SerializerOptions);
+
+			if (parsedResponse is null) return false;
+
+			if (!_httpClientHandler.CookieContainer.GetAllCookies().Any()) return false;
+
+			foreach (Cookie cookie in _httpClientHandler.CookieContainer.GetAllCookies())
+			{
+				_cookieExpiration = _cookieExpiration > cookie.Expires ? _cookieExpiration : cookie.Expires;
+			}
+
+			_loggedIn = parsedResponse.LoggedIn;
+
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	private async Task<bool> TryLoginIfNotAlready(CancellationToken ct = default)
+	{
+		if (_loggedIn && DateTime.UtcNow <= _cookieExpiration)
+		{
+			return true;
+		}
+		else if (_loggedIn)
+		{
+			return await Login(ct);
+		}
+		else
+		{
+			return false;
+		}
+	}
 
 	~RegisterClient()
 	{
