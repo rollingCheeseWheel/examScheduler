@@ -1,4 +1,5 @@
-﻿using System;
+﻿using examScheduler.Digitales_Register_API.Models;
+using System;
 using System.Net;
 using System.Text.Json;
 
@@ -71,7 +72,9 @@ public class RegisterClient : IDisposable
 
 			foreach (Cookie cookie in _httpClientHandler.CookieContainer.GetAllCookies())
 			{
-				_cookieExpiration = _cookieExpiration > cookie.Expires ? _cookieExpiration : cookie.Expires;
+				_cookieExpiration = _cookieExpiration > cookie.Expires
+					? _cookieExpiration
+					: cookie.Expires;
 			}
 
 			_loggedIn = parsedResponse.LoggedIn;
@@ -100,6 +103,12 @@ public class RegisterClient : IDisposable
 		}
 	}
 
+	public async Task<List<CalendarDay>> GetCalendar(DateTime startDate, DateTime endDate, CancellationToken ct = default)
+	{
+		if (!await TryLoginIfNotAlready(ct)) return [ ];
+		return [ ];
+	}
+
 	~RegisterClient()
 	{
 		Dispose();
@@ -126,10 +135,5 @@ public class RegisterClient : IDisposable
 		// Free unmanaged resources here if you had any
 
 		_disposed = true;
-	}
-
-	private void Login(string loginPath = "", CancellationToken ct = default)
-	{
-		throw new NotImplementedException();
 	}
 }
