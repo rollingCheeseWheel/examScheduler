@@ -1,3 +1,0 @@
-{
-	"ConnectionStrings:DatabaseConnection": "Server=localhost;Username=postgres;Database=postgres"
-}

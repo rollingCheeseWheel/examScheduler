@@ -1,5 +1,4 @@
-﻿using examScheduler.Entities;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace examScheduler.Identity;

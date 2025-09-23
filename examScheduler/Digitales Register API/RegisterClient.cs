@@ -14,7 +14,7 @@ public class RegisterClient : IDisposable
 
 	private string? _registerUsername;
 	private string? _registerPassword;
-	public readonly Uri RegisterURI;
+	public readonly Uri RegisterBaseURI;
 
 	private bool _loggedIn = false;
 	private DateTime _cookieExpiration = DateTime.MaxValue;
@@ -23,7 +23,7 @@ public class RegisterClient : IDisposable
 	{
 		_registerUsername = registerUsername;
 		_registerPassword = registerPassword;
-		RegisterURI = new(registerURI.Authority);
+		RegisterBaseURI = new(registerURI.Authority);
 
 		_httpClientHandler = new HttpClientHandler()
 		{
@@ -33,7 +33,7 @@ public class RegisterClient : IDisposable
 
 		_httpClient = new HttpClient(_httpClientHandler)
 		{
-			BaseAddress = RegisterURI
+			BaseAddress = RegisterBaseURI
 		};
 	}
 
@@ -50,7 +50,7 @@ public class RegisterClient : IDisposable
 			Username = _registerUsername
 		};
 
-		var request = new HttpRequestMessage(HttpMethod.Post, RegisterURI)
+		var request = new HttpRequestMessage(HttpMethod.Post, )
 		{
 			Content = new StringContent(JsonSerializer.Serialize(credentials, Constants.SerializerOptions))
 			{
@@ -109,6 +109,11 @@ public class RegisterClient : IDisposable
 		return [ ];
 	}
 
+	private Task<ResponseWrapper<T>> PostJson<T>(Uri uri) where T : class
+	{
+
+	}
+
 	~RegisterClient()
 	{
 		Dispose();
@@ -135,5 +140,38 @@ public class RegisterClient : IDisposable
 		// Free unmanaged resources here if you had any
 
 		_disposed = true;
+	}
+}
+
+internal class ResponseWrapper<T> where T : class
+{
+	public HttpResponseMessage ResponseMessage { get; init; }
+	public T? Value { get; init; } = null;
+
+	private ResponseWrapper(HttpResponseMessage responseMessage, T? value = null)
+	{
+		ResponseMessage = responseMessage;
+		Value = value;
+	}
+
+	public async Task<ResponseWrapper<T>> Create(HttpResponseMessage responseMessage)
+	{
+		T? value = null;
+
+		try
+		{
+			var message = await responseMessage.Content.ReadAsStringAsync();
+
+			value = JsonSerializer.Deserialize<T>(message, Constants.SerializerOptions);
+		}
+		catch
+		{
+			value = null;
+		}
+
+		return new ResponseWrapper<T>(responseMessage, responseMessage.IsSuccessStatusCode
+			? value
+			: null
+		);
 	}
 }
