@@ -12,18 +12,26 @@ public class RegisterClient : IDisposable
 	private HttpClientHandler _httpClientHandler;
 	private HttpClient _httpClient;
 
+	public readonly Uri RegisterBaseURI;
+
+	public readonly Uri LoginUri;
+	public readonly Uri CalendarUri;
+
 	private string? _registerUsername;
 	private string? _registerPassword;
-	public readonly Uri RegisterBaseURI;
 
 	private bool _loggedIn = false;
 	private DateTime _cookieExpiration = DateTime.MaxValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
+		RegisterBaseURI = new(registerURI.Authority);
+		LoginUri = RegisterBaseURI.;
+
+
+
 		_registerUsername = registerUsername;
 		_registerPassword = registerPassword;
-		RegisterBaseURI = new(registerURI.Authority);
 
 		_httpClientHandler = new HttpClientHandler()
 		{
@@ -44,7 +52,7 @@ public class RegisterClient : IDisposable
 	{
 		if (_registerPassword is null || _registerUsername is null) return true;
 
-		var credentials = new Models.LoginRequest
+		var credentials = new LoginRequest
 		{
 			Password = _registerPassword,
 			Username = _registerUsername
@@ -64,7 +72,7 @@ public class RegisterClient : IDisposable
 
 			var content = await response.Content.ReadAsStringAsync(ct);
 
-			var parsedResponse = JsonSerializer.Deserialize<Models.LoginResponse>(content, Constants.SerializerOptions);
+			var parsedResponse = JsonSerializer.Deserialize<LoginResponse>(content, Constants.SerializerOptions);
 
 			if (parsedResponse is null) return false;
 
@@ -103,10 +111,11 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<List<CalendarDay>> GetCalendar(DateTime startDate, DateTime endDate, CancellationToken ct = default)
+	public async Task<List<CalendarDay>?> GetCalendar(DateTime startDate, DateTime endDate, CancellationToken ct = default)
 	{
-		if (!await TryLoginIfNotAlready(ct)) return [ ];
-		return [ ];
+		if (!await TryLoginIfNotAlready(ct)) return null;
+
+		return null;
 	}
 
 	private Task<ResponseWrapper<T>> PostJson<T>(Uri uri) where T : class
