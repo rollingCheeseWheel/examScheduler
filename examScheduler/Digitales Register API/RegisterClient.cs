@@ -1,6 +1,7 @@
 ﻿using examScheduler.Digitales_Register_API.Models;
 using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace examScheduler.Digitales_Register_API;
@@ -14,9 +15,6 @@ public class RegisterClient : IDisposable
 
 	public readonly Uri RegisterBaseURI;
 
-	public readonly Uri LoginUri;
-	public readonly Uri CalendarUri;
-
 	private string? _registerUsername;
 	private string? _registerPassword;
 
@@ -25,10 +23,7 @@ public class RegisterClient : IDisposable
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
-		RegisterBaseURI = new(registerURI.Authority);
-		LoginUri = RegisterBaseURI.;
-
-
+		RegisterBaseURI = registerURI.GetBaseApiPath();
 
 		_registerUsername = registerUsername;
 		_registerPassword = registerPassword;
@@ -48,7 +43,7 @@ public class RegisterClient : IDisposable
 	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
-	private async Task<bool> Login(CancellationToken ct = default)
+	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (_registerPassword is null || _registerUsername is null) return true;
 
@@ -58,52 +53,30 @@ public class RegisterClient : IDisposable
 			Username = _registerUsername
 		};
 
-		var request = new HttpRequestMessage(HttpMethod.Post, )
-		{
-			Content = new StringContent(JsonSerializer.Serialize(credentials, Constants.SerializerOptions))
-			{
-				Headers = { ContentType = new("application/json") }
-			}
-		};
+		var (parsedResponse, response, error) = await PostJsonAsync<LoginResponse>(RegisterPath.Login, credentials, true, ct);
 
-		try
-		{
-			var response = await _httpClient.SendAsync(request, ct);
-
-			var content = await response.Content.ReadAsStringAsync(ct);
-
-			var parsedResponse = JsonSerializer.Deserialize<LoginResponse>(content, Constants.SerializerOptions);
-
-			if (parsedResponse is null) return false;
-
-			if (!_httpClientHandler.CookieContainer.GetAllCookies().Any()) return false;
-
-			foreach (Cookie cookie in _httpClientHandler.CookieContainer.GetAllCookies())
-			{
-				_cookieExpiration = _cookieExpiration > cookie.Expires
-					? _cookieExpiration
-					: cookie.Expires;
-			}
-
-			_loggedIn = parsedResponse.LoggedIn;
-
-			return true;
-		}
-		catch
-		{
+		if (!_httpClientHandler.CookieContainer.GetAllCookies().Any()
+			|| parsedResponse is null)
 			return false;
-		}
+
+		_cookieExpiration = _httpClientHandler.CookieContainer.GetAllCookies()
+			.OrderBy((cookie) => cookie.Expires)
+			.FirstOrDefault()!.Expires;
+
+		_loggedIn = parsedResponse.LoggedIn;
+
+		return true;
 	}
 
-	private async Task<bool> TryLoginIfNotAlready(CancellationToken ct = default)
+	private async Task<bool> TryLoginIfNotAlreadyAsync(CancellationToken ct = default)
 	{
-		if (_loggedIn && DateTime.UtcNow <= _cookieExpiration)
+		if (_loggedIn && DateTime.UtcNow < _cookieExpiration)
 		{
 			return true;
 		}
 		else if (_loggedIn)
 		{
-			return await Login(ct);
+			return await LoginAsync(ct);
 		}
 		else
 		{
@@ -111,16 +84,47 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<List<CalendarDay>?> GetCalendar(DateTime startDate, DateTime endDate, CancellationToken ct = default)
+	public async Task<List<CalendarDay>> GetCalendarAsync(DateTime startDate, int spanYears = 1, CancellationToken ct = default)
 	{
-		if (!await TryLoginIfNotAlready(ct)) return null;
+		var iterDate = startDate;
+		var stopDate = startDate.AddYears(spanYears);
 
-		return null;
+		List<CalendarDay> days = new();
+
+		while (stopDate <= iterDate)
+		{
+
+		}
+
+		return new();
 	}
 
-	private Task<ResponseWrapper<T>> PostJson<T>(Uri uri) where T : class
+	private async Task<HttpResponseMessage> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{
+		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
+			throw new InvalidOperationException("The user cannot be logged in");
+		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
+	}
 
+	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
+	{
+		try
+		{
+			var response = await PostJsonAsync(path, value, isAuthRequest, ct);
+			var message = await response.Content.ReadAsStringAsync();
+
+			if (response.IsSuccessStatusCode)
+			{
+				var deserialized = JsonSerializer.Deserialize<T>(message, Constants.SerializerOptions);
+				return (deserialized, response, null);
+			}
+
+			return (null, response, null);
+		}
+		catch (Exception ex)
+		{
+			return (null, null, ex);
+		}
 	}
 
 	~RegisterClient()

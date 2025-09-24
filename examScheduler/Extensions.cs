@@ -10,4 +10,7 @@ public static class Extensions
 
 	public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
 
+	public static Uri AppendRelativePath(this Uri uri, string relativePath) => new(uri.ToString() + ( relativePath.StartsWith('/') ? "" : "/" ) + relativePath);
+
+	public static Uri GetBaseApiPath(this Uri uri) => uri.AppendRelativePath(RegisterPath.Api);
 }

@@ -15,10 +15,10 @@ public static class Constants
 
 public sealed class RegisterPath(string value) : StringEnum(value)
 {
-	public readonly RegisterPath Api = new("v2/api/");
+	public static readonly RegisterPath Api = new("v2/api/");
 
-	public readonly RegisterPath AuthLogin = new("auth/login/");
-	public readonly RegisterPath Calendar = new("calendar/student/");
+	public static readonly RegisterPath Login = new("auth/login/");
+	public static readonly RegisterPath Calendar = new("calendar/student/");
 }
 
 public class StringEnum
