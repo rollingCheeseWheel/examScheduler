@@ -1,8 +1,7 @@
 ﻿using examScheduler.Digitales_Register_API.Models;
-using System;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.ComponentModel;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace examScheduler.Digitales_Register_API;
 
@@ -15,10 +14,11 @@ public class RegisterClient : IDisposable
 
 	public readonly Uri RegisterBaseURI;
 
-	private string? _registerUsername;
-	private string? _registerPassword;
+	private string _registerUsername;
+	private string _registerPassword;
 
 	private bool _loggedIn = false;
+	private bool _expired => _cookieExpiration > DateTime.UtcNow;
 	private DateTime _cookieExpiration = DateTime.MaxValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
@@ -45,7 +45,7 @@ public class RegisterClient : IDisposable
 
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
-		if (_registerPassword is null || _registerUsername is null) return true;
+		if (_loggedIn && !_expired) return _loggedIn;
 
 		var credentials = new LoginRequest
 		{
@@ -63,18 +63,18 @@ public class RegisterClient : IDisposable
 			.OrderBy((cookie) => cookie.Expires)
 			.FirstOrDefault()!.Expires;
 
-		_loggedIn = parsedResponse.LoggedIn;
+		_loggedIn = parsedResponse.LoggedIn && !_expired;
 
-		return true;
+		return _loggedIn;
 	}
 
 	private async Task<bool> TryLoginIfNotAlreadyAsync(CancellationToken ct = default)
 	{
-		if (_loggedIn && DateTime.UtcNow < _cookieExpiration)
+		if (_loggedIn && !_expired)
 		{
 			return true;
 		}
-		else if (_loggedIn)
+		else if (_expired)
 		{
 			return await LoginAsync(ct);
 		}
@@ -90,13 +90,36 @@ public class RegisterClient : IDisposable
 		var stopDate = startDate.AddYears(spanYears);
 
 		List<CalendarDay> days = new();
+		HttpResponseMessage response;
 
-		while (stopDate <= iterDate)
+		while (stopDate >= iterDate)
 		{
+			response = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(iterDate), ct: ct);
 
+			days.AddRange(await ParseCalendarDays(response));
+
+			iterDate = iterDate.AddDays(7);
 		}
 
 		return new();
+	}
+
+	private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
+	{
+		List<CalendarDay> calendarDays = new();
+
+		var message = await response.Content.ReadAsStringAsync(ct);
+		var jsonDoc = JsonDocument.Parse(message);
+		var root = jsonDoc.RootElement;
+
+		foreach (var prop in root.EnumerateObject())
+		{
+			if (!prop.Name.RegisterTryParse(out var dateTime))
+				continue;
+			
+		}
+
+		return calendarDays;
 	}
 
 	private async Task<HttpResponseMessage> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
@@ -111,7 +134,7 @@ public class RegisterClient : IDisposable
 		try
 		{
 			var response = await PostJsonAsync(path, value, isAuthRequest, ct);
-			var message = await response.Content.ReadAsStringAsync();
+			var message = await response.Content.ReadAsStringAsync(ct);
 
 			if (response.IsSuccessStatusCode)
 			{
@@ -153,38 +176,5 @@ public class RegisterClient : IDisposable
 		// Free unmanaged resources here if you had any
 
 		_disposed = true;
-	}
-}
-
-internal class ResponseWrapper<T> where T : class
-{
-	public HttpResponseMessage ResponseMessage { get; init; }
-	public T? Value { get; init; } = null;
-
-	private ResponseWrapper(HttpResponseMessage responseMessage, T? value = null)
-	{
-		ResponseMessage = responseMessage;
-		Value = value;
-	}
-
-	public async Task<ResponseWrapper<T>> Create(HttpResponseMessage responseMessage)
-	{
-		T? value = null;
-
-		try
-		{
-			var message = await responseMessage.Content.ReadAsStringAsync();
-
-			value = JsonSerializer.Deserialize<T>(message, Constants.SerializerOptions);
-		}
-		catch
-		{
-			value = null;
-		}
-
-		return new ResponseWrapper<T>(responseMessage, responseMessage.IsSuccessStatusCode
-			? value
-			: null
-		);
 	}
 }

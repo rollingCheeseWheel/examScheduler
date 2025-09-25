@@ -1,4 +1,6 @@
-﻿namespace examScheduler;
+﻿using System.Globalization;
+
+namespace examScheduler;
 
 public static class Extensions
 {
@@ -7,6 +9,17 @@ public static class Extensions
 	public static string RegisterFormat(this DateTime dateTime) => dateTime.ToString(Format);
 
 	public static DateTime RegisterParse(this string dateTime) => DateTime.ParseExact(dateTime, Format, null);
+
+	public static bool RegisterTryParse(this string dateTime, out DateTime? result)
+	{
+		if (DateTime.TryParseExact(dateTime, Format, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
+		{
+			result = temp;
+			return true;
+		}
+		result = null;
+		return false;
+	}
 
 	public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
 
