@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace examScheduler.Entities;
+﻿namespace examScheduler.Entities;
 
 public class Schedule
 {
@@ -10,9 +8,9 @@ public class Schedule
 	public DateTime? lockInDate { get; set; }
 
 	// Navigation Properties
-	public ICollection<ExamSlot> ExamSlots { get; set; } = [];
+	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
 	public Classroom Classroom { get; set; } = default!;
-	public ICollection<Teacher> Teachers { get; set; } = [];
+	public ICollection<Teacher> Teachers { get; set; } = [ ];
 	public Subject Subject { get; set; } = default!;
 }
 

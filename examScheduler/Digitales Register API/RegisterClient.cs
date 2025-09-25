@@ -1,12 +1,14 @@
 ﻿using examScheduler.Digitales_Register_API.Models;
-using System.ComponentModel;
+using examScheduler.Models.Auth;
+using System.Data;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace examScheduler.Digitales_Register_API;
 
 public class RegisterClient : IDisposable
 {
+	public static ILogger logger = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug)).CreateLogger<RegisterClient>();
+
 	private bool _disposed = false;
 
 	private HttpClientHandler _httpClientHandler;
@@ -43,27 +45,44 @@ public class RegisterClient : IDisposable
 	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
+	public RegisterClient(RegisterRequest loginRequest) : this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
+
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (_loggedIn && !_expired) return _loggedIn;
 
-		var credentials = new LoginRequest
+		var credentials = new Models.LoginRequest
 		{
 			Password = _registerPassword,
 			Username = _registerUsername
 		};
 
-		var (parsedResponse, response, error) = await PostJsonAsync<LoginResponse>(RegisterPath.Login, credentials, true, ct);
+		var (parsedResponse, response, error) = await PostJsonAsync<Models.LoginResponse>(RegisterPath.Login, credentials, true, ct);
 
 		if (!_httpClientHandler.CookieContainer.GetAllCookies().Any()
 			|| parsedResponse is null)
+		{
+			logger.LogDebug("Exiting early");
+			logger.LogDebug(JsonSerializer.Serialize(parsedResponse));
+			logger.LogDebug(error?.Message);
+			logger.LogDebug(response.Headers.ToString());
 			return false;
+		}
 
-		_cookieExpiration = _httpClientHandler.CookieContainer.GetAllCookies()
+		var cookies = _httpClientHandler.CookieContainer.GetAllCookies().AsEnumerable() ?? [ ];
+
+		foreach (var cookie in cookies)
+		{
+			logger.LogDebug($"Name: {cookie.Name} - Value: {cookie.Value}");
+		}
+
+		_cookieExpiration = cookies
 			.OrderBy((cookie) => cookie.Expires)
 			.FirstOrDefault()!.Expires;
 
 		_loggedIn = parsedResponse.LoggedIn && !_expired;
+
+		logger.LogDebug($"Logged in: {_loggedIn}");
 
 		return _loggedIn;
 	}
@@ -104,6 +123,13 @@ public class RegisterClient : IDisposable
 		return new();
 	}
 
+	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
+	{
+		var response = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
+
+		return await response.Content.ReadAsStringAsync(ct);
+	}
+
 	private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
 	{
 		List<CalendarDay> calendarDays = new();
@@ -112,11 +138,34 @@ public class RegisterClient : IDisposable
 		var jsonDoc = JsonDocument.Parse(message);
 		var root = jsonDoc.RootElement;
 
-		foreach (var prop in root.EnumerateObject())
+		foreach (var prop in root.EnumerateObject()) // date
 		{
 			if (!prop.Name.RegisterTryParse(out var dateTime))
 				continue;
-			
+
+			List<HourInDay> hoursInDay = new();
+
+			try
+			{
+				var nestedProp = prop.Value.EnumerateObject().First(); // "1"
+				var innerNestedProp = nestedProp.Value.EnumerateObject().First(); // "1"
+
+				foreach (var hour in innerNestedProp.Value.EnumerateObject())
+				{
+					try
+					{
+						hoursInDay.Append(JsonSerializer.Deserialize<HourInDay>(hour.Value, Constants.SerializerOptions));
+					}
+					catch
+					{
+						continue;
+					}
+				}
+			}
+			catch
+			{
+				continue;
+			}
 		}
 
 		return calendarDays;
@@ -126,6 +175,9 @@ public class RegisterClient : IDisposable
 	{
 		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
 			throw new InvalidOperationException("The user cannot be logged in");
+
+		logger.LogDebug(path);
+		logger.LogDebug(_httpClient.BaseAddress.ToString());
 		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
 	}
 
@@ -138,8 +190,15 @@ public class RegisterClient : IDisposable
 
 			if (response.IsSuccessStatusCode)
 			{
-				var deserialized = JsonSerializer.Deserialize<T>(message, Constants.SerializerOptions);
-				return (deserialized, response, null);
+				try
+				{
+					var deserialized = JsonSerializer.Deserialize<T>(message, Constants.SerializerOptions);
+					return (deserialized, response, null);
+				}
+				catch (Exception ex)
+				{
+					return (null, response, ex);
+				}
 			}
 
 			return (null, response, null);

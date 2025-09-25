@@ -1,5 +1,4 @@
 ﻿using examScheduler.Models.Auth;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;
@@ -13,5 +12,4 @@ public class AuthController : ControllerBase
 	{
 		return Ok("sadfasfd");
 	}
-
 }

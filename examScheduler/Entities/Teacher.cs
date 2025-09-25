@@ -8,6 +8,6 @@ public class Teacher
 
 	// Navigation Properties
 	public Timetable Timetable { get; set; } = default!;
-	public ICollection<Classroom> Classrooms { get; set; } = [];
-	public ICollection<Subject> Subjects { get; set; } = [];
+	public ICollection<Classroom> Classrooms { get; set; } = [ ];
+	public ICollection<Subject> Subjects { get; set; } = [ ];
 }

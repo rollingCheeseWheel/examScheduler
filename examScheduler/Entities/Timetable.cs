@@ -6,7 +6,7 @@ public class Timetable
 	public DateTime CreatedAt { get; set; }
 
 	// Navigation Properties
-	public ICollection<Week> Data { get; set; } = [];
+	public ICollection<Week> Data { get; set; } = [ ];
 	public Classroom Classroom { get; set; } = default!;
 }
 
@@ -16,7 +16,7 @@ public class Week
 	public DateTime Start { get; set; }
 
 	// Navigation Properties
-	public ICollection<Day> Days { get; set; } = [];
+	public ICollection<Day> Days { get; set; } = [ ];
 }
 
 public class Day
@@ -25,7 +25,7 @@ public class Day
 	public DayOfWeek DayOfWeek { get; set; } // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
 	// Navigation Properties
-	public ICollection<Lesson> Periods { get; set; } = [];
+	public ICollection<Lesson> Periods { get; set; } = [ ];
 }
 
 public class Lesson
@@ -46,5 +46,5 @@ public class Subject
 	public string Name { get; set; } = default!;
 
 	// Navigation Properties
-	public ICollection<Teacher> Teachers { get; set; } = [];
+	public ICollection<Teacher> Teachers { get; set; } = [ ];
 }

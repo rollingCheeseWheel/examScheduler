@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using examScheduler.Entities;
+﻿using examScheduler.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace examScheduler.Data;
 

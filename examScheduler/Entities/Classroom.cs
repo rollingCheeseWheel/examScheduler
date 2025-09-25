@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace examScheduler.Entities;
+﻿namespace examScheduler.Entities;
 
 public class Classroom
 {
@@ -11,6 +9,6 @@ public class Classroom
 
 	// Navigation Properties
 	public Timetable Timetable { get; set; } = default!;
-	public ICollection<Student> Students { get; set; } = [];
-	public ICollection<Teacher> Teachers { get; set; } = [];
+	public ICollection<Student> Students { get; set; } = [ ];
+	public ICollection<Teacher> Teachers { get; set; } = [ ];
 }
