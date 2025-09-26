@@ -18,10 +18,8 @@ public class RegisterClient : IDisposable
 
 	private string _registerUsername;
 	private string _registerPassword;
-
-	private bool _loggedIn = false;
-	private bool _expired => _cookieExpiration > DateTime.UtcNow;
-	private DateTime _cookieExpiration = DateTime.MaxValue;
+	private bool _expired => _cookieExpiration < DateTime.UtcNow;
+	private DateTime _cookieExpiration = DateTime.MinValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
@@ -33,7 +31,7 @@ public class RegisterClient : IDisposable
 		_httpClientHandler = new HttpClientHandler()
 		{
 			UseCookies = true,
-			CookieContainer = new(),
+			CookieContainer = new()
 		};
 
 		_httpClient = new HttpClient(_httpClientHandler)
@@ -49,7 +47,9 @@ public class RegisterClient : IDisposable
 
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
-		if (_loggedIn && !_expired) return _loggedIn;
+		if (!_expired) return true;
+
+		await _httpClient.GetAsync(RegisterBaseURI.GetSchemeAndAuthority().AppendRelativePath(RegisterPath.LoginPage));
 
 		var credentials = new Models.LoginRequest
 		{
@@ -57,17 +57,10 @@ public class RegisterClient : IDisposable
 			Username = _registerUsername
 		};
 
-		var (parsedResponse, response, error) = await PostJsonAsync<Models.LoginResponse>(RegisterPath.Login, credentials, true, ct);
+		var response = await PostJsonAsync(RegisterPath.Login, credentials, true, ct);
 
-		if (!_httpClientHandler.CookieContainer.GetAllCookies().Any()
-			|| parsedResponse is null)
-		{
-			logger.LogDebug("Exiting early");
-			logger.LogDebug(JsonSerializer.Serialize(parsedResponse));
-			logger.LogDebug(error?.Message);
-			logger.LogDebug(response.Headers.ToString());
-			return false;
-		}
+		if (!response.IsSuccessStatusCode ||
+			!_httpClientHandler.CookieContainer.GetAllCookies().Any()) return false;
 
 		var cookies = _httpClientHandler.CookieContainer.GetAllCookies().AsEnumerable() ?? [ ];
 
@@ -80,16 +73,14 @@ public class RegisterClient : IDisposable
 			.OrderBy((cookie) => cookie.Expires)
 			.FirstOrDefault()!.Expires;
 
-		_loggedIn = parsedResponse.LoggedIn && !_expired;
+		logger.LogDebug($"Logged in: {!_expired}");
 
-		logger.LogDebug($"Logged in: {_loggedIn}");
-
-		return _loggedIn;
+		return !_expired;
 	}
 
 	private async Task<bool> TryLoginIfNotAlreadyAsync(CancellationToken ct = default)
 	{
-		if (_loggedIn && !_expired)
+		if (!_expired)
 		{
 			return true;
 		}
@@ -176,8 +167,7 @@ public class RegisterClient : IDisposable
 		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
 			throw new InvalidOperationException("The user cannot be logged in");
 
-		logger.LogDebug(path);
-		logger.LogDebug(_httpClient.BaseAddress.ToString());
+		logger.LogDebug(_httpClient.BaseAddress?.AppendRelativePath(path).ToString());
 		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
 	}
 
