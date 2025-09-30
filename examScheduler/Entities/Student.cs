@@ -1,22 +1,34 @@
-﻿namespace examScheduler.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace examScheduler.Entities;
 
 public class Student
 {
+	[Key]
+	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	public string RegisterUsername { get; set; } = default!;
-	public Uri RegisterUri { get; set; } = default!;
-	public string Name { get; set; } = default!;
-	public string Surname { get; set; } = default!;
-	public string DisplayName { get; set; } = default!;
+	[Required]
+	public required string RegisterUsername { get; set; }
+	[Required]
+	public required Uri RegisterUri { get; set; }
+	[Required]
+	public required string Name { get; set; }
+	[Required]
+	public required string Surname { get; set; }
 	public DateTime CreatedAt { get; set; }
 
-	public string Salt { get; set; } = default!;
-	public string Hash { get; set; } = default!;
+	[Required]
+	public required string Salt { get; set; }
+	[Required]
+	public required string Hash { get; set; }
 
 	// Permissions - enum flags, can be combined
 	// e.g. Permission.Read | Permission.Write = 3
-	public Permission Permissions { get; set; } = default!;
+	[Required]
+	public required Permission Permissions { get; set; }
 
 	// Navigation Properties
-	public Classroom Classroom { get; set; } = default!;
+	[Required]
+	public required Classroom Classroom { get; set; }
 }

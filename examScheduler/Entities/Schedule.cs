@@ -1,9 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace examScheduler.Entities;
 
 public class Schedule
 {
+	[Key]
+	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 
 	public AutoLockIn AutoLockIn { get; set; } = AutoLockIn.OnExamination;
@@ -11,17 +14,21 @@ public class Schedule
 
 	// Navigation Properties
 	public ICollection<ExamSlot> ExamSlots { get; set; } = [];
-	public Classroom Classroom { get; set; } = default!;
+	[Required]
+	public required Classroom Classroom { get; set; }
 	public ICollection<Teacher> Teachers { get; set; } = [];
-	public Subject Subject { get; set; } = default!;
+	[Required]
+	public required Subject Subject { get; set; }
 }
 
 public class ExamSlot
 {
+	[Key]
+	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 
 	// Navigation Properties
-	public Lesson Period { get; set; } = default!;
-	public Classroom Classroom { get; set; } = default!;
+	public required Lesson Period { get; set; }
+	public required Classroom Classroom { get; set; }
 
 }

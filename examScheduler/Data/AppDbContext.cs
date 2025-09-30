@@ -7,6 +7,14 @@ public class AppDbContext : DbContext
 {
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+	{
+		modelBuilder.Entity<Classroom>()
+			.HasOne(c => c.Timetable)
+			.WithOne(t => t.Classroom)
+			.HasForeignKey<Timetable>(t => t.ClassroomId);
+	}
+
 	public DbSet<AuditLog> AuditLogs { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
 	public DbSet<Schedule> Schedules { get; set; }
