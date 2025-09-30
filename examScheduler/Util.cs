@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace examScheduler;
 
@@ -17,8 +16,11 @@ public sealed class RegisterPath(string value) : StringEnum(value)
 {
 	public static readonly RegisterPath Api = new("v2/api/");
 
+	public static readonly RegisterPath LoginPage = new("login");
+
 	public static readonly RegisterPath Login = new("auth/login/");
 	public static readonly RegisterPath Calendar = new("calendar/student/");
+	public static readonly RegisterPath ProfileDetails = new("profile/get");
 }
 
 public class StringEnum
