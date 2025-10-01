@@ -9,7 +9,8 @@ public class Timetable
 	[Key]
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	public DateTime CreatedAt { get; set; }
+	[Required]
+	public required DateTime CreatedAt { get; set; } = DateTime.Now;
 
 	// Navigation Properties
 	[Required]
@@ -22,38 +23,48 @@ public class Timetable
 public class Week
 {
 	public int Id { get; set; }
-	public DateTime Start { get; set; }
+	[Required]
+	public required DateTime Start { get; set; }
 
 	// Navigation Properties
+	[Required]
 	public ICollection<Day> Days { get; set; } = [ ];
 }
 
 public class Day
 {
 	public int Id { get; set; }
-	public DayOfWeek DayOfWeek { get; set; } // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+	[Required]
+	public required DayOfWeek DayOfWeek { get; set; } // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
 	// Navigation Properties
+	[Required]
 	public ICollection<Lesson> Periods { get; set; } = [ ];
 }
 
 public class Lesson
 {
 	public int Id { get; set; }
-	public DateTime Start { get; set; }
-	public byte StartHour { get; set; } // 0-23
-	public byte DurationInHours { get; set; } // 1-24
+	[Required]
+	public required DateTime Start { get; set; }
+	[Required]
+	public required byte StartHour { get; set; } // 0-23
+	[Required]
+	public required byte DurationInHours { get; set; } // 1-24
 
 
 	// Navigation Properties
-	public Subject Subject { get; set; } = default!;
+	[Required]
+	public required Subject Subject { get; set; }
 }
 
 public class Subject
 {
 	public int Id { get; set; }
-	public string Name { get; set; } = default!;
+	[Required]
+	public required string Name { get; set; }
 
 	// Navigation Properties
+	[Required]
 	public ICollection<Teacher> Teachers { get; set; } = [ ];
 }
