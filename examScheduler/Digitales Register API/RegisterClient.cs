@@ -1,6 +1,8 @@
 ﻿using examScheduler.Digitales_Register_API.Models;
 using examScheduler.Models.Auth;
+using System;
 using System.Data;
+using System.Net;
 using System.Text.Json;
 
 namespace examScheduler.Digitales_Register_API;
@@ -12,6 +14,7 @@ public class RegisterClient : IDisposable
 	private bool _disposed = false;
 
 	private HttpClientHandler _httpClientHandler;
+	private CookieContainer _cookieContainer = new();
 	private HttpClient _httpClient;
 
 	public readonly Uri RegisterBaseURI;
@@ -31,13 +34,10 @@ public class RegisterClient : IDisposable
 		_httpClientHandler = new HttpClientHandler()
 		{
 			UseCookies = true,
-			CookieContainer = new()
+			CookieContainer = _cookieContainer,
 		};
 
-		_httpClient = new HttpClient(_httpClientHandler)
-		{
-			BaseAddress = RegisterBaseURI
-		};
+		_httpClient = new HttpClient(_httpClientHandler);
 	}
 
 	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
@@ -45,28 +45,26 @@ public class RegisterClient : IDisposable
 
 	public RegisterClient(RegisterRequest loginRequest) : this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
 
-	private async Task<bool> LoginAsync(CancellationToken ct = default)
+	public async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (!_expired) return true;
 
-		await _httpClient.GetAsync(RegisterBaseURI.GetSchemeAndAuthority().AppendRelativePath(RegisterPath.LoginPage));
-
-		var credentials = new Models.LoginRequest
+		var credentials = new
 		{
-			Password = _registerPassword,
-			Username = _registerUsername
+			password = _registerPassword,
+			username = _registerUsername
 		};
 
 		var response = await PostJsonAsync(RegisterPath.Login, credentials, true, ct);
 
+		var cookies = _httpClientHandler.CookieContainer.GetAllCookies();
+
 		if (!response.IsSuccessStatusCode ||
-			!_httpClientHandler.CookieContainer.GetAllCookies().Any()) return false;
+			!cookies.Any()) return false;
 
-		var cookies = _httpClientHandler.CookieContainer.GetAllCookies().AsEnumerable() ?? [ ];
-
-		foreach (var cookie in cookies)
+		foreach (Cookie cookie in cookies)
 		{
-			logger.LogDebug($"Name: {cookie.Name} - Value: {cookie.Value}");
+			logger.LogDebug($"Name: {cookie.Name} - Value: {cookie.Value} - Expiration: {cookie.Expires}");
 		}
 
 		_cookieExpiration = cookies
@@ -74,7 +72,9 @@ public class RegisterClient : IDisposable
 			.FirstOrDefault()!.Expires;
 
 		logger.LogDebug($"Logged in: {!_expired}");
-
+		logger.LogDebug($"Expiration date: {_cookieExpiration}");
+		var message = await response.Content.ReadAsStringAsync();
+		logger.LogDebug(message);
 		return !_expired;
 	}
 
@@ -84,13 +84,9 @@ public class RegisterClient : IDisposable
 		{
 			return true;
 		}
-		else if (_expired)
-		{
-			return await LoginAsync(ct);
-		}
 		else
 		{
-			return false;
+			return await LoginAsync(ct);
 		}
 	}
 
@@ -116,7 +112,7 @@ public class RegisterClient : IDisposable
 
 	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
 	{
-		var response = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
+		var response = await PostJsonAsync(RegisterPath.ProfileDetails, null, ct: ct);
 
 		return await response.Content.ReadAsStringAsync(ct);
 	}
@@ -167,8 +163,23 @@ public class RegisterClient : IDisposable
 		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
 			throw new InvalidOperationException("The user cannot be logged in");
 
-		logger.LogDebug(_httpClient.BaseAddress?.AppendRelativePath(path).ToString());
-		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
+		var stringContent = new StringContent(JsonSerializer.Serialize(value))
+		{
+			Headers = { ContentType = new("application/json") }
+		};
+
+		var uri = RegisterBaseURI.AppendRelativePath(path);
+
+		var request = new HttpRequestMessage(HttpMethod.Post, uri)
+		{
+			Content = stringContent
+		};
+
+		logger.LogDebug(uri.ToString());
+
+		return await _httpClient.SendAsync(request, ct);
+
+		/*return await _httpClient.PostAsJsonAsync(RegisterBaseURI.AppendRelativePath(path), value, ct);*/
 	}
 
 	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class

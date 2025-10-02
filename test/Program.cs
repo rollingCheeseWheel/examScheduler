@@ -1,14 +1,23 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using examScheduler.Digitales_Register_API;
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Text.Json;
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
-using var handler = new HttpClientHandler()
+using var registerClient = new RegisterClient(config[ "password" ]!, config[ "username" ]!, "https://wfo-bruneck.digitalesregister.it/");
+
+Console.WriteLine("return value: " + await registerClient.LoginAsync());
+
+
+
+
+
+/*using var handler = new HttpClientHandler()
 {
-	CookieContainer = new(),
-	UseCookies = true
+CookieContainer = new(),
+UseCookies = true
 };
 
 using var client = new HttpClient(handler);
@@ -18,24 +27,25 @@ var cookieUri = new Uri(uri.GetLeftPart(UriPartial.Authority));
 
 var credentials = new
 {
-	password = config[ "password" ],
-	username = config[ "username" ]
+password = config[ "password" ],
+username = config[ "username" ]
 };
 
 var stringContent = new StringContent(JsonSerializer.Serialize(credentials))
 {
-	Headers = { ContentType = new("application/json") }
+Headers = { ContentType = new("application/json") }
 };
 
 var request = new HttpRequestMessage(HttpMethod.Post, uri)
 {
-	Content = stringContent
+Content = stringContent
 };
 
 var response = await client.SendAsync(request);
 
 handler.CookieContainer.PrintAllCookies("POST");
-Console.WriteLine(await response.Content.ReadAsStringAsync());
+var responseMessage = await response.Content.ReadAsStringAsync();
+Console.WriteLine(responseMessage);
 
 
 public static class Extensions
@@ -60,4 +70,4 @@ public static class Extensions
 			}
 		}
 	}
-}
+}*/
