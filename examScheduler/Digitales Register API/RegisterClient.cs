@@ -52,7 +52,7 @@ public class RegisterClient : IDisposable
 	public RegisterClient(RegisterRequest loginRequest)
 		: this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
 
-	public async Task<bool> LoginAsync(CancellationToken ct = default)
+	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (LoggedIn) return true;
 
@@ -81,14 +81,7 @@ public class RegisterClient : IDisposable
 
 	private async Task<bool> TryLoginIfNotAlreadyAsync(CancellationToken ct = default)
 	{
-		if (LoggedIn)
-		{
-			return true;
-		}
-		else
-		{
-			return await LoginAsync(ct);
-		}
+		return LoggedIn ? true : await LoginAsync(ct);
 	}
 
 	/*public async Task<List<CalendarDay>> GetCalendarAsync(DateTime startDate, int spanYears = 1, CancellationToken ct = default)
@@ -111,6 +104,10 @@ public class RegisterClient : IDisposable
 
 		return new();
 	}*/
+	public string GetProfileImageAsync(CancellationToken ct = default)
+	{
+		throw new NotImplementedException();
+	}
 
 	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
 	{

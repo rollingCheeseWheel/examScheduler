@@ -6,9 +6,7 @@ var config = new ConfigurationBuilder()
 
 using var client = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
 
-Console.WriteLine("return value: " + await client.LoginAsync());
-
-Console.WriteLine("return value: " + await client.GetProfileDetailsAsync());
+Console.WriteLine("profile details: " + await client.GetProfileDetailsAsync());
 
 
 
