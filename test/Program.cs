@@ -1,7 +1,5 @@
 ﻿using examScheduler.Digitales_Register_API;
 using Microsoft.Extensions.Configuration;
-using System.Net;
-using System.Text.Json;
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();

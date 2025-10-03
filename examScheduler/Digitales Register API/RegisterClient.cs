@@ -1,7 +1,5 @@
 ﻿using examScheduler.Digitales_Register_API.Models;
 using examScheduler.Models.Auth;
-using System;
-using System.Data;
 using System.Net;
 using System.Text.Json;
 

@@ -14,11 +14,11 @@ public class Schedule
 
 	// Navigation Properties
 	[Required] // not null
-	public ICollection<ExamSlot> ExamSlots { get; set; } = [];
+	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
 	[Required]
 	public required Classroom Classroom { get; set; }
 	[Required]
-	public ICollection<Teacher> Teachers { get; set; } = [];
+	public ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
 	public required Subject Subject { get; set; }
 }

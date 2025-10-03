@@ -15,7 +15,7 @@ public class Teacher
 	// Navigation Properties
 	public Timetable? Timetable { get; set; }
 	[Required]
-	public ICollection<Classroom> Classrooms { get; set; } = [];
+	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 	[Required]
-	public ICollection<Subject> Subjects { get; set; } = [];
+	public ICollection<Subject> Subjects { get; set; } = [ ];
 }
