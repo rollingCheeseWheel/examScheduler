@@ -21,11 +21,18 @@ public class RegisterClient : IDisposable
 
 	private string _registerUsername;
 	private string _registerPassword;
-	private bool _expired => _cookieExpiration < DateTime.UtcNow;
+
+	public bool LoggedIn { get; private set; }
+	private bool _expired => _cookieExpiration <= DateTime.UtcNow;
 	private DateTime _cookieExpiration = DateTime.MinValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
+		if (registerURI.Scheme != Uri.UriSchemeHttps)
+		{
+			throw new ArgumentException(nameof(registerURI), "Invalid URI scheme, must be HTTPS");
+		}
+
 		RegisterBaseURI = registerURI.GetBaseApiPath();
 
 		_registerUsername = registerUsername;
@@ -37,22 +44,27 @@ public class RegisterClient : IDisposable
 			CookieContainer = _cookieContainer,
 		};
 
-		_httpClient = new HttpClient(_httpClientHandler);
+		_httpClient = new HttpClient(_httpClientHandler)
+		{
+			BaseAddress = RegisterBaseURI,
+			Timeout = TimeSpan.FromMilliseconds(500)
+		};
 	}
 
 	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
-	public RegisterClient(RegisterRequest loginRequest) : this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
+	public RegisterClient(RegisterRequest loginRequest)
+		: this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
 
 	public async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (!_expired) return true;
 
-		var credentials = new
+		var credentials = new Models.LoginRequest
 		{
-			password = _registerPassword,
-			username = _registerUsername
+			Password = _registerPassword,
+			Username = _registerUsername
 		};
 
 		var response = await PostJsonAsync(RegisterPath.Login, credentials, true, ct);
@@ -71,10 +83,6 @@ public class RegisterClient : IDisposable
 			.OrderBy((cookie) => cookie.Expires)
 			.FirstOrDefault()!.Expires;
 
-		logger.LogDebug($"Logged in: {!_expired}");
-		logger.LogDebug($"Expiration date: {_cookieExpiration}");
-		var message = await response.Content.ReadAsStringAsync();
-		logger.LogDebug(message);
 		return !_expired;
 	}
 
@@ -163,23 +171,7 @@ public class RegisterClient : IDisposable
 		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
 			throw new InvalidOperationException("The user cannot be logged in");
 
-		var stringContent = new StringContent(JsonSerializer.Serialize(value))
-		{
-			Headers = { ContentType = new("application/json") }
-		};
-
-		var uri = RegisterBaseURI.AppendRelativePath(path);
-
-		var request = new HttpRequestMessage(HttpMethod.Post, uri)
-		{
-			Content = stringContent
-		};
-
-		logger.LogDebug(uri.ToString());
-
-		return await _httpClient.SendAsync(request, ct);
-
-		/*return await _httpClient.PostAsJsonAsync(RegisterBaseURI.AppendRelativePath(path), value, ct);*/
+		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
 	}
 
 	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class

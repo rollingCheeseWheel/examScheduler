@@ -21,6 +21,13 @@ public sealed class RegisterPath(string value) : StringEnum(value)
 	public static readonly RegisterPath Login = new("auth/login");
 	public static readonly RegisterPath Calendar = new("calendar/student");
 	public static readonly RegisterPath ProfileDetails = new("profile/get");
+
+	public override string ToString()
+	{
+		return base.ToString().EndsWith('/')
+			? throw new Exception("Paths cannot end in slashes")
+			: base.ToString();
+	}
 }
 
 public class StringEnum
@@ -29,11 +36,11 @@ public class StringEnum
 
 	protected StringEnum(string value) => Value = value;
 
-	public static implicit operator string(StringEnum value) => value.Value;
+	public static implicit operator string(StringEnum @enum) => @enum.ToString();
 	public static bool operator ==(StringEnum? left, StringEnum? right) => left?.Value == right?.Value;
 	public static bool operator !=(StringEnum? left, StringEnum? right) => !( left == right );
 
-	public override string ToString() => this;
+	public override string ToString() => Value;
 
 	public override bool Equals(object? obj)
 	{
