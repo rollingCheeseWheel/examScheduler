@@ -114,11 +114,11 @@ public class RegisterClient : IDisposable
 		return new();
 	}*/
 
-	public async Task<string?> GetProfileDetailsAsync(CancellationToken ct = default)
+	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
 	{
-		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, null, ct: ct);
+		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
 
-		if (error is not null) return null;
+		if (error is not null) return error.Message;
 
 		return await response!.Content.ReadAsStringAsync(ct);
 	}
@@ -168,7 +168,7 @@ public class RegisterClient : IDisposable
 	{
 		try
 		{
-			if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
+			if (!isAuthRequest && !await TryLoginIfNotAlreadyAsync(ct))
 				throw new InvalidOperationException("The user cannot be logged in");
 
 

@@ -6,10 +6,11 @@ using System.Text.Json;
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
-using var registerClient = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
+using var client = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
 
-Console.WriteLine("return value: " + await registerClient.LoginAsync());
+Console.WriteLine("return value: " + await client.LoginAsync());
 
+Console.WriteLine("return value: " + await client.GetProfileDetailsAsync());
 
 
 
