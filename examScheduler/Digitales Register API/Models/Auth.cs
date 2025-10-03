@@ -12,8 +12,6 @@ public class LoginRequest
 
 public class LoginResponse
 {
-	[JsonPropertyName("error")]
-	public required object? Error { get; set; }
 	[JsonPropertyName("loggedIn")]
-	public required bool LoggedIn { get; set; }
+	public bool? LoggedIn { get; set; }
 }

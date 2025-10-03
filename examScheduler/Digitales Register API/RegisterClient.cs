@@ -23,8 +23,6 @@ public class RegisterClient : IDisposable
 	private string _registerPassword;
 
 	public bool LoggedIn { get; private set; }
-	private bool _expired => _cookieExpiration <= DateTime.UtcNow;
-	private DateTime _cookieExpiration = DateTime.MinValue;
 
 	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
 	{
@@ -46,8 +44,7 @@ public class RegisterClient : IDisposable
 
 		_httpClient = new HttpClient(_httpClientHandler)
 		{
-			BaseAddress = RegisterBaseURI,
-			Timeout = TimeSpan.FromMilliseconds(500)
+			BaseAddress = RegisterBaseURI
 		};
 	}
 
@@ -59,7 +56,7 @@ public class RegisterClient : IDisposable
 
 	public async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
-		if (!_expired) return true;
+		if (LoggedIn) return true;
 
 		var credentials = new Models.LoginRequest
 		{
@@ -67,28 +64,26 @@ public class RegisterClient : IDisposable
 			Username = _registerUsername
 		};
 
-		var response = await PostJsonAsync(RegisterPath.Login, credentials, true, ct);
+		var (loginResponse, response, error) = await PostJsonAsync<Models.LoginResponse>(RegisterPath.Login, credentials, true, ct);
 
 		var cookies = _httpClientHandler.CookieContainer.GetAllCookies();
 
-		if (!response.IsSuccessStatusCode ||
-			!cookies.Any()) return false;
-
-		foreach (Cookie cookie in cookies)
+		if (error is not null
+			|| loginResponse is null
+			|| !response!.IsSuccessStatusCode
+			|| !cookies.Any())
 		{
-			logger.LogDebug($"Name: {cookie.Name} - Value: {cookie.Value} - Expiration: {cookie.Expires}");
+			return false;
 		}
 
-		_cookieExpiration = cookies
-			.OrderBy((cookie) => cookie.Expires)
-			.FirstOrDefault()!.Expires;
+		LoggedIn = loginResponse.LoggedIn.GetValueOrDefault();
 
-		return !_expired;
+		return LoggedIn;
 	}
 
 	private async Task<bool> TryLoginIfNotAlreadyAsync(CancellationToken ct = default)
 	{
-		if (!_expired)
+		if (LoggedIn)
 		{
 			return true;
 		}
@@ -98,17 +93,18 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<List<CalendarDay>> GetCalendarAsync(DateTime startDate, int spanYears = 1, CancellationToken ct = default)
+	/*public async Task<List<CalendarDay>> GetCalendarAsync(DateTime startDate, int spanYears = 1, CancellationToken ct = default)
 	{
 		var iterDate = startDate;
 		var stopDate = startDate.AddYears(spanYears);
 
 		List<CalendarDay> days = new();
 		HttpResponseMessage response;
+		Exception error;
 
 		while (stopDate >= iterDate)
 		{
-			response = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(iterDate), ct: ct);
+			(response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(iterDate), ct: ct);
 
 			days.AddRange(await ParseCalendarDays(response));
 
@@ -116,13 +112,15 @@ public class RegisterClient : IDisposable
 		}
 
 		return new();
-	}
+	}*/
 
-	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
+	public async Task<string?> GetProfileDetailsAsync(CancellationToken ct = default)
 	{
-		var response = await PostJsonAsync(RegisterPath.ProfileDetails, null, ct: ct);
+		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, null, ct: ct);
 
-		return await response.Content.ReadAsStringAsync(ct);
+		if (error is not null) return null;
+
+		return await response!.Content.ReadAsStringAsync(ct);
 	}
 
 	private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
@@ -166,20 +164,41 @@ public class RegisterClient : IDisposable
 		return calendarDays;
 	}
 
-	private async Task<HttpResponseMessage> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
+	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{
-		if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
-			throw new InvalidOperationException("The user cannot be logged in");
+		try
+		{
+			if (!isAuthRequest && await TryLoginIfNotAlreadyAsync(ct))
+				throw new InvalidOperationException("The user cannot be logged in");
 
-		return await _httpClient.PostAsJsonAsync(path, value, Constants.SerializerOptions, ct);
+
+			var stringContent = new StringContent(JsonSerializer.Serialize(value, Constants.SerializerOptions))
+			{
+				Headers = { ContentType = new("application/json") }
+			};
+
+			var request = new HttpRequestMessage(HttpMethod.Post, RegisterBaseURI.AppendRelativePath(path))
+			{
+				Content = stringContent
+			};
+
+			return (await _httpClient.SendAsync(request, ct), null);
+		}
+		catch (Exception ex)
+		{
+			return (null, ex);
+		}
 	}
 
 	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
 	{
 		try
 		{
-			var response = await PostJsonAsync(path, value, isAuthRequest, ct);
-			var message = await response.Content.ReadAsStringAsync(ct);
+			var (response, error) = await PostJsonAsync(path, value, isAuthRequest, ct);
+
+			if (error is not null) return (null, response, error);
+
+			var message = await response!.Content.ReadAsStringAsync(ct);
 
 			if (response.IsSuccessStatusCode)
 			{
