@@ -9,6 +9,7 @@ public class Student
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
+	// Unique
 	public required string RegisterUsername { get; set; }
 	[Required]
 	public required Uri RegisterUri { get; set; }

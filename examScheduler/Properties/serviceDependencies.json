@@ -1,13 +1,12 @@
 {
   "dependencies": {
-    "postgresql1": {
-      "type": "postgresql",
-      "connectionId": "ConnectionStrings:DatabaseConnection",
-      "dynamicId": null
-    },
     "secrets1": {
       "type": "secrets",
       "dynamicId": null
+    },
+    "postgresql1": {
+      "type": "postgresql",
+      "connectionId": "ConnectionStrings:DatabaseConnection"
     }
   }
 }

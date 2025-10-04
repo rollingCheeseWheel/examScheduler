@@ -14,6 +14,7 @@ public class Timetable
 	// Navigation Properties
 	[Required]
 	public ICollection<Week> Data { get; set; } = [ ];
+	[Required]
 	public int ClassroomId { get; set; }
 	[Required]
 	public required Classroom Classroom { get; set; }

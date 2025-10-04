@@ -10,13 +10,14 @@ public class Classroom
 	public int Id { get; set; }
 
 	[Required]
-	public string Name { get; set; } = default!;
-	public DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
+	public required string Name { get; set; }
+	[Required]
+	public required DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
 
 	// Navigation Properties
 	public Timetable? Timetable { get; set; }
 	[Required]
-	public ICollection<Student> Students { get; set; } = [ ];
+	public required ICollection<Student> Students { get; set; } = [ ];
 	[Required]
-	public ICollection<Teacher> Teachers { get; set; } = [ ];
+	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 }

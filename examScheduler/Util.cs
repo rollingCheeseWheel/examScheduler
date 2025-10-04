@@ -1,6 +1,19 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace examScheduler;
+
+public static class Util
+{
+	public static byte[ ] GenerateRandomSalt(int length = 32)
+	{
+		var salt = new byte[ length ];
+		RandomNumberGenerator.Fill(salt);
+		return salt;
+	}
+
+	public static string GenerateSaltBase64(int length = 32) => GenerateRandomSalt(length).ToBase64();
+}
 
 public static class Constants
 {

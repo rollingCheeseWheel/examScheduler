@@ -9,10 +9,19 @@ public class AppDbContext : DbContext
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
+		base.OnModelCreating(modelBuilder);
+
 		modelBuilder.Entity<Classroom>()
 			.HasOne(c => c.Timetable)
 			.WithOne(t => t.Classroom)
 			.HasForeignKey<Timetable>(t => t.ClassroomId);
+
+		modelBuilder.Entity<Student>()
+			.HasIndex(s => s.RegisterUsername)
+			.IsUnique();
+		modelBuilder.Entity<Student>()
+			.HasIndex(s => s.Salt)
+			.IsUnique();
 	}
 
 	public DbSet<AuditLog> AuditLogs { get; set; }
@@ -22,5 +31,4 @@ public class AppDbContext : DbContext
 	public DbSet<Teacher> Teachers { get; set; }
 	public DbSet<Timetable> Timetables { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
-
 }
