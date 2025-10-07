@@ -9,7 +9,7 @@ public class CalendarRequest
 
 	public CalendarRequest(DateTime startDate)
 	{
-		StartDate = startDate.RegisterFormat();
+		StartDate = startDate.ToRegisterFormat();
 	}
 }
 

@@ -8,7 +8,7 @@ using var client = new RegisterClient(config[ "username" ]!, config[ "password" 
 
 Console.WriteLine("profile details: " + await client.GetProfileDetailsAsync());
 
-
+Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeek());
 
 
 /*using var handler = new HttpClientHandler()

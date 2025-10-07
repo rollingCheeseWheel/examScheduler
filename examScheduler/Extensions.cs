@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Threading.Tasks;
 
 namespace examScheduler;
 
@@ -6,7 +7,7 @@ public static class Extensions
 {
 	public const string Format = "yyyy-MM-dd";
 
-	public static string RegisterFormat(this DateTime dateTime) => dateTime.ToString(Format);
+	public static string ToRegisterFormat(this DateTime dateTime) => dateTime.ToString(Format);
 
 	public static DateTime RegisterParse(this string dateTime) => DateTime.ParseExact(dateTime, Format, null);
 
@@ -32,4 +33,9 @@ public static class Extensions
 	public static Uri GetBaseApiPath(this Uri uri) => uri.GetSchemeAndAuthority().AppendRelativePath(RegisterPath.Api);
 
 	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
+
+	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct =  default)
+	{
+		return await message.Content.ReadAsStringAsync(ct);
+	}
 }

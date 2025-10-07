@@ -2,6 +2,7 @@
 using examScheduler.Models.Auth;
 using System.Net;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace examScheduler.Digitales_Register_API;
 
@@ -126,6 +127,15 @@ public class RegisterClient : IDisposable
 		if (error is not null) return error.Message;
 
 		return await response!.Content.ReadAsStringAsync(ct);
+	}
+
+	public async Task<string> GetCurrentCalendarWeek(CancellationToken ct = default)
+	{
+		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(DateTime.UtcNow), ct: ct);
+
+		if (error is not null) return error.Message;
+
+		return await response!.ReadContentAsStringAsync(ct);
 	}
 
 	private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
