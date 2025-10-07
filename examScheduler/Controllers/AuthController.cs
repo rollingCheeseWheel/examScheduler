@@ -1,4 +1,4 @@
-﻿using examScheduler.Models.Auth;
+﻿using Models.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;

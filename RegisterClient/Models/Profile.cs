@@ -1,4 +1,4 @@
-﻿namespace examScheduler.Digitales_Register_API.Models;
+﻿namespace registerClient.Models;
 
 public class Profile
 {

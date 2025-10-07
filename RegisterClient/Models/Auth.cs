@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace examScheduler.Digitales_Register_API.Models;
+namespace registerClient.Models;
 
 public class LoginRequest
 {

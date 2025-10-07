@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace examScheduler;
+namespace Util;
 
 public static class Util
 {

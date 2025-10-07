@@ -1,10 +1,11 @@
-﻿using examScheduler.Digitales_Register_API.Models;
-using examScheduler.Models.Auth;
+﻿using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
-using System.Threading.Tasks;
+using registerClient.Models;
+using Models.Auth;
+using Util;
 
-namespace examScheduler.Digitales_Register_API;
+namespace registerClient;
 
 public class RegisterClient : IDisposable
 {

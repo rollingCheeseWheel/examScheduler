@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\examScheduler\examScheduler.csproj" />
+    <ProjectReference Include="..\RegisterClient\registerClient.csproj" />
   </ItemGroup>
 
 </Project>

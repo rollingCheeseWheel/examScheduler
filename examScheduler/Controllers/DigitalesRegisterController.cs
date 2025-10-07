@@ -1,5 +1,5 @@
-﻿using examScheduler.Digitales_Register_API;
-using examScheduler.Models.Auth;
+﻿using registerClient;
+using Models.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;

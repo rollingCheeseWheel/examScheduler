@@ -1,4 +1,6 @@
-﻿namespace examScheduler.Digitales_Register_API.Models;
+﻿using Util;
+
+namespace registerClient.Models;
 
 public class CalendarRequest
 {

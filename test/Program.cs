@@ -1,4 +1,4 @@
-﻿using examScheduler.Digitales_Register_API;
+﻿using registerClient;
 using Microsoft.Extensions.Configuration;
 
 var config = new ConfigurationBuilder()

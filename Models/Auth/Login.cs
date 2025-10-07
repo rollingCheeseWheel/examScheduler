@@ -1,4 +1,4 @@
-﻿namespace examScheduler.Models.Auth;
+﻿namespace Models.Auth;
 
 public class LoginRequest
 {

@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Threading.Tasks;
 
-namespace examScheduler;
+namespace Util;
 
 public static class Extensions
 {
