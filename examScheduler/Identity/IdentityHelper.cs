@@ -3,17 +3,14 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Util;
 
 namespace examScheduler.Identity;
 
 public static class IdentityHelper
 {
-	public const string PermissionClaimName = "permissions";
-	public const string ClassroomIdClaimName = "classroomId";
-	public const string StudentIdClaimName = "studentId";
-
 	public static JwtSecurityToken GetJWT(
-		this IConfiguration config,
+		this IServiceProvider serviceProvider,
 		int classroomId,
 		int studentId,
 		Permission permissions,
@@ -21,19 +18,20 @@ public static class IdentityHelper
 		int notBeforeMinutes = 1
 	)
 	{
-		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config[ "JWT:key" ]!));
-		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+		var tokenValidationOptions = serviceProvider.GetRequiredService<TokenValidationParameters>();
+
+		var creds = new SigningCredentials(tokenValidationOptions.IssuerSigningKey, SecurityAlgorithms.HmacSha256);
 
 		var claims = new[ ]
 		{
-			new Claim(PermissionClaimName, ((int)permissions).ToString()),
-			new Claim(ClassroomIdClaimName, classroomId.ToString()),
-			new Claim(StudentIdClaimName, studentId.ToString())
+			new Claim(Constants.PermissionClaimName, ((int)permissions).ToString()),
+			new Claim(Constants.ClassroomIdClaimName, classroomId.ToString()),
+			new Claim(Constants.StudentIdClaimName, studentId.ToString())
 		};
 
 		return new(
-			config[ "JWT:issuer" ],
-			config[ "JWT:audience" ],
+			tokenValidationOptions.ValidIssuer,
+			tokenValidationOptions.ValidAudience,
 			claims,
 			DateTime.UtcNow.AddMinutes(notBeforeMinutes * -1),
 			DateTime.UtcNow.AddMinutes(expiresInMinutes),
@@ -43,7 +41,7 @@ public static class IdentityHelper
 
 	public static JwtSecurityToken GetJWT(
 		this Student student,
-		IConfiguration config,
+		IServiceProvider config,
 		int expiresInMinutes = 5,
 		int notBeforeMinutes = 1
 	)
@@ -57,7 +55,7 @@ public static class IdentityHelper
 	}
 
 	public static JwtSecurityToken GetJWT(
-		this IConfiguration config,
+		this IServiceProvider config,
 		Student student,
 		int expiresInMinutes = 5,
 		int notBeforeMinutes = 1
@@ -66,7 +64,7 @@ public static class IdentityHelper
 		return student.GetJWT(config, expiresInMinutes, notBeforeMinutes);
 	}
 
-	public static string GetJWTString(this JwtSecurityToken token)
+	public static string GetString(this JwtSecurityToken token)
 	{
 		return new JwtSecurityTokenHandler().WriteToken(token);
 	}

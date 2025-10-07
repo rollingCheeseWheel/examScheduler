@@ -23,7 +23,10 @@ public class EnumClaimAttribute<T>
 		var httpContext = context.HttpContext;
 		var authHeader = httpContext.Request.Headers[ "Authorization" ].FirstOrDefault();
 
-		if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+		if (
+			string.IsNullOrEmpty(authHeader) ||
+			!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			context.Result = new UnauthorizedResult();
 			return;

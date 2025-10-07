@@ -23,6 +23,10 @@ public static class Constants
 		PropertyNameCaseInsensitive = true,
 		AllowTrailingCommas = true,
 	};
+
+	public const string PermissionClaimName = "permissions";
+	public const string ClassroomIdClaimName = "classroomId";
+	public const string StudentIdClaimName = "studentId";
 }
 
 public sealed class RegisterPath(string value) : StringEnum(value)
