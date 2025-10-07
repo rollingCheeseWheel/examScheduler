@@ -38,11 +38,21 @@ public class RegisterClient : IDisposable
 		{
 			UseCookies = true,
 			CookieContainer = _cookieContainer,
+			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+			{
+				if (errors != System.Net.Security.SslPolicyErrors.None)
+					return false;
+
+				if (message.RequestUri?.Scheme != Uri.UriSchemeHttps)
+					return false;
+
+				return true;
+			}
 		};
 
 		_httpClient = new HttpClient(_httpClientHandler)
 		{
-			BaseAddress = RegisterBaseURI
+			BaseAddress = RegisterBaseURI,
 		};
 	}
 
