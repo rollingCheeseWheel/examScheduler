@@ -4,6 +4,7 @@ using System.Text.Json;
 using registerClient.Models;
 using Models.Auth;
 using Util;
+using Models.Calendar;
 
 namespace registerClient;
 
@@ -130,16 +131,66 @@ public class RegisterClient : IDisposable
 		return await response!.Content.ReadAsStringAsync(ct);
 	}
 
-	public async Task<string> GetCurrentCalendarWeek(CancellationToken ct = default)
+	public async Task<string?> GetCalendarWeekString(DateTime startDate, CancellationToken ct = default)
 	{
-		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(DateTime.UtcNow), ct: ct);
+		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = DateTime.UtcNow }, ct: ct);
 
-		if (error is not null) return error.Message;
+		if (response is null)
+			return null;
 
-		return await response!.ReadContentAsStringAsync(ct);
+		return await response.ReadContentAsStringAsync(ct);
+
 	}
 
-	private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
+	public async Task<string?> GetCurrentCalendarWeekString(CancellationToken ct = default)
+	{
+		return await GetCalendarWeekString(DateTime.UtcNow, ct);
+	}
+
+	public static CalendarWeek ParseCalendarWeek(string json, CancellationToken ct = default)
+	{
+		List<CalendarDay> calendarDays = new();
+
+		var jsonDoc = JsonDocument.Parse(json);
+		var root = jsonDoc.RootElement;
+
+		foreach (var prop in root.EnumerateObject()) // date
+		{
+			if (!prop.Name.RegisterTryParse(out var dateTime))
+				continue;
+
+			List<HourInDay> hoursInDay = new();
+
+			var nestedProp = prop.Value.EnumerateObject().First(); // "1"
+			var innerNestedProp = nestedProp.Value.EnumerateObject().First(); // "1"
+
+			foreach (var hour in innerNestedProp.Value.EnumerateObject())
+			{
+				try
+				{
+					hoursInDay.Append(JsonSerializer.Deserialize<HourInDay>(hour.Value, Constants.SerializerOptions));
+				}
+				catch
+				{
+					continue;
+				}
+			}
+
+			calendarDays.Append(new()
+			{
+				Date = (DateTime)dateTime!,
+				HoursInDay = hoursInDay
+			});
+		}
+
+		return new()
+		{
+			Date = calendarDays.OrderBy(day => day.Date.ToUniversalTime()).FirstOrDefault()?.Date ?? DateTime.MinValue,
+			Days = calendarDays,
+		};
+	}
+
+	/*private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
 	{
 		List<CalendarDay> calendarDays = new();
 
@@ -178,7 +229,7 @@ public class RegisterClient : IDisposable
 		}
 
 		return calendarDays;
-	}
+	}*/
 
 	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{

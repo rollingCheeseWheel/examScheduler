@@ -1,14 +1,31 @@
 ﻿using registerClient;
 using Microsoft.Extensions.Configuration;
+using Util;
+using System.Text.Json;
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
 using var client = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
 
-Console.WriteLine("profile details: " + await client.GetProfileDetailsAsync());
+//Console.WriteLine("profile details: " + await client.GetProfileDetailsAsync());
 
-Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeek());
+//Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeekString());
+
+Console.WriteLine();
+var json = await client.GetCurrentCalendarWeekString();
+
+if (json is not null)
+{
+	var calendar = RegisterClient.ParseCalendarWeek(json);
+
+	Console.WriteLine(JsonSerializer.Serialize(calendar));
+}
+else
+{
+	Console.WriteLine("input is null");
+}
+
 
 
 /*using var handler = new HttpClientHandler()
