@@ -12,6 +12,6 @@ public class DigitalesRegisterController : ControllerBase
 	{
 		var registerClient = new RegisterClient(request);
 
-		return Ok(await registerClient.GetProfileDetailsAsync(ct));
+		return Ok(await registerClient.GetUserProfileAsync(ct));
 	}
 }

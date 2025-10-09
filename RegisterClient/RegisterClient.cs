@@ -122,13 +122,24 @@ public class RegisterClient : IDisposable
 		throw new NotImplementedException();
 	}
 
-	public async Task<string> GetProfileDetailsAsync(CancellationToken ct = default)
+	internal async Task<string> GetUserProfileStringAsync(CancellationToken ct = default)
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
 
 		if (error is not null) return error.Message;
 
 		return await response!.Content.ReadAsStringAsync(ct);
+	}
+
+	public async Task<UserProfile?> GetUserProfileAsync(CancellationToken ct = default)
+	{
+		try
+		{
+			return JsonSerializer.Deserialize<UserProfile>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
+		} catch
+		{
+			return null;
+		}
 	}
 
 	public async Task<string?> GetCalendarWeekString(DateTime startDate, CancellationToken ct = default)
@@ -157,7 +168,9 @@ public class RegisterClient : IDisposable
 		foreach (var prop in root.EnumerateObject()) // date
 		{
 			if (!prop.Name.RegisterTryParse(out var dateTime))
+			{
 				continue;
+			}
 
 			List<HourInDay> hoursInDay = new();
 
@@ -168,7 +181,15 @@ public class RegisterClient : IDisposable
 			{
 				try
 				{
-					hoursInDay.Append(JsonSerializer.Deserialize<HourInDay>(hour.Value, Constants.SerializerOptions));
+					var parsedHour = hour.Value.Deserialize<HourInDay>(Constants.SerializerOptions)!;
+
+
+					if (parsedHour.IsLesson){
+						hoursInDay.Add(parsedHour);
+					} else
+					{
+						continue;
+					}
 				}
 				catch
 				{
@@ -176,7 +197,7 @@ public class RegisterClient : IDisposable
 				}
 			}
 
-			calendarDays.Append(new()
+			calendarDays.Add(new()
 			{
 				Date = (DateTime)dateTime!,
 				HoursInDay = hoursInDay
@@ -185,7 +206,7 @@ public class RegisterClient : IDisposable
 
 		return new()
 		{
-			Date = calendarDays.OrderBy(day => day.Date.ToUniversalTime()).FirstOrDefault()?.Date ?? DateTime.MinValue,
+			StartDate = calendarDays.OrderBy(day => day.Date.ToUniversalTime()).FirstOrDefault()?.Date ?? DateTime.MinValue,
 			Days = calendarDays,
 		};
 	}

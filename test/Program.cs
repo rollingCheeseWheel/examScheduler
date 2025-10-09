@@ -3,23 +3,24 @@ using Microsoft.Extensions.Configuration;
 using Util;
 using System.Text.Json;
 
+var options = new JsonSerializerOptions { WriteIndented = true };
+
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
 using var client = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
 
-//Console.WriteLine("profile details: " + await client.GetProfileDetailsAsync());
+//Console.WriteLine("profile details: " + (await client.GetUserProfileAsync()).ToJson(options));
 
 //Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeekString());
 
-Console.WriteLine();
 var json = await client.GetCurrentCalendarWeekString();
 
 if (json is not null)
 {
 	var calendar = RegisterClient.ParseCalendarWeek(json);
 
-	Console.WriteLine(JsonSerializer.Serialize(calendar));
+	Console.WriteLine(calendar.ToJson(options));
 }
 else
 {

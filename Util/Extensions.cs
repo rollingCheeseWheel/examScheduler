@@ -1,4 +1,6 @@
 ﻿using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Util;
@@ -34,8 +36,12 @@ public static class Extensions
 
 	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 
-	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct =  default)
+	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default)
 	{
 		return await message.Content.ReadAsStringAsync(ct);
 	}
+
+	public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
+
+	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 }

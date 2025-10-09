@@ -13,9 +13,17 @@ public class IntToBoolConverter : JsonConverter<bool>
 		}
 
 		if (reader.TokenType == JsonTokenType.True)
+		{
 			return true;
+		}
 		if (reader.TokenType == JsonTokenType.False)
+		{
 			return false;
+		}
+		if (reader.TokenType == JsonTokenType.Null)
+		{
+			return false;
+		}
 
 		throw new JsonException($"Unexpected token {reader.TokenType} when parsing bool.");
 	}

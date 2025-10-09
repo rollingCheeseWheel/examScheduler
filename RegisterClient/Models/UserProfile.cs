@@ -1,6 +1,6 @@
 ﻿namespace registerClient.Models;
 
-public class Profile
+public class UserProfile
 {
 	public required string Username { get; set; }
 	public required string RoleName { get; set; }
