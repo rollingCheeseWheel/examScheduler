@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Models.DigitalesRegister;
 using Util;
 
 namespace Entities;
@@ -62,28 +63,4 @@ public class HourInDay
 	[NotMapped]
 	[JsonIgnore]
 	public int Duration { get => LinkedHoursCount + 1; }
-}
-
-public class Lesson
-{
-	public required int? Id { get; set; }
-	[JsonPropertyName("ttcid")]
-	public required int TTCID { get; set; }
-	[JsonConverter(typeof(RegisterDateConverter))]
-	public required DateTime Date { get; set; }
-	public required int Hour { get; set; }
-	public required int ToHour { get; set; }
-	public required int ClassId { get; set; }
-	public required string ClassName { get; set; }
-	public required Models.DigitalesRegister.Teacher[ ] Teachers { get; set; }
-	public required Subject Subject { get; set; }
-
-	[JsonConverter(typeof(IntToBoolConverter))]
-	public required bool LinkToPreviousHour { get; set; }
-}
-
-public struct Subject
-{
-	public required int Id { get; set; }
-	public required string Name { get; set; }
 }
