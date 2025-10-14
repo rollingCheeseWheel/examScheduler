@@ -1,4 +1,5 @@
-﻿using examScheduler.Entities;
+﻿using Entities;
+using Models.DigitalesRegister;
 using Microsoft.EntityFrameworkCore;
 
 namespace examScheduler.Data;
@@ -28,7 +29,7 @@ public class AppDbContext : DbContext
 	public DbSet<Classroom> Classrooms { get; set; }
 	public DbSet<Schedule> Schedules { get; set; }
 	public DbSet<Student> Students { get; set; }
-	public DbSet<Teacher> Teachers { get; set; }
+	public DbSet<Entities.Teacher> Teachers { get; set; }
 	public DbSet<Timetable> Timetables { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
 }

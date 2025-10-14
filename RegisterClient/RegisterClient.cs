@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
-using registerClient.Models;
+using Models.DigitalesRegister;
 using Models.Auth;
 using Util;
-using Models.Calendar;
+using Entities;
 
 namespace registerClient;
 
@@ -69,7 +69,7 @@ public class RegisterClient : IDisposable
 	{
 		if (LoggedIn) return true;
 
-		var credentials = new Models.LoginRequest
+		var credentials = new Models.DigitalesRegister.LoginRequest
 		{
 			Password = _registerPassword,
 			Username = _registerUsername
@@ -131,11 +131,11 @@ public class RegisterClient : IDisposable
 		return await response!.Content.ReadAsStringAsync(ct);
 	}
 
-	public async Task<UserProfile?> GetUserProfileAsync(CancellationToken ct = default)
+	public async Task<RegisterProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
 		try
 		{
-			return JsonSerializer.Deserialize<UserProfile>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
+			return JsonSerializer.Deserialize<RegisterProfile>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
 		} catch
 		{
 			return null;
