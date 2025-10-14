@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using Util;
 
-namespace Models.Calendar;
+namespace Entities;
 
 public class CalendarWeek
 {
@@ -19,7 +19,7 @@ public class CalendarWeek
 			.Distinct();
 	}
 
-	public IEnumerable<Teacher> GetTeachers()
+	public IEnumerable<Models.DigitalesRegister.Teacher> GetTeachers()
 	{
 		return Days
 			.SelectMany(d => d.GetTeachers())
@@ -43,7 +43,7 @@ public class CalendarDay
 			.Distinct();
 	}
 
-	public IEnumerable<Teacher> GetTeachers()
+	public IEnumerable<Models.DigitalesRegister.Teacher> GetTeachers()
 	{
 		return HoursInDay
 			.SelectMany(h => h.Lesson.Teachers)
@@ -75,7 +75,7 @@ public class Lesson
 	public required int ToHour { get; set; }
 	public required int ClassId { get; set; }
 	public required string ClassName { get; set; }
-	public required Teacher[ ] Teachers { get; set; }
+	public required Models.DigitalesRegister.Teacher[ ] Teachers { get; set; }
 	public required Subject Subject { get; set; }
 
 	[JsonConverter(typeof(IntToBoolConverter))]
@@ -86,11 +86,4 @@ public struct Subject
 {
 	public required int Id { get; set; }
 	public required string Name { get; set; }
-}
-
-public struct Teacher
-{
-	public required int Id { get; set; }
-	public required string FirstName { get; set; }
-	public required string LastName { get; set; }
 }

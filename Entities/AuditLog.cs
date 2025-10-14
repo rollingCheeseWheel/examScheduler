@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace examScheduler.Entities;
+namespace Entities;
 
 public class AuditLog
 {

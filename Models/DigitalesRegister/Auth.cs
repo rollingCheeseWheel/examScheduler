@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace registerClient.Models;
+namespace Models.DigitalesRegister;
 
 public class LoginRequest
 {

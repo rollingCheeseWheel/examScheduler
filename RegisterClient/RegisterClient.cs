@@ -75,7 +75,7 @@ public class RegisterClient : IDisposable
 			Username = _registerUsername
 		};
 
-		var (loginResponse, response, error) = await PostJsonAsync<Models.LoginResponse>(RegisterPath.Login, credentials, true, ct);
+		var (loginResponse, response, error) = await PostJsonAsync<Models.DigitalesRegister.LoginResponse>(RegisterPath.Login, credentials, true, ct);
 
 		var cookies = _httpClientHandler.CookieContainer.GetAllCookies();
 

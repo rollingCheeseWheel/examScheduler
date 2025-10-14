@@ -1,4 +1,4 @@
-﻿namespace examScheduler.Entities;
+﻿namespace Entities;
 
 public enum AutoLockIn
 {

@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Models.DigitalesRegister;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace examScheduler.Entities;
+namespace Entities;
 
 public class Student
 {
@@ -32,4 +33,7 @@ public class Student
 	// Navigation Properties
 	[Required]
 	public required Classroom Classroom { get; set; }
+
+	[Required]
+	public required RegisterProfile RegisterProfile { get; set; }
 }
