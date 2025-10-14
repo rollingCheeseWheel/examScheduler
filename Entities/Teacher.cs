@@ -1,24 +1,42 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Models.DigitalesRegister;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Models.DigitalesRegister;
+using System.Text.Json.Serialization;
 
 namespace Entities;
 
 public class Teacher
 {
-	[Key]
+	[JsonIgnore]
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
-	public required string Name { get; set; }
+	[JsonPropertyName("id")]
+	public required int RegisterId { get; set; }
 	[Required]
+	[StringLength(100)]
+	public required string FirstName { get; set; }
+	[Required]
+	[StringLength(100)]
 	public required string LastName { get; set; }
-	public DateTime CreatedAt { get; set; }
 
 	// Navigation Properties
-	public Timetable? Timetable { get; set; }
+	public Calendar? Timetable { get; set; }
 	[Required]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is Teacher asTeacher)
+		{
+			return FirstName == asTeacher.FirstName
+				&& LastName == asTeacher.LastName
+				&& RegisterId == asTeacher.RegisterId;
+		}
+		return false;
+	}
+
+	public override int GetHashCode() => base.GetHashCode();
 }

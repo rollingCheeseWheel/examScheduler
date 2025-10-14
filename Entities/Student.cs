@@ -10,19 +10,21 @@ public class Student
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
-	// Unique
-	public required string RegisterUsername { get; set; }
-	[Required]
+	[StringLength(1024)]
 	public required Uri RegisterUri { get; set; }
 	[Required]
-	public required string Name { get; set; }
+	[StringLength(255)]
+	public required string RegisterUsername { get; set; }
 	[Required]
-	public required string Surname { get; set; }
+	[StringLength(255)]
+	public required string Name { get; set; }
 	public DateTime CreatedAt { get; set; }
 
 	[Required]
+	[StringLength(50)]
 	public required string Salt { get; set; }
 	[Required]
+	[StringLength(100)]
 	public required string Hash { get; set; }
 
 	// Permissions - enum flags, can be combined

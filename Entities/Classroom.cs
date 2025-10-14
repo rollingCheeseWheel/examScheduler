@@ -10,12 +10,13 @@ public class Classroom
 	public int Id { get; set; }
 
 	[Required]
+	[StringLength(255)]
 	public required string Name { get; set; }
 	[Required]
 	public required DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
 
 	// Navigation Properties
-	public Timetable? Timetable { get; set; }
+	public Calendar? Timetable { get; set; }
 	[Required]
 	public required ICollection<Student> Students { get; set; } = [ ];
 	[Required]
