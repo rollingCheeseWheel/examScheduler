@@ -27,7 +27,7 @@ public class Lesson
 	public required int ToHour { get; set; }
 	public required int ClassId { get; set; }
 	public required string ClassName { get; set; }
-	public required Models.DigitalesRegister.Teacher[ ] Teachers { get; set; }
+	public required Teacher[ ] Teachers { get; set; }
 	public required Subject Subject { get; set; }
 
 	[JsonConverter(typeof(IntToBoolConverter))]
