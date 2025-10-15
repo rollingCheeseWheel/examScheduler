@@ -61,7 +61,7 @@ public class CalendarDay
 	public required List<HourInDay> HoursInDay { get; set; } = [ ];
 	[NotMapped]
 	[JsonIgnore]
-	public int TotalHourCount { get => HoursInDay.Select(h => h.Duration).Aggregate((p, c) => p + c); }
+	public int TotalHourCount { get => HoursInDay.Select(h => h.Duration).Sum(); }
 
 	public IEnumerable<Subject> GetSubjects()
 	{

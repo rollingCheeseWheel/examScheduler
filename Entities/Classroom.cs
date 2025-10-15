@@ -21,4 +21,6 @@ public class Classroom
 	public required ICollection<Student> Students { get; set; } = [ ];
 	[Required]
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	[Required]
+	public required ICollection<Schedule> Schedules { get; set; } = [ ];
 }
