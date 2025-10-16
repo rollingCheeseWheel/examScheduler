@@ -13,7 +13,7 @@ public class AppDbContext : DbContext
 		base.OnModelCreating(modelBuilder);
 
 		modelBuilder.Entity<Classroom>()
-			.HasOne(c => c.Timetable)
+			.HasOne(c => c.Calendar)
 			.WithOne(t => t.Classroom)
 			.HasForeignKey<Calendar>(t => t.ClassroomId);
 

@@ -11,13 +11,12 @@ public class Student
 	public int Id { get; set; }
 	[Required]
 	public required Uri RegisterUri { get; set; }
+	[NotMapped]
+	public string RegisterUsername { get => RegisterProfile.Username; }
+	[NotMapped]
+	public string DisplayName { get => RegisterProfile.Name; }
 	[Required]
-	[StringLength(255)]
-	public required string RegisterUsername { get; set; }
-	[Required]
-	[StringLength(255)]
-	public required string Name { get; set; }
-	public DateTime CreatedAt { get; set; }
+	public DateTime CreatedAt { get; set; } = DateTime.Now;
 
 	[Required]
 	[StringLength(255)]

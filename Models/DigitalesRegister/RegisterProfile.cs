@@ -10,7 +10,7 @@ public class RegisterProfile
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
-	[StringLength(100)]
+	[StringLength(255)]
 	public required string Username { get; set; }
 	[StringLength(255)]
 	[Required]

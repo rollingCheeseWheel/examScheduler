@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ public static class Extensions
 
 	public static DateTime RegisterParse(this string dateTime) => DateTime.ParseExact(dateTime, Format, null);
 
-	public static bool RegisterTryParse(this string dateTime, out DateTime? result)
+	public static bool RegisterTryParse(this string dateTime, [NotNullWhen(true)] out DateTime? result)
 	{
 		if (DateTime.TryParseExact(dateTime, Format, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
 		{
@@ -22,6 +23,12 @@ public static class Extensions
 		}
 		result = null;
 		return false;
+	}
+
+	public static DateTime RoundToMonday(this DateTime date)
+	{
+		int diff = ( 7 + ( date.DayOfWeek - DayOfWeek.Monday ) ) % 7;
+		return date.AddDays(-diff).Date;
 	}
 
 	public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);

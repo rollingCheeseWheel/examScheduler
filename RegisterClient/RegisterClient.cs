@@ -5,6 +5,7 @@ using Models.DigitalesRegister;
 using Models.Auth;
 using Util;
 using Entities;
+using System.Runtime.CompilerServices;
 
 namespace registerClient;
 
@@ -63,7 +64,7 @@ public class RegisterClient : IDisposable
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
 	public RegisterClient(RegisterRequest loginRequest)
-		: this(loginRequest.Username, loginRequest.Password, loginRequest.Uri) { }
+		: this(loginRequest.Username, loginRequest.RegisterPassword, loginRequest.RegisterUri) { }
 
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
@@ -142,23 +143,44 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<string?> GetCalendarWeekString(DateTime startDate, CancellationToken ct = default)
+	public async Task<List<CalendarWeek>?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
-		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = DateTime.UtcNow }, ct: ct);
+		var calendarWeeks = new List<CalendarWeek>();
+		var iterDateTime = DateTime.UtcNow;
+		var currentWeekTimeout = 0;
+		while (iterDateTime <= DateTime.UtcNow.AddYears(yearDuration) 
+			&& currentWeekTimeout < timeoutAfterEmptyWeeks)
+		{
+			var tempWeek = await GetCalendarWeekAsync(iterDateTime, ct);
+			iterDateTime.AddDays(7);
+
+			if (tempWeek is null || !tempWeek.Days.Any())
+			{
+				currentWeekTimeout++;
+				continue;
+			}
+		}
+
+		return calendarWeeks.Any() ? calendarWeeks : null;
+	}
+
+	private async Task<CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
+	{
+		var json = await GetCalendarWeekStringAsync(date, ct);
+		return json is null ? null : ParseCalendarWeek(json);
+	}
+
+	private async Task<string?> GetCalendarWeekStringAsync(DateTime date, CancellationToken ct = default)
+	{
+		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
 
 		if (response is null)
 			return null;
 
 		return await response.ReadContentAsStringAsync(ct);
-
 	}
 
-	public async Task<string?> GetCurrentCalendarWeekString(CancellationToken ct = default)
-	{
-		return await GetCalendarWeekString(DateTime.UtcNow, ct);
-	}
-
-	public static CalendarWeek ParseCalendarWeek(string json, CancellationToken ct = default)
+	private static CalendarWeek ParseCalendarWeek(string json, CancellationToken ct = default)
 	{
 		List<CalendarDay> calendarDays = new();
 

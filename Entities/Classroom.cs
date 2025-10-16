@@ -16,7 +16,7 @@ public class Classroom
 	public required DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
 
 	// Navigation Properties
-	public Calendar? Timetable { get; set; }
+	public Calendar? Calendar { get; set; }
 	[Required]
 	public required ICollection<Student> Students { get; set; } = [ ];
 	[Required]
