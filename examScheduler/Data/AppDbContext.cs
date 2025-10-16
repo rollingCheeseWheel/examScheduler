@@ -20,9 +20,6 @@ public class AppDbContext : DbContext
 		modelBuilder.Entity<Student>()
 			.HasIndex(s => s.RegisterUsername)
 			.IsUnique();
-		modelBuilder.Entity<Student>()
-			.HasIndex(s => s.Salt)
-			.IsUnique();
 	}
 
 	public DbSet<AuditLog> AuditLogs { get; set; }
