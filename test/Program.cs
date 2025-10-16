@@ -2,8 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Util;
 using System.Text.Json;
+using examScheduler.Identity;
 
-var options = new JsonSerializerOptions { WriteIndented = true };
+/*var options = new JsonSerializerOptions { WriteIndented = true };
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
@@ -25,7 +26,16 @@ if (json is not null)
 else
 {
 	Console.WriteLine("input is null");
-}
+}*/
+
+
+
+
+var password = "bobber";
+var hash = PasswordHelper.Hash(password);
+Console.WriteLine(hash);
+Console.WriteLine(PasswordHelper.Verify(hash, password));
+Console.WriteLine(PasswordHelper.Verify(hash, "hash"));
 
 
 

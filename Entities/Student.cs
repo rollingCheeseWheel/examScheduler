@@ -10,7 +10,6 @@ public class Student
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
-	[StringLength(1024)]
 	public required Uri RegisterUri { get; set; }
 	[Required]
 	[StringLength(255)]
@@ -21,10 +20,8 @@ public class Student
 	public DateTime CreatedAt { get; set; }
 
 	[Required]
-	[StringLength(50)]
-	public required string Salt { get; set; }
-	[Required]
-	[StringLength(100)]
+	[StringLength(255)]
+	// Argon2id stores the salt in the encoded string
 	public required string Hash { get; set; }
 
 	// Permissions - enum flags, can be combined

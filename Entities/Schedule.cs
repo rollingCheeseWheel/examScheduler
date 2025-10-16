@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Models.DigitalesRegister;
 
 namespace Entities;
 
@@ -17,6 +16,8 @@ public class Schedule
 
 	[Required]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.OnExamination;
+	// AutoLockIn.FixedDate = the date the freeze happens
+	// AutoLockIn.TimeBeforeExamination = offset from DateTime.MinValue represents how much time before the exam slot it locks in
 	public DateTime? lockInDate { get; set; }
 
 	// Navigation Properties
@@ -37,9 +38,15 @@ public class ExamSlot
 	public int Id { get; set; }
 
 	[Required]
+	[Range(0, int.MaxValue)]
 	public required int RequiredParticipants { get; set; }
 	[Required]
+	[Range(0, int.MaxValue)]
 	public required int MaxParticipants { get; set; }
+	[Required]
+	public required DateTime Date { get; set; }
+	[Required]
+	public required bool IsLocked { get; set; }
 
 	// Navigation Properties
 	[Required]
