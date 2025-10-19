@@ -1,5 +1,4 @@
 ﻿using Entities;
-using Models.DigitalesRegister;
 using Microsoft.EntityFrameworkCore;
 
 namespace examScheduler.Data;
@@ -20,13 +19,17 @@ public class AppDbContext : DbContext
 		modelBuilder.Entity<Student>()
 			.HasIndex(s => s.RegisterUsername)
 			.IsUnique();
+
+		modelBuilder.Entity<Student>()
+			.HasMany(s => s.ExamSlots)
+			.WithMany(e => e.Participants);
 	}
 
 	public DbSet<AuditLog> AuditLogs { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
 	public DbSet<Schedule> Schedules { get; set; }
 	public DbSet<Student> Students { get; set; }
-	public DbSet<Entities.Teacher> Teachers { get; set; }
+	public DbSet<Teacher> Teachers { get; set; }
 	public DbSet<Calendar> Timetables { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
 }

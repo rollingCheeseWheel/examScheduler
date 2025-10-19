@@ -25,11 +25,10 @@ public class CalendarWeek
 	[JsonIgnore]
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	[NotMapped]
-	[JsonIgnore]
-	public bool StartsMonday { get => StartDate.DayOfWeek == DayOfWeek.Monday; }
 	[Required]
 	public required DateTime StartDate { get; set; }
+	[NotMapped]
+	public DateTime MondayDate { get => StartDate.RoundToMonday(); }
 	[Required]
 	public required List<CalendarDay> Days { get; set; } = [ ];
 
@@ -86,7 +85,7 @@ public class HourInDay
 	public int Id { get; set; }
 	[Required]
 	[JsonConverter(typeof(IntToBoolConverter))]
-	public required bool IsLesson { get; set; }
+	public required bool IsLesson { get; set; } // could be removed
 	[Required]
 	public required Lesson Lesson { get; set; }
 	[Required]

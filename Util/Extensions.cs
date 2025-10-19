@@ -1,6 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -43,6 +45,8 @@ public static class Extensions
 
 	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 
+	public static byte[ ] GetBytes(this string str) => Encoding.UTF8.GetBytes(str);
+
 	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default)
 	{
 		return await message.Content.ReadAsStringAsync(ct);
@@ -51,4 +55,6 @@ public static class Extensions
 	public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
 
 	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
+
+	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 }

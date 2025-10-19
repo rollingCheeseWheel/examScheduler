@@ -30,7 +30,7 @@ public static class PasswordHelper
 			Threads = Environment.ProcessorCount,
 			Salt = GenerateSalt(),
 			HashLength = 32,
-			Password = Encoding.UTF8.GetBytes(password),
+			Password = password.GetBytes(),
 		};
 
 		using var argon2 = new Argon2(config);

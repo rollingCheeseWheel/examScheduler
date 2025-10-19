@@ -1,6 +1,7 @@
 ﻿using Models.Auth;
 using Microsoft.AspNetCore.Mvc;
 using examScheduler.Data;
+using Util;
 
 namespace examScheduler.Controllers;
 [Route("api/[controller]")]
@@ -11,14 +12,25 @@ public class AuthController : ControllerBase
 	[HttpPost]
 	public IActionResult Register([FromBody] RegisterRequest registerRequest, AppDbContext dbContext)
 	{
-		var exists = dbContext.Students.Where(s => s.RegisterUsername == registerRequest.Username).Any();
-
-		if (exists)
+		try
 		{
-			return BadRequest();
-		}
 
-		return Ok();
+			var exists = dbContext.Students.Where(s => s.RegisterUsername == registerRequest.Username).Any();
+
+
+
+
+			if (exists)
+			{
+				return Conflict();
+			}
+
+			return Ok();
+		}
+		catch
+		{
+			return this.ServerError();
+		}
 	}
 
 	[Route("login")]

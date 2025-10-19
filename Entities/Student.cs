@@ -11,8 +11,8 @@ public class Student
 	public int Id { get; set; }
 	[Required]
 	public required Uri RegisterUri { get; set; }
-	[NotMapped]
-	public string RegisterUsername { get => RegisterProfile.Username; }
+	[Required]
+	public required string RegisterUsername { get; set; }
 	[NotMapped]
 	public string DisplayName { get => RegisterProfile.Name; }
 	[Required]
@@ -31,7 +31,14 @@ public class Student
 	// Navigation Properties
 	[Required]
 	public required Classroom Classroom { get; set; }
-
 	[Required]
 	public required RegisterProfile RegisterProfile { get; set; }
+	/// <summary>
+	/// to convince EF of a many-to-many relationship
+	/// a Student has a Classroom, a Classroom has many (indirect) ExamSlots, an ExamSlot has many Students
+	/// thus a Student has many ExamSlots
+	/// </summary>
+	[Required]
+	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
+	
 }
