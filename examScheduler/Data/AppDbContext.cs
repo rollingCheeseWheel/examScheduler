@@ -16,13 +16,33 @@ public class AppDbContext : DbContext
 			.WithOne(t => t.Classroom)
 			.HasForeignKey<Calendar>(t => t.ClassroomId);
 
+		modelBuilder.Entity<Classroom>()
+			.HasMany(c => c.Teachers)
+			.WithMany(t => t.Classrooms);
+
+		modelBuilder.Entity<Classroom>()
+			.HasMany(c => c.Schedules)
+			.WithOne(s => s.Classroom);
+
+		modelBuilder.Entity<Classroom>()
+			.HasMany(c => c.Students)
+			.WithOne(s => s.Classroom);
+
+		modelBuilder.Entity<Schedule>()
+			.HasMany(s => s.ExamSlots)
+			.WithOne(e => e.Schedule);
+
+		modelBuilder.Entity<ExamSlot>()
+			.HasMany(e => e.Participants)
+			.WithMany(s => s.ExamSlots);
+
 		modelBuilder.Entity<Student>()
 			.HasIndex(s => s.RegisterUsername)
 			.IsUnique();
 
-		modelBuilder.Entity<Student>()
-			.HasMany(s => s.ExamSlots)
-			.WithMany(e => e.Participants);
+		modelBuilder.Entity<Teacher>()
+			.HasMany(t => t.Lessons)
+			.WithMany(l => l.Teachers);
 	}
 
 	public DbSet<AuditLog> AuditLogs { get; set; }

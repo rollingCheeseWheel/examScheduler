@@ -51,4 +51,6 @@ public class ExamSlot
 	// Navigation Properties
 	[Required]
 	public required ICollection<Student> Participants { get; set; } = [ ];
+	[Required]
+	public required Schedule Schedule { get; set; }
 }

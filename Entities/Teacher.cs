@@ -26,6 +26,8 @@ public class Teacher
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
+	[Required]
+	public ICollection<Lesson> Lessons { get; set; } = [ ];
 
 	public override bool Equals(object? obj)
 	{

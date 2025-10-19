@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251019170732_postgresql.container_migration_179")]
+    partial class postgresqlcontainer_migration_179
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -375,6 +378,9 @@ namespace examScheduler.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("RegisterId")
                         .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
@@ -386,6 +392,8 @@ namespace examScheduler.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
 
                     b.HasIndex("ScheduleId");
 
@@ -407,21 +415,6 @@ namespace examScheduler.Migrations
                     b.HasIndex("ParticipantsId");
 
                     b.ToTable("ExamSlotStudent");
-                });
-
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.Property<int>("LessonsId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TeachersId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("LessonsId", "TeachersId");
-
-                    b.HasIndex("TeachersId");
-
-                    b.ToTable("LessonTeacher");
                 });
 
             modelBuilder.Entity("Models.DigitalesRegister.RegisterProfile", b =>
@@ -589,6 +582,10 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
+                    b.HasOne("Entities.Lesson", null)
+                        .WithMany("Teachers")
+                        .HasForeignKey("LessonId");
+
                     b.HasOne("Entities.Schedule", null)
                         .WithMany("Teachers")
                         .HasForeignKey("ScheduleId");
@@ -615,21 +612,6 @@ namespace examScheduler.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.HasOne("Entities.Lesson", null)
-                        .WithMany()
-                        .HasForeignKey("LessonsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Entities.Teacher", null)
-                        .WithMany()
-                        .HasForeignKey("TeachersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Entities.Calendar", b =>
                 {
                     b.Navigation("Data");
@@ -652,6 +634,11 @@ namespace examScheduler.Migrations
                     b.Navigation("Schedules");
 
                     b.Navigation("Students");
+                });
+
+            modelBuilder.Entity("Entities.Lesson", b =>
+                {
+                    b.Navigation("Teachers");
                 });
 
             modelBuilder.Entity("Entities.Schedule", b =>

@@ -21,6 +21,7 @@ public class Student
 	[Required]
 	[StringLength(255)]
 	// Argon2id stores the salt in the encoded string
+	// no unique required since the salt already has 2^(8*16) different combinations + the password can be 255 chars long
 	public required string Hash { get; set; }
 
 	// Permissions - enum flags, can be combined
