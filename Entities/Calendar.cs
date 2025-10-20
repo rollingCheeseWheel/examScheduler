@@ -83,9 +83,9 @@ public class HourInDay
 	[JsonIgnore]
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	[Required]
+	[NotMapped]
 	[JsonConverter(typeof(IntToBoolConverter))]
-	public required bool IsLesson { get; set; } // could be removed
+	public required bool IsLesson { get; set; }
 	[Required]
 	public required Lesson Lesson { get; set; }
 	[Required]

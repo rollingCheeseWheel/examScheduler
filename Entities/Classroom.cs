@@ -13,6 +13,8 @@ public class Classroom
 	[StringLength(255)]
 	public required string Name { get; set; }
 	[Required]
+	public required int RegisterId { get; set; }
+	[Required]
 	public required DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
 
 	// Navigation Properties

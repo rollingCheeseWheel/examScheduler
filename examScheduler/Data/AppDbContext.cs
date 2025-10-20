@@ -43,6 +43,27 @@ public class AppDbContext : DbContext
 		modelBuilder.Entity<Teacher>()
 			.HasMany(t => t.Lessons)
 			.WithMany(l => l.Teachers);
+
+		modelBuilder.Entity<Teacher>()
+			.HasIndex(t => new
+			{
+				t.FirstName,
+				t.LastName,
+				t.RegisterId
+			})
+			.IsUnique();
+
+		modelBuilder.Entity<Subject>()
+			.HasIndex(s => new
+			{
+				s.RegisterId,
+				s.Name,
+			})
+			.IsUnique();
+
+		modelBuilder.Entity<Classroom>()
+			.HasIndex(c => c.RegisterId)
+			.IsUnique();
 	}
 
 	public DbSet<AuditLog> AuditLogs { get; set; }
