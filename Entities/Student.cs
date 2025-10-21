@@ -1,4 +1,5 @@
-﻿using Models.DigitalesRegister;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Models.DigitalesRegister;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -41,5 +42,26 @@ public class Student
 	/// </summary>
 	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
-	
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is Student asStudent)
+		{
+			return this == asStudent;
+		} else
+		{
+			return false;
+		}
+	}
+
+	public static bool operator ==(Student a, Student b)
+	{
+		return (
+			a.RegisterUri == b.RegisterUri &&
+			a.RegisterUsername == b.RegisterUsername &&
+			a.Classroom == b.Classroom
+			);
+	}
+
+	public static bool operator !=(Student a, Student b) => !(a == b);
 }

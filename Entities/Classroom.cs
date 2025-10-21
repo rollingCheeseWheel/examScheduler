@@ -25,4 +25,26 @@ public class Classroom
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
 	public required ICollection<Schedule> Schedules { get; set; } = [ ];
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is Classroom asClassroom)
+		{
+			return this == asClassroom;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	public static bool operator ==(Classroom a, Classroom b)
+	{
+		return (
+			a.Name == b.Name &&
+			a.RegisterId == b.RegisterId
+			);
+	}
+
+	public static bool operator !=(Classroom a, Classroom b) => !( a == b );
 }
