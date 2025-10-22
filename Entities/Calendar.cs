@@ -134,6 +134,7 @@ public class Subject
 	[JsonIgnore]
 	public int Id { get; set; }
 	[Required]
+	[JsonPropertyName("id")]
 	public required int RegisterId { get; set; }
 	[Required]
 	[StringLength(255)]

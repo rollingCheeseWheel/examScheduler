@@ -3,8 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Util;
 using System.Text.Json;
 using examScheduler.Identity;
+using System.ComponentModel.DataAnnotations;
 
-/*var options = new JsonSerializerOptions { WriteIndented = true };
+var options = new JsonSerializerOptions { WriteIndented = true };
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
@@ -15,27 +16,19 @@ using var client = new RegisterClient(config[ "username" ]!, config[ "password" 
 
 //Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeekString());
 
-var json = await client.GetCurrentCalendarWeekString();
-
-if (json is not null)
-{
-	var calendar = RegisterClient.ParseCalendarWeek(json);
-
-	Console.WriteLine(calendar.ToJson(options));
-}
-else
-{
-	Console.WriteLine("input is null");
-}*/
+var week = await client.GetCalendarWeekAsync(DateTime.Now);
 
 
+Console.WriteLine(week.Days[1].HoursInDay.Count);
 
 
-var password = "bobber";
+/*var password = "bobber";
 var hash = PasswordHelper.Hash(password);
 Console.WriteLine(hash);
 Console.WriteLine(PasswordHelper.Verify(hash, password));
-Console.WriteLine(PasswordHelper.Verify(hash, "hash"));
+Console.WriteLine(PasswordHelper.Verify(hash, "hash"));*/
+
+
 
 
 

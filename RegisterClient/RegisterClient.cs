@@ -164,7 +164,7 @@ public class RegisterClient : IDisposable
 		return calendarWeeks.Any() ? calendarWeeks : null;
 	}
 
-	private async Task<CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
+	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
 	{
 		var json = await GetCalendarWeekStringAsync(date, ct);
 		return json is null ? null : ParseCalendarWeek(json);
@@ -196,8 +196,12 @@ public class RegisterClient : IDisposable
 
 			List<HourInDay> hoursInDay = new();
 
+			logger.LogDebug(prop.Value.EnumerateObject().ToHashSet().ToJson());
+
 			var nestedProp = prop.Value.EnumerateObject().First(); // "1"
 			var innerNestedProp = nestedProp.Value.EnumerateObject().First(); // "1"
+
+			logger.LogDebug(nestedProp.Value.EnumerateObject().ToList().ToJson());
 
 			foreach (var hour in innerNestedProp.Value.EnumerateObject())
 			{
@@ -213,8 +217,10 @@ public class RegisterClient : IDisposable
 						continue;
 					}
 				}
-				catch
+				catch (Exception ex) 
 				{
+					logger.LogDebug($"Cannot parse hour: {hour.Name} of day: {dateTime ?? DateTime.MinValue}");
+					logger.LogDebug(ex.Message);
 					continue;
 				}
 			}

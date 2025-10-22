@@ -13,7 +13,7 @@ public class Schedule
 	[NotMapped]
 	public int RequiredParticipants { get => ExamSlots.Select(e => e.RequiredParticipants).Sum(); }
 	[NotMapped]
-	public int Participants { get => ExamSlots.Select(e => e.Participants.Count).Sum(); }
+	public int Participants { get => ExamSlots.Select(e => e.Participating).Sum(); }
 
 	[Required]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.OnExamination;
@@ -33,6 +33,10 @@ public class Schedule
 
 	public bool TrySwapStudents(Student student1, Student student2)
 	{
+		if (ExamSlots.Count == 0)
+		{
+			return false;
+		}
 		if (student1 == student2)
 		{
 			return true;
@@ -59,51 +63,53 @@ public class Schedule
 
 	public bool TryEnlistStudent(Student student, DateTime date)
 	{
-
+		throw new NotImplementedException();
 	}
 
 	public bool TryEnlistStudent(Student student, ExamSlot slot)
 	{
-
+		throw new NotImplementedException();
 	}
 
 	public bool TryEnlistStudentAtNearestDate(Student student)
 	{
 		if (GetExamSlot(student) is not null) // student is already enlisted 
 		{
-			return false;
+			return true;
 		}
-
-		if (GetNextOpenExamSlot() is null)
+		var nextOpenExamSlot = GetNextOpenExamSlot();
+		if (nextOpenExamSlot is null)
 		{
 			return false;
 		}
 
-
+		return nextOpenExamSlot.TryEnlistStudent(student);
 	}
 
 	public bool EnlistStudentAtNearesDateForcefully(Student student)
 	{
 
+		throw new NotImplementedException();
 	}
 
-	public ExamSlot? GetNextOpenExamSlot() { 
+	public ExamSlot? GetNextOpenExamSlot()
+	{
 		return ExamSlots
-			.Where(e => e.Participants.Count < e.MaxParticipants)
-			.OrderBy(e => e.Participants.Count)
+			.Where(e => !e.IsFull())
+			.OrderBy(e => e.Participating)
 			.ThenBy(e => e.Date)
 			.ThenByDescending(e => e.RequiredParticipants)
-			.FirstOrDefault(); 
+			.FirstOrDefault();
 	}
 
 	public ExamSlot? GetNextOpenExamSlotForcefully()
 	{
 		return ExamSlots
-			.Select((e, index ) => new {e, index})
+			.Select((e, index) => new { e, index })
 			.OrderBy(a => a.index)
 			.Select(a => a.e)
-			.Where(e => e.Participants.Count < e.MaxParticipants)
-			.OrderBy(e => e.Participants.Count)
+			.Where(e => !e.IsFull())
+			.OrderBy(e => e.Participating)
 			.ThenBy(e => e.Date)
 			.ThenByDescending(e => e.RequiredParticipants)
 			.FirstOrDefault();
@@ -135,6 +141,9 @@ public class ExamSlot
 	[Required]
 	public required Schedule Schedule { get; set; }
 
+	[NotMapped]
+	public int Participating { get => Participating; }
+
 	internal bool TrySwapStudents(Student target, Student replacement)
 	{
 		if (!IsParticipating(target))
@@ -146,4 +155,24 @@ public class ExamSlot
 	}
 
 	public bool IsParticipating(Student student) => Participants.Contains(student);
+
+	public bool TryEnlistStudent(Student student)
+	{
+		if (IsParticipating(student))
+		{
+			return false;
+		}
+		else if (IsFull())
+		{
+			return false;
+		} else
+		{
+			Participants.Add(student);
+			return true;
+		}
+	}
+
+	public bool IsFull() => Participating >= MaxParticipants;
+
+	public int GetMissingParticipantCount() => int.Max(Participating - RequiredParticipants, 0);
 }
