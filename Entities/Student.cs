@@ -43,25 +43,17 @@ public class Student
 	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
 
-	public override bool Equals(object? obj)
+	public override bool Equals(object? obj) => obj is Student other && this == other;
+
+	public static bool operator ==(Student? a, Student? b)
 	{
-		if (obj is Student asStudent)
-		{
-			return this == asStudent;
-		} else
-		{
-			return false;
-		}
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+
+		return a.RegisterUri == b.RegisterUri
+			&& a.RegisterUsername == b.RegisterUsername
+			&& a.Classroom == b.Classroom;
 	}
 
-	public static bool operator ==(Student a, Student b)
-	{
-		return (
-			a.RegisterUri == b.RegisterUri &&
-			a.RegisterUsername == b.RegisterUsername &&
-			a.Classroom == b.Classroom
-			);
-	}
-
-	public static bool operator !=(Student a, Student b) => !(a == b);
+	public static bool operator !=(Student? a, Student? b) => !(a == b);
 }

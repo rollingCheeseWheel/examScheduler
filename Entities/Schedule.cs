@@ -142,7 +142,7 @@ public class ExamSlot
 	public required Schedule Schedule { get; set; }
 
 	[NotMapped]
-	public int Participating { get => Participating; }
+	public int Participating { get => Participants.Count; }
 
 	internal bool TrySwapStudents(Student target, Student replacement)
 	{
@@ -150,8 +150,15 @@ public class ExamSlot
 		{
 			return false;
 		}
-		Participants = Participants.Select(s => s == target ? replacement : s).ToList();
-		return true;
+		else if (!Participants.Remove(target))
+		{
+			return false;
+		}
+		else
+		{
+			Participants.Add(replacement);
+			return true;
+		}
 	}
 
 	public bool IsParticipating(Student student) => Participants.Contains(student);
@@ -165,7 +172,8 @@ public class ExamSlot
 		else if (IsFull())
 		{
 			return false;
-		} else
+		}
+		else
 		{
 			Participants.Add(student);
 			return true;
@@ -174,5 +182,5 @@ public class ExamSlot
 
 	public bool IsFull() => Participating >= MaxParticipants;
 
-	public int GetMissingParticipantCount() => int.Max(Participating - RequiredParticipants, 0);
+	public int GetMissingParticipantCount() => Math.Max(Participating - RequiredParticipants, 0);
 }

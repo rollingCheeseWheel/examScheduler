@@ -26,25 +26,15 @@ public class Classroom
 	[Required]
 	public required ICollection<Schedule> Schedules { get; set; } = [ ];
 
-	public override bool Equals(object? obj)
+	public override bool Equals(object? obj) => obj is Classroom other && this == other;
+
+	public static bool operator ==(Classroom? a, Classroom? b)
 	{
-		if (obj is Classroom asClassroom)
-		{
-			return this == asClassroom;
-		}
-		else
-		{
-			return false;
-		}
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.Name == b.Name 
+			&& a.RegisterId == b.RegisterId;
 	}
 
-	public static bool operator ==(Classroom a, Classroom b)
-	{
-		return (
-			a.Name == b.Name &&
-			a.RegisterId == b.RegisterId
-			);
-	}
-
-	public static bool operator !=(Classroom a, Classroom b) => !( a == b );
+	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
 }

@@ -19,7 +19,7 @@ using var client = new RegisterClient(config[ "username" ]!, config[ "password" 
 var week = await client.GetCalendarWeekAsync(DateTime.Now);
 
 
-Console.WriteLine(week.Days[1].HoursInDay.Count);
+Console.WriteLine(week.ToJson(options));
 
 
 /*var password = "bobber";

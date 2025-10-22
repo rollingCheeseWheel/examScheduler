@@ -98,26 +98,6 @@ public class RegisterClient : IDisposable
 		return LoggedIn ? true : await LoginAsync(ct);
 	}
 
-	/*public async Task<List<CalendarDay>> GetCalendarAsync(DateTime startDate, int spanYears = 1, CancellationToken ct = default)
-	{
-		var iterDate = startDate;
-		var stopDate = startDate.AddYears(spanYears);
-
-		List<CalendarDay> days = new();
-		HttpResponseMessage response;
-		Exception error;
-
-		while (stopDate >= iterDate)
-		{
-			(response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest(iterDate), ct: ct);
-
-			days.AddRange(await ParseCalendarDays(response));
-
-			iterDate = iterDate.AddDays(7);
-		}
-
-		return new();
-	}*/
 	public string GetProfileImageAsync(CancellationToken ct = default)
 	{
 		throw new NotImplementedException();
@@ -196,14 +176,17 @@ public class RegisterClient : IDisposable
 
 			List<HourInDay> hoursInDay = new();
 
-			logger.LogDebug(prop.Value.EnumerateObject().ToHashSet().ToJson());
+			List<JsonProperty> flattenedEnumeratedObject = new();
 
-			var nestedProp = prop.Value.EnumerateObject().First(); // "1"
-			var innerNestedProp = nestedProp.Value.EnumerateObject().First(); // "1"
+			foreach (var nestedProp in prop.Value.EnumerateObject())
+			{
+				foreach (var innerMostProp in nestedProp.Value.EnumerateObject())
+				{
+					flattenedEnumeratedObject.AddRange(innerMostProp.Value.EnumerateObject());
+				}
+			}
 
-			logger.LogDebug(nestedProp.Value.EnumerateObject().ToList().ToJson());
-
-			foreach (var hour in innerNestedProp.Value.EnumerateObject())
+			foreach (var hour in flattenedEnumeratedObject)
 			{
 				try
 				{
