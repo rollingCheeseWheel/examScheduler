@@ -7,8 +7,7 @@ namespace Entities;
 
 public class Student
 {
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
 	public required Uri RegisterUri { get; set; }
@@ -42,6 +41,8 @@ public class Student
 	/// </summary>
 	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
+
+	public override int GetHashCode() => Id;
 
 	public override bool Equals(object? obj) => obj is Student other && this == other;
 

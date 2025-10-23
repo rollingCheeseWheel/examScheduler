@@ -5,14 +5,11 @@ using Models.DigitalesRegister;
 using Models.Auth;
 using Util;
 using Entities;
-using System.Runtime.CompilerServices;
 
 namespace registerClient;
 
 public class RegisterClient : IDisposable
 {
-	public static ILogger logger = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug)).CreateLogger<RegisterClient>();
-
 	private bool _disposed = false;
 
 	private HttpClientHandler _httpClientHandler;
@@ -123,9 +120,9 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<List<CalendarWeek>?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
+	public async Task<List<Models.DigitalesRegister.CalendarWeek>?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
-		var calendarWeeks = new List<CalendarWeek>();
+		var calendarWeeks = new List<Models.DigitalesRegister.CalendarWeek>();
 		var iterDateTime = DateTime.UtcNow;
 		var currentWeekTimeout = 0;
 		while (iterDateTime <= DateTime.UtcNow.AddYears(yearDuration) 
@@ -144,7 +141,7 @@ public class RegisterClient : IDisposable
 		return calendarWeeks.Any() ? calendarWeeks : null;
 	}
 
-	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
+	public async Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
 	{
 		var json = await GetCalendarWeekStringAsync(date, ct);
 		return json is null ? null : ParseCalendarWeek(json);
@@ -154,15 +151,17 @@ public class RegisterClient : IDisposable
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
 
+		Console.WriteLine(error?.Message);
+
 		if (response is null)
 			return null;
 
 		return await response.ReadContentAsStringAsync(ct);
 	}
 
-	private static CalendarWeek ParseCalendarWeek(string json, CancellationToken ct = default)
+	private static Models.DigitalesRegister.CalendarWeek ParseCalendarWeek(string json)
 	{
-		List<CalendarDay> calendarDays = new();
+		List<Models.DigitalesRegister.CalendarDay> calendarDays = new();
 
 		var jsonDoc = JsonDocument.Parse(json);
 		var root = jsonDoc.RootElement;
@@ -174,7 +173,7 @@ public class RegisterClient : IDisposable
 				continue;
 			}
 
-			List<HourInDay> hoursInDay = new();
+			List<Models.DigitalesRegister.HourInDay> hoursInDay = new();
 
 			List<JsonProperty> flattenedEnumeratedObject = new();
 
@@ -190,7 +189,7 @@ public class RegisterClient : IDisposable
 			{
 				try
 				{
-					var parsedHour = hour.Value.Deserialize<HourInDay>(Constants.SerializerOptions)!;
+					var parsedHour = hour.Value.Deserialize<Models.DigitalesRegister.HourInDay>(Constants.SerializerOptions)!;
 
 
 					if (parsedHour.IsLesson){
@@ -200,10 +199,8 @@ public class RegisterClient : IDisposable
 						continue;
 					}
 				}
-				catch (Exception ex) 
+				catch
 				{
-					logger.LogDebug($"Cannot parse hour: {hour.Name} of day: {dateTime ?? DateTime.MinValue}");
-					logger.LogDebug(ex.Message);
 					continue;
 				}
 			}
@@ -217,7 +214,6 @@ public class RegisterClient : IDisposable
 
 		return new()
 		{
-			StartDate = calendarDays.OrderBy(day => day.Date.ToUniversalTime()).FirstOrDefault()?.Date ?? DateTime.MinValue,
 			Days = calendarDays,
 		};
 	}

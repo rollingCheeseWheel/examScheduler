@@ -7,8 +7,7 @@ namespace Entities;
 
 public class Calendar
 {
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 
 	// Navigation Properties
@@ -18,12 +17,37 @@ public class Calendar
 	public int ClassroomId { get; set; }
 	[Required]
 	public required Classroom Classroom { get; set; }
+
+	public bool TryCompileTeachers()
+	{
+		var subjectTeachers = Data
+			.SelectMany(w => w.Days)
+			.SelectMany(d => d.HoursInDay)
+			.Select(h => h.Lesson)
+			.Select(l => new
+			{
+				l.Subject,
+				l.Teachers
+			});
+
+		foreach (var subjectTeacher in subjectTeachers)
+		{
+			foreach (var teacher in subjectTeacher.Teachers)
+			{
+				if (!teacher.Subjects.Contains(subjectTeacher.Subject))
+				{
+					teacher.Subjects.Add(subjectTeacher.Subject);
+				}
+			}
+		}
+		throw new NotImplementedException();
+	}
+
 }
 
 public class CalendarWeek
 {
-	[JsonIgnore]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
 	public required DateTime StartDate { get; set; }
@@ -49,8 +73,7 @@ public class CalendarWeek
 
 public class CalendarDay
 {
-	[JsonIgnore]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
 	public required DateTime Date { get; set; }
@@ -59,7 +82,6 @@ public class CalendarDay
 	[Required]
 	public required List<HourInDay> HoursInDay { get; set; } = [ ];
 	[NotMapped]
-	[JsonIgnore]
 	public int TotalHourCount { get => HoursInDay.Select(h => h.Duration).Sum(); }
 
 	public IEnumerable<Subject> GetSubjects()
@@ -80,11 +102,9 @@ public class CalendarDay
 
 public class HourInDay
 {
-	[JsonIgnore]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[NotMapped]
-	[JsonConverter(typeof(IntToBoolConverter))]
 	public required bool IsLesson { get; set; }
 	[Required]
 	public required Lesson Lesson { get; set; }
@@ -93,22 +113,18 @@ public class HourInDay
 	[Required]
 	public required int LinkedHoursCount { get; set; }
 	[NotMapped]
-	[JsonIgnore]
 	public int Duration { get => LinkedHoursCount + 1; }
 }
 
 
 public class Lesson
 {
-	[JsonIgnore]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	[JsonPropertyName("id")]
 	public required int? RegisterId { get; set; }
-	[JsonPropertyName("ttcid")]
+	[Required]
 	public required int TTCID { get; set; }
 	[Required]
-	[JsonConverter(typeof(RegisterDateConverter))]
 	public required DateTime Date { get; set; }
 	[Required]
 	public required int Hour { get; set; }
@@ -123,18 +139,14 @@ public class Lesson
 	[Required]
 	public required Subject Subject { get; set; }
 	[Required]
-
-	[JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
 }
 
 public class Subject
 {
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	[JsonIgnore]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
 	[Required]
-	[JsonPropertyName("id")]
 	public required int RegisterId { get; set; }
 	[Required]
 	[StringLength(255)]
