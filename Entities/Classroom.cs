@@ -10,7 +10,8 @@ public class Classroom
 	public int Id { get; set; }
 
 	[Required]
-	[StringLength(255)]
+	public required Uri RegisterUri { get; set; }
+	[Required]
 	public required string Name { get; set; }
 	[Required]
 	public required int RegisterId { get; set; }
@@ -26,15 +27,15 @@ public class Classroom
 	[Required]
 	public required ICollection<Schedule> Schedules { get; set; } = [ ];
 
-	public override bool Equals(object? obj) => obj is Classroom other && this == other;
-
 	public static bool operator ==(Classroom? a, Classroom? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.Name == b.Name 
-			&& a.RegisterId == b.RegisterId;
+		return a.RegisterId == b.RegisterId
+			&& a.RegisterUri == b.RegisterUri;
 	}
 
 	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is Classroom other && this == other;
+	public override int GetHashCode() => HashCode.Combine(RegisterId, RegisterUri);
 }

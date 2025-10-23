@@ -13,7 +13,7 @@ public static class IdentityHelper
 		this IServiceProvider serviceProvider,
 		int classroomId,
 		int studentId,
-		Permission permissions,
+		UserPermissions permissions,
 		int expiresInMinutes = 5,
 		int notBeforeMinutes = 1
 	)
@@ -49,7 +49,7 @@ public static class IdentityHelper
 		return config.GetJWT(
 			student.Classroom.Id,
 			student.Id,
-			student.Permissions,
+			student.UserProfile.Permissions,
 			expiresInMinutes, notBeforeMinutes
 		);
 	}

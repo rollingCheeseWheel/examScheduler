@@ -1,26 +1,18 @@
-﻿using Models.DigitalesRegister;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Entities;
 
 public class Teacher
 {
-	[JsonIgnore]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; set; }
-	[Required]
-	[JsonPropertyName("id")]
-	public required int RegisterId { get; set; }
-	[Required]
-	[StringLength(100)]
-	public required string FirstName { get; set; }
-	[Required]
-	[StringLength(100)]
-	public required string LastName { get; set; }
 
 	// Navigation Properties
+	[Required]
+	public required UserProfile UserProfile { get; set; }
+
+
 	public Calendar? Timetable { get; set; }
 	[Required]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
@@ -29,16 +21,15 @@ public class Teacher
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
 
-	public override bool Equals(object? obj)
+	public override bool Equals(object? obj) => obj is Teacher other && this == other;
+
+	public static bool operator ==(Teacher? a, Teacher?b)
 	{
-		if (obj is Teacher asTeacher)
-		{
-			return FirstName == asTeacher.FirstName
-				&& LastName == asTeacher.LastName
-				&& RegisterId == asTeacher.RegisterId;
-		}
-		return false;
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.UserProfile == b.UserProfile;
 	}
 
-	public override int GetHashCode() => base.GetHashCode();
+	public static bool operator !=(Teacher? a, Teacher? b) => !(a == b);
+	public override int GetHashCode() => UserProfile.GetHashCode();
 }

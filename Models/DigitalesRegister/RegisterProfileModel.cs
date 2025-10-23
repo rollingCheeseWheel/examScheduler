@@ -1,6 +1,6 @@
 ﻿namespace Models.DigitalesRegister;
 
-public class RegisterProfile
+public class RegisterProfileModel
 {
 	public required string Username { get; set; }
 	public required string RoleName { get; set; }

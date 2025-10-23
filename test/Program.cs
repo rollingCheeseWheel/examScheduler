@@ -2,8 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Util;
 using System.Text.Json;
-using examScheduler.Identity;
-using System.ComponentModel.DataAnnotations;
+using Models.DigitalesRegister;
 
 var options = new JsonSerializerOptions { WriteIndented = true };
 
@@ -16,10 +15,11 @@ using var client = new RegisterClient(config[ "username" ]!, config[ "password" 
 
 //Console.WriteLine("current calendar week:\n" + await client.GetCurrentCalendarWeekString());
 
-var week = await client.GetCalendarWeekAsync(DateTime.Now);
+var week = await client.GetCalendarWeekAsync(DateTime.Now.AddDays(14));
 
+var calendar = new Calendar { Data = [ week ] };
 
-Console.WriteLine(week.ToJson(options));
+Console.WriteLine(calendar.CompileTeachersWithSubject().ToJson(options));
 
 
 /*var password = "bobber";

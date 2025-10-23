@@ -15,10 +15,7 @@ public class AuthController : ControllerBase
 		try
 		{
 
-			var exists = dbContext.Students.Where(s => s.RegisterUsername == registerRequest.Username).Any();
-
-
-
+			var exists = dbContext.Students.Where(s => s.UserProfile.RegisterUsername == registerRequest.Username).Any();
 
 			if (exists)
 			{

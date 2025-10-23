@@ -7,6 +7,15 @@ public class AppDbContext : DbContext
 {
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+	public DbSet<AuditLog> AuditLogs { get; set; }
+	public DbSet<Classroom> Classrooms { get; set; }
+	public DbSet<Schedule> Schedules { get; set; }
+	public DbSet<Student> Students { get; set; }
+	public DbSet<Teacher> Teachers { get; set; }
+	public DbSet<Calendar> Timetables { get; set; }
+	public DbSet<Subject> Subjects { get; set; }
+	public DbSet<UserProfile> UserProfiles { get; set; }
+
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		base.OnModelCreating(modelBuilder);
@@ -36,22 +45,17 @@ public class AppDbContext : DbContext
 			.HasMany(e => e.Participants)
 			.WithMany(s => s.ExamSlots);
 
-		modelBuilder.Entity<Student>()
-			.HasIndex(s => s.RegisterUsername)
+		modelBuilder.Entity<UserProfile>()
+			.HasIndex(s => new {
+				s.RegisterUsername,
+				s.RegisterUri,
+				s.RegisterId
+			})
 			.IsUnique();
 
 		modelBuilder.Entity<Teacher>()
 			.HasMany(t => t.Lessons)
 			.WithMany(l => l.Teachers);
-
-		modelBuilder.Entity<Teacher>()
-			.HasIndex(t => new
-			{
-				t.FirstName,
-				t.LastName,
-				t.RegisterId
-			})
-			.IsUnique();
 
 		modelBuilder.Entity<Subject>()
 			.HasIndex(s => new
@@ -65,12 +69,4 @@ public class AppDbContext : DbContext
 			.HasIndex(c => c.RegisterId)
 			.IsUnique();
 	}
-
-	public DbSet<AuditLog> AuditLogs { get; set; }
-	public DbSet<Classroom> Classrooms { get; set; }
-	public DbSet<Schedule> Schedules { get; set; }
-	public DbSet<Student> Students { get; set; }
-	public DbSet<Teacher> Teachers { get; set; }
-	public DbSet<Calendar> Timetables { get; set; }
-	public DbSet<Subject> Subjects { get; set; }
 }

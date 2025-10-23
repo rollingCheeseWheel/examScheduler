@@ -109,11 +109,11 @@ public class RegisterClient : IDisposable
 		return await response!.Content.ReadAsStringAsync(ct);
 	}
 
-	public async Task<RegisterProfile?> GetUserProfileAsync(CancellationToken ct = default)
+	public async Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct = default)
 	{
 		try
 		{
-			return JsonSerializer.Deserialize<RegisterProfile>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
+			return JsonSerializer.Deserialize<RegisterProfileModel>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
 		} catch
 		{
 			return null;

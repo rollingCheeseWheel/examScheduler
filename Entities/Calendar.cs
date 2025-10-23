@@ -149,17 +149,17 @@ public class Subject
 	[Required]
 	public required int RegisterId { get; set; }
 	[Required]
-	[StringLength(255)]
 	public required string Name { get; set; }
 
-	public override bool Equals(object? obj)
+	public static bool operator ==(Subject? a, Subject? b)
 	{
-		if (obj is Subject asSubject)
-		{
-			return RegisterId == asSubject.RegisterId && Name == asSubject.Name;
-		}
-		return false;
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.RegisterId == b.RegisterId
+			&& a.Name == b.Name;
 	}
 
-	public override int GetHashCode() => base.GetHashCode();
+	public static bool operator !=(Subject? a, Subject? b) => !(a == b);
+	public override bool Equals(object? obj) => obj is Subject other && this == other;
+	public override int GetHashCode() => HashCode.Combine(RegisterId, Name);
 }
