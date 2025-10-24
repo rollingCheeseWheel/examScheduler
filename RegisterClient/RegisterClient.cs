@@ -114,31 +114,39 @@ public class RegisterClient : IDisposable
 		try
 		{
 			return JsonSerializer.Deserialize<RegisterProfileModel>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
-		} catch
+		}
+		catch
 		{
 			return null;
 		}
 	}
 
-	public async Task<List<Models.DigitalesRegister.CalendarWeek>?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
+	public async Task<Models.DigitalesRegister.Calendar?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
 		var calendarWeeks = new List<Models.DigitalesRegister.CalendarWeek>();
-		var iterDateTime = DateTime.UtcNow;
+		var iterDate = DateTime.UtcNow;
 		var currentWeekTimeout = 0;
-		while (iterDateTime <= DateTime.UtcNow.AddYears(yearDuration) 
+		while (iterDate < DateTime.UtcNow.AddYears(yearDuration)
 			&& currentWeekTimeout < timeoutAfterEmptyWeeks)
 		{
-			var tempWeek = await GetCalendarWeekAsync(iterDateTime, ct);
-			iterDateTime.AddDays(7);
+			//Console.WriteLine($"Getting calendar for week {iterDate}");
+			var tempWeek = await GetCalendarWeekAsync(iterDate, ct);
+			iterDate = iterDate.AddDays(7);
 
-			if (tempWeek is null || !tempWeek.Days.Any())
+			if (tempWeek is null || tempWeek.Days.Count == 0)
 			{
+				//Console.WriteLine($"Empty week - timeout: {currentWeekTimeout}");
 				currentWeekTimeout++;
 				continue;
 			}
+			else
+			{
+				currentWeekTimeout = 0;
+				calendarWeeks.Add(tempWeek);
+			}
 		}
 
-		return calendarWeeks.Any() ? calendarWeeks : null;
+		return calendarWeeks.Any() ? new(calendarWeeks) : null;
 	}
 
 	public async Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
@@ -150,8 +158,6 @@ public class RegisterClient : IDisposable
 	private async Task<string?> GetCalendarWeekStringAsync(DateTime date, CancellationToken ct = default)
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
-
-		Console.WriteLine(error?.Message);
 
 		if (response is null)
 			return null;
@@ -192,9 +198,11 @@ public class RegisterClient : IDisposable
 					var parsedHour = hour.Value.Deserialize<Models.DigitalesRegister.HourInDay>(Constants.SerializerOptions)!;
 
 
-					if (parsedHour.IsLesson){
+					if (parsedHour.IsLesson)
+					{
 						hoursInDay.Add(parsedHour);
-					} else
+					}
+					else
 					{
 						continue;
 					}
@@ -212,52 +220,8 @@ public class RegisterClient : IDisposable
 			});
 		}
 
-		return new()
-		{
-			Days = calendarDays,
-		};
+		return new() { Days = calendarDays };
 	}
-
-	/*private static async Task<List<CalendarDay>> ParseCalendarDays(HttpResponseMessage response, CancellationToken ct = default)
-	{
-		List<CalendarDay> calendarDays = new();
-
-		var message = await response.Content.ReadAsStringAsync(ct);
-		var jsonDoc = JsonDocument.Parse(message);
-		var root = jsonDoc.RootElement;
-
-		foreach (var prop in root.EnumerateObject()) // date
-		{
-			if (!prop.Name.RegisterTryParse(out var dateTime))
-				continue;
-
-			List<HourInDay> hoursInDay = new();
-
-			try
-			{
-				var nestedProp = prop.Value.EnumerateObject().First(); // "1"
-				var innerNestedProp = nestedProp.Value.EnumerateObject().First(); // "1"
-
-				foreach (var hour in innerNestedProp.Value.EnumerateObject())
-				{
-					try
-					{
-						hoursInDay.Append(JsonSerializer.Deserialize<HourInDay>(hour.Value, Constants.SerializerOptions));
-					}
-					catch
-					{
-						continue;
-					}
-				}
-			}
-			catch
-			{
-				continue;
-			}
-		}
-
-		return calendarDays;
-	}*/
 
 	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{

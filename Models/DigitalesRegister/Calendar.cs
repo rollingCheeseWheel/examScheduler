@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Util;
 
 namespace Models.DigitalesRegister;
@@ -10,17 +9,61 @@ public class CalendarRequest
 	public DateTime StartDate { get; set; }
 }
 
-public record TeacherSubjects(Teacher Teacher, ICollection<Subject> Subjects);
+public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
+public record DetailedTeacherSubjects(Teacher Teacher, IEnumerable<DetailedSubject> Subjects);
+public record DetailedSubject(Subject Subject, int Count);
+
 
 public class Calendar
 {
+	public Calendar(ICollection<CalendarWeek> weeks) => Data = weeks;
+
 	public ICollection<CalendarWeek> Data { get; set; } = [ ];
 
-	[Obsolete("TODO: make this weekly to filter out noise like subjstitue teachers")]
-	public ICollection<TeacherSubjects> CompileTeachersWithSubject()
+	/// <summary>
+	/// Get an IEnumerable of Teachers, each Teacher has an additional IEnumerable of Subjects they are associated with.
+	/// This function also filters out noise like substitute teachers, altough this only works (well) when the calendar is long(er)
+	/// </summary>
+	/// <param name="ignorePercentage"></param>
+	/// <returns></returns>
+	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.3)
 	{
-		return Data
-			.SelectMany(w => w.Days)
+		var summedTeacherSubjects = Data
+			.SelectMany(w => w.CompileTeachersWithSubjects()) // get a list of all TeacherSubjects side-by-side
+			.GroupBy(x => x.Teacher) // group teachers together, is less efficient but more useful
+			.Select(g => new DetailedTeacherSubjects( // reform a single TeacherSubject with the summed up lesson counts
+				g.Key,
+				g.SelectMany(a => a.Subjects)
+				.GroupBy(x => x.Subject)
+				.Select(a => new DetailedSubject( // sum up lesson counts
+					a.Key,
+					a.Sum(c => c.Count)
+				))
+			));
+
+		var ignoreThreshold = summedTeacherSubjects
+			.SelectMany(t => t.Subjects)
+			.GroupBy(x => x.Subject)
+			.Select(g => g.Sum(s => s.Count))
+			.Average() * ignorePercentage;
+
+		return summedTeacherSubjects
+			.Select(t => new TeacherSubjects(
+				t.Teacher,
+				t.Subjects.Where(s => s.Count > ignoreThreshold).Select(s => s.Subject)
+			))
+			.Where(t => t.Subjects.Any());
+	}
+}
+
+public class CalendarWeek
+{
+	public DateTime StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
+	public required ICollection<CalendarDay> Days { get; set; } = [ ];
+
+	internal IEnumerable<DetailedTeacherSubjects> CompileTeachersWithSubjects()
+	{
+		return Days
 			.SelectMany(d => d.HoursInDay)
 			.Select(h => h.Lesson) // Lessons
 			.SelectMany(l => l.Teachers.Select(t => new
@@ -29,19 +72,12 @@ public class Calendar
 				l.Subject
 			}))
 			.GroupBy(x => x.Teacher) // make distinct 
-			.Select(g => new TeacherSubjects
+			.Select(g => new DetailedTeacherSubjects
 			(
 				g.Key, // Distinct Teachers
-				g.Select(x => x.Subject).Distinct().ToList() // Distinct Subjects
-			))
-			.ToList();
+				g.GroupBy(x => x.Subject).Select(a => new DetailedSubject(a.Key, a.Count())) // Distinct Subjects
+			));
 	}
-}
-
-public class CalendarWeek
-{
-	public DateTime StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
-	public required ICollection<CalendarDay> Days { get; set; } = [ ];
 }
 
 public class CalendarDay

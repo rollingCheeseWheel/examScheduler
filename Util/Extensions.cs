@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -56,5 +57,14 @@ public static class Extensions
 
 	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 
+	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, JsonSerializerOptions options) => (await task).ToJson(options);
+
+	public static async Task<string> ToJsonAsync<T>(this Task<T?> task) => await task.ToJsonAsync(Constants.SerializerOptions);
+
 	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
+
+	public static Stopwatch Print(this Stopwatch stopwatch){
+		Console.WriteLine($"Time elapsed: {stopwatch.ElapsedMilliseconds} ms");
+		return stopwatch;
+	}
 }
