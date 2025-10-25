@@ -1,6 +1,6 @@
 # examScheduler
 
-examScheduler is a .NET 9.0 exam scheduling and management system designed to simplify the process of creating and maintaining comprehensive exam timetables for schools using [Digitales Register](https://digitalesregister.it/). It combines automation, data integrity, and flexibility with a modular architecture built on modern .NET technologies.
+examScheduler is a .NET 9.0 exam scheduling and management system designed to simplify the process of creating and maintaining comprehensive exam timetables for schools using [Digitales Register](https://digitalesregister.it/).
 ## Architecture Overview
 
 The solution is divided into several key projects:
