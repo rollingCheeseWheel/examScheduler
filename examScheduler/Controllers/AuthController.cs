@@ -14,8 +14,10 @@ public class AuthController : ControllerBase
 	{
 		try
 		{
-
-			var exists = dbContext.Students.Where(s => s.UserProfile.RegisterUsername == registerRequest.Username).Any();
+			var exists = dbContext.UserProfiles.Where(u =>
+				u.RegisterUri == registerRequest.RegisterUri &&
+				u.RegisterUsername == registerRequest.Username
+			).Any();
 
 			if (exists)
 			{
@@ -24,8 +26,9 @@ public class AuthController : ControllerBase
 
 			return Ok();
 		}
-		catch
+		catch (Exception ex) 
 		{
+			Console.WriteLine(ex.Message);
 			return this.ServerError();
 		}
 	}
