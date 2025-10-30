@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030190918_postgresql.container_migration_798")]
+    partial class postgresqlcontainer_migration_798
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -371,9 +374,14 @@ namespace examScheduler.Migrations
                     b.Property<int?>("ScheduleId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("TimetableId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ScheduleId");
+
+                    b.HasIndex("TimetableId");
 
                     b.ToTable("Teachers");
                 });
@@ -600,6 +608,12 @@ namespace examScheduler.Migrations
                     b.HasOne("Entities.Schedule", null)
                         .WithMany("Teachers")
                         .HasForeignKey("ScheduleId");
+
+                    b.HasOne("Entities.Calendar", "Timetable")
+                        .WithMany()
+                        .HasForeignKey("TimetableId");
+
+                    b.Navigation("Timetable");
                 });
 
             modelBuilder.Entity("Entities.TeacherProfile", b =>

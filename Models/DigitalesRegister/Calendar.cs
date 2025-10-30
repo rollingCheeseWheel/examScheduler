@@ -26,7 +26,7 @@ public class Calendar
 	/// </summary>
 	/// <param name="ignorePercentage"></param>
 	/// <returns></returns>
-	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.3)
+	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.25)
 	{
 		var summedTeacherSubjects = Data
 			.SelectMany(w => w.CompileTeachersWithSubjects()) // get a list of all TeacherSubjects side-by-side

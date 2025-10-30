@@ -57,14 +57,17 @@ public static class Extensions
 
 	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, JsonSerializerOptions options) => (await task).ToJson(options);
+	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T?> task) => await task.ToJsonAsync(Constants.SerializerOptions);
+	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
 
 	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 
-	public static Stopwatch Print(this Stopwatch stopwatch){
+	public static Stopwatch Print(this Stopwatch stopwatch)
+	{
 		Console.WriteLine($"Time elapsed: {stopwatch.ElapsedMilliseconds} ms");
 		return stopwatch;
 	}
+
+	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * Math.Ceiling((double)( value / multiple )) );
 }

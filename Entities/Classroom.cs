@@ -10,9 +10,9 @@ public class Classroom
 	public int Id { get; set; }
 
 	[Required]
-	public required Uri RegisterUri { get; set; }
-	[Required]
 	public required string Name { get; set; }
+	[Required]
+	public required Uri RegisterUri { get; set; }
 	[Required]
 	public required int RegisterId { get; set; }
 	[Required]

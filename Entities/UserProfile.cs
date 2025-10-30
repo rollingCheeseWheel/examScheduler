@@ -18,7 +18,8 @@ public class UserProfile
 
 	[Required]
 	// Argon2id stores the salt in the encoded string
-	// no unique required since the salt already has 2^(8*16) different combinations 
+	// no unique required since the salt already has 2^(8*16) different combinations
+	// and collisions do not garantee the same password and hash
 	public required string Hash { get; set; }
 
 	// Permissions - enum flags, can be combined

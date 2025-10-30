@@ -2,9 +2,14 @@
 
 public enum AutoLockIn
 {
-	OnExamination = 0,
-	FixedDate = 1,
-	TimeBeforeExamination = 2,
+	FixedDate,
+	TimeBeforeExamination,
+}
+
+public enum ScheduleGeneratorBehavior
+{
+	Generator,
+	ListOfAvailableSlots,
 }
 
 [Flags]
@@ -18,5 +23,5 @@ public enum UserPermissions
 public enum UserProfileRoles
 {
 	Student,
-	Teacher
+	Teacher,
 }
