@@ -8,21 +8,21 @@ namespace Entities;
 public class Student
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; set; }
+	public int Id { get; private set; }
 
 	// Navigation Properties
 	[Required]
-	public required UserProfile UserProfile { get; set; }
+	public required UserProfile UserProfile { get; init; }
 
 	[Required]
-	public required Classroom Classroom { get; set; }
+	public required Classroom Classroom { get; init; }
 	/// <summary>
 	/// to convince EF of a many-to-many relationship
 	/// a Student has a Classroom, a Classroom has many (indirect) ExamSlots, an ExamSlot has many Students
 	/// thus a Student has many ExamSlots
 	/// </summary>
 	[Required]
-	public ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
+	public ICollection<ExamSlot> ExamSlots { get; internal set; } = [ ];
 
 	public static bool operator ==(Student? a, Student? b)
 	{
@@ -32,6 +32,6 @@ public class Student
 	}
 
 	public static bool operator !=(Student? a, Student? b) => !(a == b);
-	public override int GetHashCode() => UserProfile.GetHashCode();
 	public override bool Equals(object? obj) => obj is Student other && this == other;
+	public override int GetHashCode() => UserProfile.GetHashCode();
 }

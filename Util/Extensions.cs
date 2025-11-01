@@ -69,5 +69,5 @@ public static class Extensions
 		return stopwatch;
 	}
 
-	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * Math.Ceiling((double)( value / multiple )) );
+	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * double.Ceiling(value / multiple) );
 }

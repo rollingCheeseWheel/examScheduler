@@ -6,13 +6,13 @@ namespace Entities;
 public class UserProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; set; }
+	public int Id { get; private set; }
 	[Required]
-	public required int RegisterId { get; set; }
+	public required int RegisterId { get; init; }
 	[Required]
-	public required Uri RegisterUri { get; set; }
+	public required Uri RegisterUri { get; init; }
 	[Required]
-	public required string RegisterUsername { get; set; }
+	public required string RegisterUsername { get; init; }
 	[Required]
 	public required string DisplayName { get; set; }
 
@@ -27,7 +27,7 @@ public class UserProfile
 	[Required]
 	public required UserPermissions Permissions { get; set; }
 	[Required]
-	public required UserProfileRoles Role { get; set; }
+	public required UserProfileRoles Role { get; init; }
 
 	public static bool operator ==(UserProfile? a, UserProfile? b)
 	{
@@ -39,6 +39,6 @@ public class UserProfile
 	}
 
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
-	public override int GetHashCode() => HashCode.Combine(RegisterUri, RegisterUsername, RegisterId);
 	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
+	public override int GetHashCode() => HashCode.Combine(RegisterUri, RegisterUsername, RegisterId);
 }

@@ -6,12 +6,6 @@ public enum AutoLockIn
 	TimeBeforeExamination,
 }
 
-public enum ScheduleGeneratorBehavior
-{
-	Generator,
-	ListOfAvailableSlots,
-}
-
 [Flags]
 public enum UserPermissions
 {

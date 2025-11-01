@@ -1,39 +1,36 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing.Internal;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq.Expressions;
-using System.Numerics;
 using Util;
 
 namespace Entities;
 
 public class Schedule
 {
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; private set; }
 
 	[Required]
-	public required DateTime FirstExamination { get; set; }
+	public required DateTime FirstExamination { get; init; }
 	[Required]
-	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
+	public required AutoLockIn AutoLockIn { get; init; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = FirstExamination - LockInDate
 	// AutoLockIn.TimeBeforeExamination = Offset, slot locks at this offset before the examination 
 	[Required]
-	public TimeSpan LockInDate { get; set; } = TimeSpan.Zero; // lock-in on examination
+	public required TimeSpan LockInDate { get; init; } = TimeSpan.Zero; // lock-in on examination
 
 	[Required]
-	public required ScheduleGenerator SlotRule { get; set; }
+	public required ScheduleGenerator SlotRule { get; init; }
 	[Required]
-	public required Subject Subject { get; set; }
+	public required Subject Subject { get; init; }
 	[Required]
-	public required Classroom Classroom { get; set; }
+	public required Classroom Classroom { get; init; }
 
 	[NotMapped]
-	public int RequiredParticipants { get => ExamSlots.Select(e => e.RequiredParticipants).Sum(); }
+	public int RequiredParticipants { get => ExamSlots.Sum(e => e.RequiredParticipants); }
 	[NotMapped]
-	public int Participants { get => ExamSlots.Select(e => e.Participating).Sum(); }
+	public int Participants { get => ExamSlots.Sum(e => e.Participating); }
+	[NotMapped]
+	public int ActuallyParticipated { get => ExamSlots.Sum(e => e.ActuallyParticipated.Count); }
 
 	// Navigation Properties
 	[Required]
@@ -199,32 +196,22 @@ public class ExamSlot
 	public int GetMissingParticipantCount() => Math.Max(Participating - RequiredParticipants, 0);
 }
 
-public class ScheduleGenerator(ScheduleGeneratorBehavior behavior, ICollection<ScheduleGeneratorSlot> slots, Schedule schedule)
+public class ScheduleGenerator
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; private set; }
 
 	[Required]
-	public required ScheduleGeneratorBehavior Behavior { get; set; } = behavior;
-	[Required]
-	public ICollection<ScheduleGeneratorSlot> Slots { get; private set; } = slots;
+	public required ICollection<ScheduleGeneratorSlot> Slots { get; init; }
 
 	[Required]
-	public required Schedule Schedule { get; set; } = schedule;
+	public required Schedule Schedule { get; init; }
 
 	public ICollection<ExamSlot>? Expand(int studentCount, ICollection<ExamSlot> slots)
 	{
-		if (Behavior != ScheduleGeneratorBehavior.Generator ||
-			Slots.Count == 0 ||
-			!DoSlotsMatch(slots)
-		)
-		{
-			return null;
-		}
-
 		var startDate = Schedule.FirstExamination;
 
-		var actual = Slots.Max(s => s.Offset).RoundUpToMultiple(7); // makes sure that slots dont overlap, slots are tiled weekly
+		var totalOffset = Slots.Max(s => s.Offset).RoundUpToMultiple(7); // makes sure that slots dont overlap, slots are tiled weekly
 
 		var result = slots.ToList();
 
@@ -241,7 +228,7 @@ public class ScheduleGenerator(ScheduleGeneratorBehavior behavior, ICollection<S
 			}
 		}).Sum() <= studentCount) // generate further until all the students are accounted for
 		{
-			result.Add(TranslateSingleSlot(GetSlotAtWrapAround(i)));
+			result.Add(TranslateSingleSlot(GetSlotAtWrapAround(i), (int)( double.Floor(i / totalOffset) * totalOffset )));
 		}
 
 		return result;
@@ -254,12 +241,13 @@ public class ScheduleGenerator(ScheduleGeneratorBehavior behavior, ICollection<S
 			return null;
 		}
 
-		return Behavior switch
+		var result = TranslateSlots();
+		if (result.Sum(s => s.MaxParticipants) > studentCount)
 		{
-			ScheduleGeneratorBehavior.Generator => GenerateUsingRule(studentCount),
-			ScheduleGeneratorBehavior.ListOfAvailableSlots => GenerateUsingListOfAvailableSlots(studentCount),
-			_ => null,
-		};
+			return result; // no further work needed
+		}
+
+		return Expand(studentCount, result)!;
 	}
 
 	private ExamSlot TranslateSingleSlot(ScheduleGeneratorSlot slot, int additionalOffset = 0)
@@ -286,17 +274,6 @@ public class ScheduleGenerator(ScheduleGeneratorBehavior behavior, ICollection<S
 		{
 			return TranslateSlots();
 		}
-	}
-
-	private ICollection<ExamSlot> GenerateUsingRule(int studentCount)
-	{
-		var result = TranslateSlots();
-		if (result.Sum(s => s.MaxParticipants) > studentCount)
-		{
-			return result; // no further work needed
-		}
-
-		return Expand(studentCount, result)!;
 	}
 
 	public ScheduleGeneratorSlot GetSlotAtWrapAround(int index) => Slots.ElementAt(( index % Slots.Count + Slots.Count ) % Slots.Count);

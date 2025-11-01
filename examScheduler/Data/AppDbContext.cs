@@ -8,14 +8,15 @@ public class AppDbContext : DbContext
 {
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-	public DbSet<AuditLog> AuditLogs { get; set; }
-	public DbSet<Classroom> Classrooms { get; set; }
-	public DbSet<Schedule> Schedules { get; set; }
-	public DbSet<Student> Students { get; set; }
-	public DbSet<Teacher> Teachers { get; set; }
-	public DbSet<Calendar> Timetables { get; set; }
-	public DbSet<Subject> Subjects { get; set; }
 	public DbSet<UserProfile> UserProfiles { get; set; }
+	public DbSet<Student> Students { get; set; }
+	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
+	public DbSet<Classroom> Classrooms { get; set; }
+	/*public DbSet<AuditLog> AuditLogs { get; set; }*/
+	/*public DbSet<Schedule> Schedules { get; set; }*/
+	/*public DbSet<Teacher> Teachers { get; set; }*/
+	/*public DbSet<Calendar> Timetables { get; set; }*/
+	/*public DbSet<Subject> Subjects { get; set; }*/
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -30,6 +31,10 @@ public class AppDbContext : DbContext
 			.HasOne(c => c.Calendar)
 			.WithOne(t => t.Classroom)
 			.HasForeignKey<Calendar>(t => t.ClassroomId);
+
+		modelBuilder.Entity<Classroom>()
+			.HasMany(c => c.AuditLogs)
+			.WithOne(a => a.Classroom);
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Teachers)
@@ -59,10 +64,6 @@ public class AppDbContext : DbContext
 				s.RegisterId
 			})
 			.IsUnique();
-
-		modelBuilder.Entity<Teacher>()
-			.HasMany(t => t.Lessons)
-			.WithMany(l => l.Teachers);
 
 		modelBuilder.Entity<Subject>()
 			.HasIndex(s => new

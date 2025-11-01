@@ -5,27 +5,28 @@ namespace Entities;
 
 public class Classroom
 {
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; set; }
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	public int Id { get; private set; }
 
 	[Required]
-	public required string Name { get; set; }
+	public required string Name { get; init; }
 	[Required]
-	public required Uri RegisterUri { get; set; }
+	public required Uri RegisterUri { get; init; }
 	[Required]
-	public required int RegisterId { get; set; }
+	public required int RegisterId { get; init; }
 	[Required]
-	public required DateTime CreatedAtUTC { get; set; } = DateTime.UtcNow;
+	public DateTime CreatedAtUTC { get; } = DateTime.UtcNow;
 
 	// Navigation Properties
 	public Calendar? Calendar { get; set; }
 	[Required]
-	public required ICollection<Student> Students { get; set; } = [ ];
+	public ICollection<Student> Students { get; private set; } = [ ];
 	[Required]
-	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	public ICollection<Teacher> Teachers { get; private set; } = [ ];
 	[Required]
-	public required ICollection<Schedule> Schedules { get; set; } = [ ];
+	public ICollection<Schedule> Schedules { get; private set; } = [ ];
+	[Required]
+	public ICollection<AuditLog> AuditLogs { get; private set; } = [ ];
 
 	public static bool operator ==(Classroom? a, Classroom? b)
 	{
