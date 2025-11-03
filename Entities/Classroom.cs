@@ -6,7 +6,7 @@ namespace Entities;
 public class Classroom
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	[Required]
 	public required string Name { get; init; }
@@ -15,10 +15,11 @@ public class Classroom
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]
-	public DateTime CreatedAtUTC { get; } = DateTime.UtcNow;
+	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
 	// Navigation Properties
-	public Calendar? Calendar { get; set; }
+	[Required]
+	public ICollection<Calendar> Calendars { get; private set; } = [ ];
 	[Required]
 	public ICollection<Student> Students { get; private set; } = [ ];
 	[Required]
@@ -35,7 +36,6 @@ public class Classroom
 		return a.RegisterId == b.RegisterId
 			&& a.RegisterUri == b.RegisterUri;
 	}
-
 	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Classroom other && this == other;
 	public override int GetHashCode() => HashCode.Combine(RegisterId, RegisterUri);

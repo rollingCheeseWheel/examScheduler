@@ -6,7 +6,7 @@ namespace Models.DigitalesRegister;
 public class CalendarRequest
 {
 	[JsonConverter(typeof(RegisterDateConverter))]
-	public DateTime StartDate { get; set; }
+	public DateTimeOffset StartDate { get; set; }
 }
 
 public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
@@ -58,7 +58,7 @@ public class Calendar
 
 public class CalendarWeek
 {
-	public DateTime StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
+	public DateTimeOffset StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
 	public required ICollection<CalendarDay> Days { get; set; } = [ ];
 
 	internal IEnumerable<DetailedTeacherSubjects> CompileTeachersWithSubjects()
@@ -82,7 +82,7 @@ public class CalendarWeek
 
 public class CalendarDay
 {
-	public required DateTime Date { get; set; }
+	public required DateTimeOffset Date { get; set; }
 	public required ICollection<HourInDay> HoursInDay { get; set; } = [ ];
 }
 
@@ -101,7 +101,7 @@ public class Lesson
 {
 	public required int? Id { get; set; }
 	[JsonConverter(typeof(RegisterDateConverter))]
-	public required DateTime Date { get; set; }
+	public required DateTimeOffset Date { get; set; }
 	public required int Hour { get; set; }
 	public required int ToHour { get; set; }
 	public required int ClassId { get; set; }

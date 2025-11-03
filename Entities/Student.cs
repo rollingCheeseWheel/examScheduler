@@ -8,7 +8,7 @@ namespace Entities;
 public class Student
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	// Navigation Properties
 	[Required]
@@ -22,7 +22,9 @@ public class Student
 	/// thus a Student has many ExamSlots
 	/// </summary>
 	[Required]
-	public ICollection<ExamSlot> ExamSlots { get; internal set; } = [ ];
+	public ICollection<ExamSlot> ParticipatingExamSlots { get; internal set; } = [ ];
+	[Required]
+	public ICollection<ExamSlot> ActuallyParticipatedExamSlots { get; internal set; } = [ ];
 
 	public static bool operator ==(Student? a, Student? b)
 	{
@@ -30,8 +32,7 @@ public class Student
 		if (a is null || b is null) return false;
 		return a.UserProfile == b.UserProfile;
 	}
-
-	public static bool operator !=(Student? a, Student? b) => !(a == b);
+	public static bool operator !=(Student? a, Student? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Student other && this == other;
 	public override int GetHashCode() => UserProfile.GetHashCode();
 }

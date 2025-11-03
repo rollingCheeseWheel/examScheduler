@@ -100,7 +100,7 @@ public class RegisterClient : IDisposable
 		throw new NotImplementedException();
 	}
 
-	internal async Task<string> GetUserProfileStringAsync(CancellationToken ct = default)
+	private async Task<string> GetUserProfileStringAsync(CancellationToken ct = default)
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
 
@@ -124,9 +124,9 @@ public class RegisterClient : IDisposable
 	public async Task<Models.DigitalesRegister.Calendar?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
 		var calendarWeeks = new List<Models.DigitalesRegister.CalendarWeek>();
-		var iterDate = DateTime.UtcNow;
+		var iterDate = DateTimeOffset.UtcNow;
 		var currentWeekTimeout = 0;
-		while (iterDate < DateTime.UtcNow.AddYears(yearDuration)
+		while (iterDate < DateTimeOffset.UtcNow.AddYears(yearDuration)
 			&& currentWeekTimeout < timeoutAfterEmptyWeeks)
 		{
 			//Console.WriteLine($"Getting calendar for week {iterDate}");
@@ -149,13 +149,13 @@ public class RegisterClient : IDisposable
 		return calendarWeeks.Any() ? new(calendarWeeks) : null;
 	}
 
-	public async Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTime date, CancellationToken ct = default)
+	public async Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var json = await GetCalendarWeekStringAsync(date, ct);
 		return json is null ? null : ParseCalendarWeek(json);
 	}
 
-	private async Task<string?> GetCalendarWeekStringAsync(DateTime date, CancellationToken ct = default)
+	private async Task<string?> GetCalendarWeekStringAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
 
@@ -174,7 +174,7 @@ public class RegisterClient : IDisposable
 
 		foreach (var prop in root.EnumerateObject()) // date
 		{
-			if (!prop.Name.RegisterTryParse(out var dateTime))
+			if (!prop.Name.RegisterTryParse(out var DateTimeOffset))
 			{
 				continue;
 			}
@@ -215,7 +215,7 @@ public class RegisterClient : IDisposable
 
 			calendarDays.Add(new()
 			{
-				Date = (DateTime)dateTime!,
+				Date = (DateTimeOffset)DateTimeOffset!,
 				HoursInDay = hoursInDay
 			});
 		}

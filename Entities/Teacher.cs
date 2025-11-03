@@ -6,7 +6,7 @@ namespace Entities;
 public class TeacherProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	// Navigation Properties
 	[Required]
@@ -15,7 +15,7 @@ public class TeacherProfile
 	[Required]
 	public required Teacher Teacher { get; init; }
 	[Required]
-	public int TeacherId { get; set; }
+	public int TeacherId { get; private set; }
 
 	public static bool operator ==(TeacherProfile? a, TeacherProfile? b)
 	{
@@ -33,7 +33,7 @@ public class TeacherProfile
 public class Teacher
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	[Required]
 	public required int RegisterID { get; init; }
@@ -48,15 +48,13 @@ public class Teacher
 	[Required]
 	public ICollection<Subject> Subjects { get; internal set; } = [ ];
 
-	public override bool Equals(object? obj) => obj is Teacher other && this == other;
-
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.RegisterID == b.RegisterID;
 	}
-
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is Teacher other && this == other;
 	public override int GetHashCode() => HashCode.Combine(RegisterID);
 }

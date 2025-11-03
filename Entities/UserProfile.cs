@@ -6,7 +6,7 @@ namespace Entities;
 public class UserProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]

@@ -7,15 +7,15 @@ public class AuditLog
 {
 	[Key]
 	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 	[Required]
-	public DateTime TimestampUTC { get; } = DateTime.UtcNow;
+	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]
 	public required string Action { get; init; }
 	[Required]
-	public required string PerformedBy { get; init; }
+	public required string Actor { get; init; }
 	[Required]
-	public required string Details { get; init; }
+	public required string Description { get; init; }
 	[Required]
 	public required Classroom Classroom { get; init; }
 }

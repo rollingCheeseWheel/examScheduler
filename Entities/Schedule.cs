@@ -7,203 +7,98 @@ namespace Entities;
 public class Schedule
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	[Required]
-	public required DateTime FirstExamination { get; init; }
+	public required DateTimeOffset FirstExamination { get; init; }
 	[Required]
 	public required AutoLockIn AutoLockIn { get; init; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = FirstExamination - LockInDate
 	// AutoLockIn.TimeBeforeExamination = Offset, slot locks at this offset before the examination 
 	[Required]
-	public required TimeSpan LockInDate { get; init; } = TimeSpan.Zero; // lock-in on examination
-
+	public required TimeSpan LockInOffset { get; init; } = TimeSpan.Zero; // lock-in on examination
 	[Required]
-	public required ScheduleGenerator SlotRule { get; init; }
+	public required string Description { get; init; }
+
+	// Navigation properties
+	[Required]
+	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; init; }
 	[Required]
 	public required Subject Subject { get; init; }
 	[Required]
 	public required Classroom Classroom { get; init; }
-
-	[NotMapped]
-	public int RequiredParticipants { get => ExamSlots.Sum(e => e.RequiredParticipants); }
-	[NotMapped]
-	public int Participants { get => ExamSlots.Sum(e => e.Participating); }
-	[NotMapped]
-	public int ActuallyParticipated { get => ExamSlots.Sum(e => e.ActuallyParticipated.Count); }
-
-	// Navigation Properties
 	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; private set; } = [ ];
-	[NotMapped]
-	public IEnumerable<Teacher> Teachers { get => Classroom.Teachers.Where(t => t.Subjects.Contains(Subject)); }
 
-	public bool TrySwapStudents(Student student1, Student student2)
+	public static bool operator ==(Schedule? a, Schedule? b)
 	{
-		if (ExamSlots.Count == 0)
-		{
-			return false;
-		}
-		if (student1 == student2)
-		{
-			return true;
-		}
-
-		var slot1 = GetExamSlot(student1);
-		var slot2 = GetExamSlot(student2);
-		if (slot1 is null || slot2 is null)
-		{
-			return false;
-		}
-		else if (slot1.AlreadyHappened || slot2.AlreadyHappened)
-		{
-			return false;
-		}
-		else
-		{
-			return slot1.TrySwapStudents(student1, student2)
-				&& slot2.TrySwapStudents(student2, student1);
-		}
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.FirstExamination == b.FirstExamination
+			&& a.Subject == b.Subject
+			&& a.Classroom == b.Classroom;
 	}
-
-	public ExamSlot? GetExamSlot(Student student) => ExamSlots.Where(e => e.IsParticipating(student)).FirstOrDefault();
-
-	public bool TryEnlistStudent(Student student, DateTime date)
-	{
-		throw new NotImplementedException();
-	}
-
-	public bool TryEnlistStudent(Student student, ExamSlot slot)
-	{
-		throw new NotImplementedException();
-	}
-
-	public bool TryEnlistStudentAtNearestDate(Student student)
-	{
-		if (GetExamSlot(student) is not null) // student is already enlisted 
-		{
-			return true;
-		}
-		var nextOpenExamSlot = GetNextOpenExamSlot();
-		if (nextOpenExamSlot is null)
-		{
-			return false;
-		}
-
-		return nextOpenExamSlot.TryEnlistStudent(student);
-	}
-
-	public bool EnlistStudentAtNearesDateForcefully(Student student)
-	{
-
-		throw new NotImplementedException();
-	}
-
-	public ExamSlot? GetNextOpenExamSlot()
-	{
-		return ExamSlots
-			.Where(e => !e.IsFull())
-			.OrderBy(e => e.Participating)
-			.ThenBy(e => e.Date)
-			.ThenByDescending(e => e.RequiredParticipants)
-			.FirstOrDefault();
-	}
-
-	[Obsolete]
-	public ExamSlot? GetNextOpenExamSlotForcefully()
-	{
-		return ExamSlots
-			.Select((e, index) => new { e, index })
-			.OrderBy(a => a.index)
-			.Select(a => a.e)
-			.Where(e => !e.IsFull())
-			.OrderBy(e => e.Participating)
-			.ThenBy(e => e.Date)
-			.ThenByDescending(e => e.RequiredParticipants)
-			.FirstOrDefault();
-	}
+	public static bool operator !=(Schedule? a, Schedule? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is Schedule other && this == other;
+	public override int GetHashCode() => HashCode.Combine(FirstExamination, Subject, Classroom);
 }
 
 public class ExamSlot
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
-
+	public int Id { get; }
 	[Required]
-	[Range(0, int.MaxValue)]
-	public required int RequiredParticipants { get; set; }
+	public required ScheduleGeneratorSlot GeneratorSlot { get; init; }
+	/*[Required]
+	public required int SlotIndex { get; init; }*/
 	[Required]
-	[Range(0, int.MaxValue)]
-	public required int MaxParticipants { get; set; }
-	[Required]
-	public required DateTime Date { get; set; }
-	[NotMapped]
-	public bool IsLocked { get; set; }
+	public required DateTimeOffset Date { get; init; }
 
 	// Navigation Properties
+	[Required]
+	public required Schedule Schedule { get; init; }
 	[Required]
 	public ICollection<Student> Participants { get; private set; } = [ ];
 	[Required]
 	public ICollection<Student> ActuallyParticipated { get; private set; } = [ ];
-	[Required]
-	public required Schedule Schedule { get; set; }
-	[Required]
-	public required ScheduleGeneratorSlot GeneratorSlot { get; set; }
 
 	[NotMapped]
-	public bool AlreadyHappened { get => Date <= DateTime.UtcNow; }
+	public int RequiredParticipants { get => GeneratorSlot.RequiredParticipants; }
 	[NotMapped]
-	public int Participating { get => Participants.Count; }
-
-	internal bool TrySwapStudents(Student target, Student replacement)
+	public int MaxParticipants { get => GeneratorSlot.MaxParticipants; }
+	[NotMapped]
+	public bool HasAlreadyHappened { get => Date < DateTimeOffset.UtcNow; }
+	[NotMapped]
+	public bool IsLocked
 	{
-		if (!IsParticipating(target))
+		get => Schedule.AutoLockIn switch
 		{
-			return false;
-		}
-		else if (!Participants.Remove(target))
-		{
-			return false;
-		}
-		else
-		{
-			Participants.Add(replacement);
-			return true;
-		}
+			AutoLockIn.FixedDate => Date >= ( Schedule.FirstExamination - Schedule.LockInOffset ),
+			AutoLockIn.TimeBeforeExamination => DateTimeOffset.UtcNow >= ( Date - Schedule.LockInOffset ),
+			_ => true,
+		};
 	}
 
-	public bool IsParticipating(Student student) => Participants.Contains(student);
-
-	public bool TryEnlistStudent(Student student)
+	public static bool operator ==(ExamSlot? a, ExamSlot? b)
 	{
-		if (IsParticipating(student))
-		{
-			return false;
-		}
-		else if (IsFull())
-		{
-			return false;
-		}
-		else
-		{
-			Participants.Add(student);
-			return true;
-		}
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.Schedule == b.Schedule
+			&& a.Date == b.Date;
 	}
-
-	public bool IsFull() => Participating >= MaxParticipants;
-
-	public int GetMissingParticipantCount() => Math.Max(Participating - RequiredParticipants, 0);
+	public static bool operator !=(ExamSlot? a, ExamSlot? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is ExamSlot other && this == other;
+	public override int GetHashCode() => HashCode.Combine(Schedule);
 }
 
+[Obsolete]
 public class ScheduleGenerator
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	[Required]
 	public required ICollection<ScheduleGeneratorSlot> Slots { get; init; }
-
 	[Required]
 	public required Schedule Schedule { get; init; }
 
@@ -255,9 +150,9 @@ public class ScheduleGenerator
 		return new ExamSlot
 		{
 			Schedule = Schedule,
-			Date = Schedule.FirstExamination.AddDays(slot.Offset + additionalOffset),
+			Date = Schedule.FirstExamination.AddDays(slot.Offset + additionalOffset),/*
 			MaxParticipants = slot.MaxParticipants,
-			RequiredParticipants = slot.RequiredParticipants,
+			RequiredParticipants = slot.RequiredParticipants,*/
 			GeneratorSlot = slot,
 		};
 	}
@@ -284,7 +179,7 @@ public class ScheduleGenerator
 public class ScheduleGeneratorSlot
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	public int Id { get; }
 
 	[Required, Range(0, int.MaxValue)]
 	public required int Offset { get; set; }
@@ -301,10 +196,7 @@ public class ScheduleGeneratorSlot
 			&& a.MaxParticipants == b.MaxParticipants
 			&& a.RequiredParticipants == b.RequiredParticipants;
 	}
-
 	public static bool operator !=(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b) => !( a == b );
-
 	public override bool Equals(object? obj) => obj is ScheduleGeneratorSlot other && this == other;
-
 	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, RequiredParticipants);
 }

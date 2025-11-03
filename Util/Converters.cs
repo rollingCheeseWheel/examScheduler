@@ -22,9 +22,9 @@ public class IntToBoolConverter : JsonConverter<bool>
 	}
 }
 
-public class RegisterDateConverter : JsonConverter<DateTime>
+public class RegisterDateConverter : JsonConverter<DateTimeOffset>
 {
-	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType != JsonTokenType.String)
 			throw new JsonException("Expected string for date.");
@@ -33,7 +33,7 @@ public class RegisterDateConverter : JsonConverter<DateTime>
 		return value!.RegisterParse();
 	}
 
-	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+	public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
 	{
 		writer.WriteStringValue(value.ToRegisterFormat());
 	}

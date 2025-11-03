@@ -2,10 +2,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Util;
 
@@ -13,13 +11,13 @@ public static class Extensions
 {
 	public const string Format = "yyyy-MM-dd";
 
-	public static string ToRegisterFormat(this DateTime dateTime) => dateTime.ToString(Format);
+	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(Format);
 
-	public static DateTime RegisterParse(this string dateTime) => DateTime.ParseExact(dateTime, Format, null);
+	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, Format, null);
 
-	public static bool RegisterTryParse(this string dateTime, [NotNullWhen(true)] out DateTime? result)
+	public static bool RegisterTryParse(this string dateTime, [NotNullWhen(true)] out DateTimeOffset? result)
 	{
-		if (DateTime.TryParseExact(dateTime, Format, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
+		if (DateTimeOffset.TryParseExact(dateTime, Format, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
 		{
 			result = temp;
 			return true;
@@ -28,7 +26,7 @@ public static class Extensions
 		return false;
 	}
 
-	public static DateTime RoundToMonday(this DateTime date)
+	public static DateTimeOffset RoundToMonday(this DateTimeOffset date)
 	{
 		int diff = ( 7 + ( date.DayOfWeek - DayOfWeek.Monday ) ) % 7;
 		return date.AddDays(-diff).Date;

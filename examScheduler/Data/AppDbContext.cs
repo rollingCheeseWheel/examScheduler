@@ -22,15 +22,34 @@ public class AppDbContext : DbContext
 	{
 		base.OnModelCreating(modelBuilder);
 
-		modelBuilder.Entity<Teacher>()
-			.HasOne(t => t.TeacherProfile)
-			.WithOne(t => t.Teacher)
-			.HasForeignKey<TeacherProfile>(t => t.TeacherId);
+		// user data
+		modelBuilder.Entity<UserProfile>()
+			.HasIndex(u => new
+			{
+				u.RegisterUsername,
+				u.RegisterUri,
+				u.RegisterId
+			})
+			.IsUnique();
+
+		// teacher (not Profile)
+		modelBuilder.Entity<TeacherProfile>()
+			.HasOne(tp => tp.Teacher)
+			.WithOne(t => t.TeacherProfile)
+			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+
+		// classroom
+		modelBuilder.Entity<Classroom>()
+			.HasIndex(c => new
+			{
+				c.RegisterId,
+				c.RegisterUri,
+			})
+			.IsUnique();
 
 		modelBuilder.Entity<Classroom>()
-			.HasOne(c => c.Calendar)
-			.WithOne(t => t.Classroom)
-			.HasForeignKey<Calendar>(t => t.ClassroomId);
+			.HasMany(c => c.Calendars)
+			.WithOne(c => c.Classroom);
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.AuditLogs)
@@ -48,38 +67,17 @@ public class AppDbContext : DbContext
 			.HasMany(c => c.Students)
 			.WithOne(s => s.Classroom);
 
+		// schedule
 		modelBuilder.Entity<Schedule>()
 			.HasMany(s => s.ExamSlots)
 			.WithOne(e => e.Schedule);
 
 		modelBuilder.Entity<ExamSlot>()
 			.HasMany(e => e.Participants)
-			.WithMany(s => s.ExamSlots);
-
-		modelBuilder.Entity<UserProfile>()
-			.HasIndex(s => new
-			{
-				s.RegisterUsername,
-				s.RegisterUri,
-				s.RegisterId
-			})
-			.IsUnique();
-
-		modelBuilder.Entity<Subject>()
-			.HasIndex(s => new
-			{
-				s.RegisterId,
-				s.Name,
-			})
-			.IsUnique();
-
-		modelBuilder.Entity<Classroom>()
-			.HasIndex(c => new
-			{
-				c.RegisterId,
-				c.RegisterUri,
-			})
-			.IsUnique();
+			.WithMany(s => s.ParticipatingExamSlots);
+		modelBuilder.Entity<ExamSlot>()
+			.HasMany(e => e.ActuallyParticipated)
+			.WithMany(s => s.ActuallyParticipatedExamSlots);
 	}
 
 	public override int SaveChanges()

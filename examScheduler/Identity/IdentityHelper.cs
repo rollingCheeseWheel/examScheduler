@@ -33,8 +33,8 @@ public static class IdentityHelper
 			tokenValidationOptions.ValidIssuer,
 			tokenValidationOptions.ValidAudience,
 			claims,
-			DateTime.UtcNow.AddMinutes(notBeforeMinutes * -1),
-			DateTime.UtcNow.AddMinutes(expiresInMinutes),
+			DateTimeOffset.UtcNow.AddMinutes(notBeforeMinutes * -1).UtcDateTime,
+			DateTimeOffset.UtcNow.AddMinutes(expiresInMinutes).UtcDateTime,
 			creds);
 
 	}
