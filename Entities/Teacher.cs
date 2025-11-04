@@ -6,7 +6,7 @@ namespace Entities;
 public class TeacherProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	// Navigation Properties
 	[Required]
@@ -33,7 +33,7 @@ public class TeacherProfile
 public class Teacher
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	[Required]
 	public required int RegisterID { get; init; }

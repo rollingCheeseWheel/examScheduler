@@ -8,7 +8,7 @@ namespace Entities;
 public class Student
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	// Navigation Properties
 	[Required]

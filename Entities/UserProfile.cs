@@ -6,11 +6,12 @@ namespace Entities;
 public class UserProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]
-	public required Uri RegisterUri { get; init; }
+	public required School School { get; init; }
+	public int SchoolId { get; }
 	[Required]
 	public required string RegisterUsername { get; init; }
 	[Required]
@@ -33,12 +34,12 @@ public class UserProfile
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.RegisterUri == b.RegisterUri
+		return a.School == b.School
 			&& a.RegisterUsername == b.RegisterUsername
 			&& a.RegisterId == b.RegisterId;
 	}
 
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterUri, RegisterUsername, RegisterId);
+	public override int GetHashCode() => HashCode.Combine(School, RegisterUsername, RegisterId);
 }

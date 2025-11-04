@@ -5,9 +5,8 @@ namespace Entities;
 
 public class AuditLog
 {
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	public int Id { get; private set; }
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]

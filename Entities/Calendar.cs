@@ -7,7 +7,7 @@ namespace Entities;
 public class Calendar
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	[Required, Range(0, int.MaxValue)]
 	public int TimesScanned { get; private set; } = 1;
@@ -37,7 +37,7 @@ public class Calendar
 public class CalendarWeek
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required DateTimeOffset StartDate { get; init; }
 	[NotMapped]
@@ -69,7 +69,7 @@ public class CalendarWeek
 public class CalendarDay
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required DateTimeOffset Date { get; init; }
 	[Required]
@@ -104,7 +104,7 @@ public class CalendarDay
 public class HourInDay
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required Lesson Lesson { get; init; }
 	[Required]
@@ -141,7 +141,7 @@ public class HourInDay
 public class Lesson
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	public required int? RegisterId { get; set; }
 	[Required]
 	public required DateTimeOffset Date { get; set; }
@@ -171,7 +171,7 @@ public class Lesson
 			LinkToPreviousHour = lesson.LinkToPreviousHour,
 			RegisterId = lesson.Id,
 			Subject = lesson.Subject,
-			Teachers = lesson.Teachers,
+			Teachers = [/*lesson.Teachers*/],
 			ToHour = lesson.ToHour,
 		};
 	}
@@ -196,7 +196,7 @@ public class Lesson
 public class Subject
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]

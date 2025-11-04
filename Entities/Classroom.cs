@@ -6,12 +6,12 @@ namespace Entities;
 public class Classroom
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
-
+	public int Id { get; private set; }
 	[Required]
 	public required string Name { get; init; }
 	[Required]
-	public required Uri RegisterUri { get; init; }
+	public required School School { get; init; }
+	public int SchoolId { get; }
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]
@@ -34,9 +34,9 @@ public class Classroom
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.RegisterId == b.RegisterId
-			&& a.RegisterUri == b.RegisterUri;
+			&& a.School == b.School;
 	}
 	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Classroom other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterId, RegisterUri);
+	public override int GetHashCode() => HashCode.Combine(RegisterId, School);
 }

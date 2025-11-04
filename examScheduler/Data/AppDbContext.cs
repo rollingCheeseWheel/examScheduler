@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
 {
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+	public DbSet<School> Schools { get; set; }
 	public DbSet<UserProfile> UserProfiles { get; set; }
 	public DbSet<Student> Students { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
@@ -22,12 +23,24 @@ public class AppDbContext : DbContext
 	{
 		base.OnModelCreating(modelBuilder);
 
+		modelBuilder.Entity<School>(s =>
+		{
+			s.Property(s => s.RegisterUri)
+			  .HasConversion(
+				v => v.ToString(),
+				v => new Uri(v))
+			  .HasMaxLength(2048) // optional: limit stored string length
+			  .IsRequired();
+
+			s.HasIndex(s => s.RegisterUri).IsUnique();
+		});
+
 		// user data
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{
 				u.RegisterUsername,
-				u.RegisterUri,
+				u.SchoolId,
 				u.RegisterId
 			})
 			.IsUnique();
@@ -43,7 +56,7 @@ public class AppDbContext : DbContext
 			.HasIndex(c => new
 			{
 				c.RegisterId,
-				c.RegisterUri,
+				c.SchoolId,
 			})
 			.IsUnique();
 

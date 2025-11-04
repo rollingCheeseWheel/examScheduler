@@ -7,7 +7,7 @@ namespace Entities;
 public class Schedule
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	[Required]
 	public required DateTimeOffset FirstExamination { get; init; }
@@ -46,7 +46,7 @@ public class Schedule
 public class ExamSlot
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 	[Required]
 	public required ScheduleGeneratorSlot GeneratorSlot { get; init; }
 	/*[Required]
@@ -95,7 +95,7 @@ public class ExamSlot
 public class ScheduleGenerator
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	[Required]
 	public required ICollection<ScheduleGeneratorSlot> Slots { get; init; }
@@ -179,7 +179,7 @@ public class ScheduleGenerator
 public class ScheduleGeneratorSlot
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; }
+	public int Id { get; private set; }
 
 	[Required, Range(0, int.MaxValue)]
 	public required int Offset { get; set; }
