@@ -1,4 +1,4 @@
-﻿namespace Models.Auth;
+﻿namespace Models.API.Auth;
 
 public class RegisterRequest
 {

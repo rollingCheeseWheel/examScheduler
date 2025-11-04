@@ -1,6 +1,6 @@
-﻿using Models.Auth;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using examScheduler.Data;
+using Models.API.Auth;
 
 namespace examScheduler.Controllers;
 [Route("api/[controller]")]

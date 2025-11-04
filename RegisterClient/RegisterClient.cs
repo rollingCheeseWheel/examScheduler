@@ -2,9 +2,9 @@
 using System.Net;
 using System.Text.Json;
 using Models.DigitalesRegister;
-using Models.Auth;
 using Util;
 using Entities;
+using Models.API.Auth;
 
 namespace registerClient;
 
