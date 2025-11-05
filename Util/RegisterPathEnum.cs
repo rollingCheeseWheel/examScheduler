@@ -1,6 +1,5 @@
-﻿using Util;
+﻿namespace Util;
 
-namespace registerClient;
 public sealed class RegisterPath(string value) : StringEnum(value)
 {
 	public static readonly RegisterPath Api = new("v2/api");

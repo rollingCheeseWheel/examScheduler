@@ -1,3 +1,5 @@
+using examScheduler.Services.Auth;
+using examScheduler.Services.School;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +13,12 @@ builder.AddServiceDefaults();
 // Add services to the container.
 
 builder.Services.AddDbContext<examScheduler.Data.AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DatabaseConnection")));
+
+/*////*/
+builder.Services
+	.AddScoped<ISchoolService, SchoolService>()
+	.AddScoped<IAuthService, AuthService>();
+/*////*/
 
 var tokenValidationParameters = new TokenValidationParameters
 {

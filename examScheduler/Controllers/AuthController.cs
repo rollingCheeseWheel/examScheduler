@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using examScheduler.Data;
-using Models.API.Auth;
+using Models.API;
 
 namespace examScheduler.Controllers;
 [Route("api/[controller]")]
@@ -9,14 +9,14 @@ public class AuthController : ControllerBase
 {
 	[Route("register")]
 	[HttpPost]
-	public IActionResult Register([FromBody] RegisterRequest registerRequest, AppDbContext dbContext)
+	public IActionResult Register([FromBody] AuthRequest registerRequest, AppDbContext dbContext)
 	{
 		throw new NotImplementedException();
 	}
 
 	[Route("login")]
 	[HttpPost]
-	public IActionResult Login([FromBody] LoginRequest loginRequest)
+	public IActionResult Login([FromBody] AuthRequest loginRequest)
 	{
 		throw new NotImplementedException();
 	}

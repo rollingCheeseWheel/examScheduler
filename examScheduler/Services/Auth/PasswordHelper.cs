@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Util;
 
-namespace examScheduler.Identity;
+namespace examScheduler.Services.Auth;
 
 public static class PasswordHelper
 {
@@ -34,10 +34,8 @@ public static class PasswordHelper
 		};
 
 		using var argon2 = new Argon2(config);
-		using (var hash = argon2.Hash())
-		{
-			return new(config.EncodeString(hash.Buffer));
-		}
+		using var hash = argon2.Hash();
+		return new(config.EncodeString(hash.Buffer));
 	}
 
 	public static bool Verify(this EncodedHash encodedHash, string password)

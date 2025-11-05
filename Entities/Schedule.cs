@@ -91,7 +91,7 @@ public class ExamSlot
 	public override int GetHashCode() => HashCode.Combine(Schedule);
 }
 
-[Obsolete]
+[Obsolete("New logic in place")]
 public class ScheduleGenerator
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]

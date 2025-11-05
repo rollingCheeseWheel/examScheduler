@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Models.DigitalesRegister;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
@@ -7,8 +8,6 @@ public class UserProfile
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int Id { get; private set; }
-	[Required]
-	public required int RegisterId { get; init; }
 	[Required]
 	public required School School { get; init; }
 	public int SchoolId { get; }
@@ -35,11 +34,12 @@ public class UserProfile
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.School == b.School
-			&& a.RegisterUsername == b.RegisterUsername
-			&& a.RegisterId == b.RegisterId;
+			&& a.RegisterUsername == b.RegisterUsername;
 	}
 
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
-	public override int GetHashCode() => HashCode.Combine(School, RegisterUsername, RegisterId);
+	public bool MatchesRegisterProfile(RegisterProfileModel model) => RegisterUsername == model.Username && DisplayName == model.Name;
+
+	public override int GetHashCode() => HashCode.Combine(School, RegisterUsername);
 }

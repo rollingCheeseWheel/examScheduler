@@ -41,7 +41,6 @@ public class AppDbContext : DbContext
 			{
 				u.RegisterUsername,
 				u.SchoolId,
-				u.RegisterId
 			})
 			.IsUnique();
 

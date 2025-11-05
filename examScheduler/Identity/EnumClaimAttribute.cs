@@ -15,7 +15,7 @@ public class EnumClaimAttribute<T>(string claimName, T requiredFlags)
 	public void OnAuthorization(AuthorizationFilterContext context)
 	{
 		var httpContext = context.HttpContext;
-		var authHeader = httpContext.Request.Headers[ "Authorization" ].FirstOrDefault();
+		var authHeader = httpContext.Request.Headers.Authorization.FirstOrDefault();
 
 		if (
 			string.IsNullOrEmpty(authHeader) ||

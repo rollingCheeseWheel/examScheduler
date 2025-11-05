@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataValidation\DataValidation.csproj" />
     <ProjectReference Include="..\Util\Util.csproj" />
   </ItemGroup>
 

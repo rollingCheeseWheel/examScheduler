@@ -49,7 +49,7 @@ public class CalendarWeek
 	{
 		return new CalendarWeek
 		{
-			Days = calendarWeek.Days.Select(d => (CalendarDay)d).ToList(),
+			Days = [ .. calendarWeek.Days.Select(d => (CalendarDay)d) ],
 			StartDate = calendarWeek.StartDate
 		};
 	}
@@ -84,7 +84,7 @@ public class CalendarDay
 		return new CalendarDay
 		{
 			Date = calendarDay.Date,
-			HoursInDay = calendarDay.HoursInDay.Select(h => (HourInDay)h).ToList()
+			HoursInDay = [ .. calendarDay.HoursInDay.Select(h => (HourInDay)h) ]
 		};
 	}
 

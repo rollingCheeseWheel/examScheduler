@@ -1,14 +1,20 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
+using Models.API;
 using Models.DigitalesRegister;
 using Util;
-using Entities;
-using Models.API.Auth;
 
 namespace registerClient;
 
-public class RegisterClient : IDisposable
+// when extended to multiple Digitales Register versions could be used to implement multiple adapters
+public interface IRegisterClient
+{
+	Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct);
+	Task<Calendar?> GetCompleteCalendar(CancellationToken ct);
+	Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
+}
+
+public class RegisterClient : IDisposable, IRegisterClient
 {
 	private bool _disposed = false;
 
@@ -18,8 +24,8 @@ public class RegisterClient : IDisposable
 
 	public readonly Uri RegisterBaseURI;
 
-	private string _registerUsername;
-	private string _registerPassword;
+	private readonly string _registerUsername;
+	private readonly string _registerPassword;
 
 	public bool LoggedIn { get; private set; }
 
@@ -60,8 +66,8 @@ public class RegisterClient : IDisposable
 	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
-	public RegisterClient(RegisterRequest loginRequest)
-		: this(loginRequest.Username, loginRequest.RegisterPassword, loginRequest.RegisterUri) { }
+	public RegisterClient(SignupRequest loginRequest)
+		: this(loginRequest.Username, loginRequest.Password, loginRequest.RegisterUri) { }
 
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
@@ -95,11 +101,6 @@ public class RegisterClient : IDisposable
 		return LoggedIn ? true : await LoginAsync(ct);
 	}
 
-	public string GetProfileImageAsync(CancellationToken ct = default)
-	{
-		throw new NotImplementedException();
-	}
-
 	private async Task<string> GetUserProfileStringAsync(CancellationToken ct = default)
 	{
 		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
@@ -121,35 +122,26 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	public async Task<Models.DigitalesRegister.Calendar?> GetCompleteCalendar(int yearDuration = 1, int timeoutAfterEmptyWeeks = 3, CancellationToken ct = default)
+	public async Task<Calendar?> GetCompleteCalendar(CancellationToken ct = default)
 	{
-		var calendarWeeks = new List<Models.DigitalesRegister.CalendarWeek>();
+		var calendarWeeks = new List<CalendarWeek>();
 		var iterDate = DateTimeOffset.UtcNow;
-		var currentWeekTimeout = 0;
-		while (iterDate < DateTimeOffset.UtcNow.AddYears(yearDuration)
-			&& currentWeekTimeout < timeoutAfterEmptyWeeks)
+		while (iterDate < DateTimeOffset.UtcNow.AddYears(1))
 		{
 			//Console.WriteLine($"Getting calendar for week {iterDate}");
 			var tempWeek = await GetCalendarWeekAsync(iterDate, ct);
 			iterDate = iterDate.AddDays(7);
 
-			if (tempWeek is null || tempWeek.Days.Count == 0)
+			if (tempWeek is not null)
 			{
-				//Console.WriteLine($"Empty week - timeout: {currentWeekTimeout}");
-				currentWeekTimeout++;
-				continue;
-			}
-			else
-			{
-				currentWeekTimeout = 0;
 				calendarWeeks.Add(tempWeek);
 			}
 		}
 
-		return calendarWeeks.Any() ? new(calendarWeeks) : null;
+		return calendarWeeks.Count != 0 ? new(calendarWeeks) : null;
 	}
 
-	public async Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var json = await GetCalendarWeekStringAsync(date, ct);
 		return json is null ? null : ParseCalendarWeek(json);
@@ -165,9 +157,9 @@ public class RegisterClient : IDisposable
 		return await response.ReadContentAsStringAsync(ct);
 	}
 
-	private static Models.DigitalesRegister.CalendarWeek ParseCalendarWeek(string json)
+	private static CalendarWeek ParseCalendarWeek(string json)
 	{
-		List<Models.DigitalesRegister.CalendarDay> calendarDays = new();
+		List<CalendarDay> calendarDays = new();
 
 		var jsonDoc = JsonDocument.Parse(json);
 		var root = jsonDoc.RootElement;
@@ -181,7 +173,7 @@ public class RegisterClient : IDisposable
 
 			List<Models.DigitalesRegister.HourInDay> hoursInDay = new();
 
-			List<JsonProperty> flattenedEnumeratedObject = new();
+			List<JsonProperty> flattenedEnumeratedObject = [ ];
 
 			foreach (var nestedProp in prop.Value.EnumerateObject())
 			{
@@ -280,11 +272,7 @@ public class RegisterClient : IDisposable
 		}
 	}
 
-	~RegisterClient()
-	{
-		Dispose();
-	}
-
+	~RegisterClient() => Dispose();
 	public void Dispose()
 	{
 		Dispose(true);
