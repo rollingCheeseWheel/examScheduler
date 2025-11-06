@@ -1,6 +1,9 @@
+using Entities;
+using examScheduler.Data;
 using examScheduler.Services.Auth;
 using examScheduler.Services.School;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -12,7 +15,10 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 
-builder.Services.AddDbContext<examScheduler.Data.AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DatabaseConnection")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
+
+builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
+	.AddEntityFrameworkStores<AppDbContext>();
 
 /*////*/
 builder.Services
@@ -66,6 +72,12 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
 	app.MapOpenApi();
+
+	using (var scope = app.Services.CreateScope())
+	{
+		var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+		db.Database.Migrate();
+	}
 }
 
 app.UseHttpsRedirection();

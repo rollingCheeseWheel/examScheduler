@@ -7,11 +7,10 @@
     "postgresql1": {
       "containerPorts": "5432:5432",
       "secretStore": "LocalSecretsFile",
-      "containerName": "postgresql",
+      "containerName": "database-2e23ea9e",
       "containerImage": "postgres",
-      "resourceId": null,
       "type": "postgresql.container",
-      "connectionId": "ConnectionStrings:DatabaseConnection"
+      "connectionId": "ConnectionStrings:postgres"
     }
   }
 }

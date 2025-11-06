@@ -21,7 +21,7 @@ public class Classroom
 	[Required]
 	public ICollection<Calendar> Calendars { get; private set; } = [ ];
 	[Required]
-	public ICollection<Student> Students { get; private set; } = [ ];
+	public ICollection<StudentProfile> Students { get; private set; } = [ ];
 	[Required]
 	public ICollection<Teacher> Teachers { get; private set; } = [ ];
 	[Required]

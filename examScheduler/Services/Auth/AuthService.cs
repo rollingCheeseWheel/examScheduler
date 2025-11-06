@@ -26,7 +26,7 @@ public class AuthService(AppDbContext context) : IAuthService
 	{
 		var temp = _context.UserProfiles.Where(u =>
 			u.School.RegisterUri == request.RegisterUri &&
-			u.RegisterUsername == request.Username);
+			u.UserName == request.Username);
 
 		return temp.Any()
 			? await temp.FirstAsync(ct)

@@ -1,23 +1,19 @@
 ﻿using Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace examScheduler.Data;
 
-public class AppDbContext : DbContext
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) 
+	: IdentityDbContext<UserProfile, IdentityRole<int>, int>(options)
 {
-	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
 	public DbSet<School> Schools { get; set; }
 	public DbSet<UserProfile> UserProfiles { get; set; }
-	public DbSet<Student> Students { get; set; }
+	public DbSet<StudentProfile> Students { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
-	/*public DbSet<AuditLog> AuditLogs { get; set; }*/
-	/*public DbSet<Schedule> Schedules { get; set; }*/
-	/*public DbSet<Teacher> Teachers { get; set; }*/
-	/*public DbSet<Calendar> Timetables { get; set; }*/
-	/*public DbSet<Subject> Subjects { get; set; }*/
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -39,10 +35,20 @@ public class AppDbContext : DbContext
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{
-				u.RegisterUsername,
+				u.UserName,
 				u.SchoolId,
 			})
 			.IsUnique();
+
+		modelBuilder.Entity<UserProfile>()
+			.HasOne(up => up.StudentProfile)
+			.WithOne(sp => sp.UserProfile)
+			.HasForeignKey<StudentProfile>(sp => sp.Id);
+
+		modelBuilder.Entity<UserProfile>()
+			.HasOne(up => up.TeacherProfile)
+			.WithOne(tp => tp.UserProfile)
+			.HasForeignKey<TeacherProfile>(tp => tp.Id);
 
 		// teacher (not Profile)
 		modelBuilder.Entity<TeacherProfile>()

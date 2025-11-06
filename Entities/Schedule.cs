@@ -58,9 +58,9 @@ public class ExamSlot
 	[Required]
 	public required Schedule Schedule { get; init; }
 	[Required]
-	public ICollection<Student> Participants { get; private set; } = [ ];
+	public ICollection<StudentProfile> Participants { get; private set; } = [ ];
 	[Required]
-	public ICollection<Student> ActuallyParticipated { get; private set; } = [ ];
+	public ICollection<StudentProfile> ActuallyParticipated { get; private set; } = [ ];
 
 	[NotMapped]
 	public int RequiredParticipants { get => GeneratorSlot.RequiredParticipants; }

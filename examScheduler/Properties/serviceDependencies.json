@@ -6,7 +6,7 @@
     },
     "postgresql1": {
       "type": "postgresql",
-      "connectionId": "ConnectionStrings:DatabaseConnection"
+      "connectionId": "ConnectionStrings:postgres"
     }
   }
 }

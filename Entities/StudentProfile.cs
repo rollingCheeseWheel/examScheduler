@@ -5,9 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class Student
+public class StudentProfile
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+	[Key]
 	public int Id { get; private set; }
 
 	// Navigation Properties
@@ -26,13 +26,13 @@ public class Student
 	[Required]
 	public ICollection<ExamSlot> ActuallyParticipatedExamSlots { get; internal set; } = [ ];
 
-	public static bool operator ==(Student? a, Student? b)
+	public static bool operator ==(StudentProfile? a, StudentProfile? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.UserProfile == b.UserProfile;
 	}
-	public static bool operator !=(Student? a, Student? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Student other && this == other;
+	public static bool operator !=(StudentProfile? a, StudentProfile? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is StudentProfile other && this == other;
 	public override int GetHashCode() => UserProfile.GetHashCode();
 }
