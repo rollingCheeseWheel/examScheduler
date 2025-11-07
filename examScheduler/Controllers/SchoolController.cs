@@ -1,4 +1,4 @@
-﻿using examScheduler.Services.School;
+﻿using examScheduler.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;

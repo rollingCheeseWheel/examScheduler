@@ -9,8 +9,27 @@ namespace registerClient;
 // when extended to multiple Digitales Register versions could be used to implement multiple adapters
 public interface IRegisterClient
 {
+	/// <summary>
+	/// Returns the Role of the user, Unknown by default
+	/// </summary>
+	/// <param name="profile"></param>
+	/// <returns></returns>
+	public static Entities.UserProfileRoles GetUserRole(RegisterProfileModel profile)
+	{
+		string[ ] student = [ "schüler/in", "alunno", "student" ];
+		string[ ] teacher = [ ];
+
+		return profile.RoleName.ToLower() switch
+		{
+			var f when student.Contains(f) => Entities.UserProfileRoles.Student,
+			var f when teacher.Contains(f) => Entities.UserProfileRoles.Teacher,
+			_ => Entities.UserProfileRoles.Unknown,
+		};
+	}
+
+	Task<bool> ValidateCredentials(CancellationToken ct);
 	Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct);
-	Task<Calendar?> GetCompleteCalendar(CancellationToken ct);
+	Task<Calendar?> GetCompleteCalendarAsync(CancellationToken ct);
 	Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
 }
 
@@ -69,17 +88,57 @@ public class RegisterClient : IDisposable, IRegisterClient
 	public RegisterClient(SignupRequest loginRequest)
 		: this(loginRequest.Username, loginRequest.Password, loginRequest.RegisterUri) { }
 
+	public async Task<bool> ValidateCredentials(CancellationToken ct) => await TryLoginIfNotAlreadyAsync(ct);
+
+	public async Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct = default)
+	{
+		try
+		{
+			return JsonSerializer.Deserialize<RegisterProfileModel>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+
+	public async Task<Calendar?> GetCompleteCalendarAsync(CancellationToken ct = default)
+	{
+		var calendarWeeks = new List<CalendarWeek>();
+		var iterDate = DateTimeOffset.UtcNow;
+		while (iterDate < DateTimeOffset.UtcNow.AddYears(1))
+		{
+			//Console.WriteLine($"Getting calendar for week {iterDate}");
+			var tempWeek = await GetCalendarWeekAsync(iterDate, ct);
+			iterDate = iterDate.AddDays(7);
+
+			if (tempWeek is not null)
+			{
+				calendarWeeks.Add(tempWeek);
+			}
+		}
+
+		return calendarWeeks.Count != 0 ? new(calendarWeeks) : null;
+	}
+
+	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+	{
+		var json = await GetCalendarWeekStringAsync(date, ct);
+		return json is null ? null : ParseCalendarWeek(json);
+	}
+
 	private async Task<bool> LoginAsync(CancellationToken ct = default)
 	{
 		if (LoggedIn) return true;
 
-		var credentials = new Models.DigitalesRegister.LoginRequest
+		var credentials = new LoginRequest
 		{
 			Password = _registerPassword,
 			Username = _registerUsername
 		};
 
-		var (loginResponse, response, error) = await PostJsonAsync<Models.DigitalesRegister.LoginResponse>(RegisterPath.Login, credentials, true, ct);
+		var (loginResponse, response, error) = await PostJsonAsync<LoginResponse>(RegisterPath.Login, credentials, true, ct);
 
 		var cookies = _httpClientHandler.CookieContainer.GetAllCookies();
 
@@ -108,43 +167,6 @@ public class RegisterClient : IDisposable, IRegisterClient
 		if (error is not null) return error.Message;
 
 		return await response!.Content.ReadAsStringAsync(ct);
-	}
-
-	public async Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct = default)
-	{
-		try
-		{
-			return JsonSerializer.Deserialize<RegisterProfileModel>(await GetUserProfileStringAsync(ct), Constants.SerializerOptions);
-		}
-		catch
-		{
-			return null;
-		}
-	}
-
-	public async Task<Calendar?> GetCompleteCalendar(CancellationToken ct = default)
-	{
-		var calendarWeeks = new List<CalendarWeek>();
-		var iterDate = DateTimeOffset.UtcNow;
-		while (iterDate < DateTimeOffset.UtcNow.AddYears(1))
-		{
-			//Console.WriteLine($"Getting calendar for week {iterDate}");
-			var tempWeek = await GetCalendarWeekAsync(iterDate, ct);
-			iterDate = iterDate.AddDays(7);
-
-			if (tempWeek is not null)
-			{
-				calendarWeeks.Add(tempWeek);
-			}
-		}
-
-		return calendarWeeks.Count != 0 ? new(calendarWeeks) : null;
-	}
-
-	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
-	{
-		var json = await GetCalendarWeekStringAsync(date, ct);
-		return json is null ? null : ParseCalendarWeek(json);
 	}
 
 	private async Task<string?> GetCalendarWeekStringAsync(DateTimeOffset date, CancellationToken ct = default)

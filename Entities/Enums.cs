@@ -16,6 +16,7 @@ public enum UserPermissions
 
 public enum UserProfileRoles
 {
+	Unknown,
 	Student,
 	Teacher,
 }

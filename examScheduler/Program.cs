@@ -1,7 +1,6 @@
 using Entities;
 using examScheduler.Data;
-using examScheduler.Services.Auth;
-using examScheduler.Services.School;
+using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

@@ -17,6 +17,5 @@ public class RegisterProfileModel
 	public required string Email { get; set; }
 	[Required]
 	public required string Picture { get; set; }
-	[Required]
 	public string? Language { get; set; }
 }
