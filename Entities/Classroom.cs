@@ -17,17 +17,16 @@ public class Classroom
 	[Required]
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
-	// Navigation Properties
-	[Required]
-	public ICollection<Calendar> Calendars { get; private set; } = [ ];
-	[Required]
-	public ICollection<StudentProfile> Students { get; private set; } = [ ];
-	[Required]
-	public ICollection<Teacher> Teachers { get; private set; } = [ ];
-	[Required]
-	public ICollection<Schedule> Schedules { get; private set; } = [ ];
-	[Required]
-	public ICollection<AuditLog> AuditLogs { get; private set; } = [ ];
+	// Navigation Properties (do not mark collections [Required])
+	public ICollection<Calendar> Calendars { get; set; } = [ ];
+	public ICollection<StudentProfile> Students { get; set; } = [ ];
+	public ICollection<Teacher> Teachers { get; set; } = [ ];
+	public ICollection<Schedule> Schedules { get; set; } = [ ];
+	public ICollection<AuditLog> AuditLogs { get; set; } = [ ];
+
+	public void AddCalendar(Calendar calendar) => Calendars.Add(calendar);
+	public void AddStudent(StudentProfile student) => Students.Add(student);
+	public void AddTeacher(Teacher teacher) => Teachers.Add(teacher);
 
 	public static bool operator ==(Classroom? a, Classroom? b)
 	{

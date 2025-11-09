@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Util;
+namespace Util.Converters;
 public class IntToBoolConverter : JsonConverter<bool>
 {
 	public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -19,22 +19,5 @@ public class IntToBoolConverter : JsonConverter<bool>
 	public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
 	{
 		writer.WriteBooleanValue(value);
-	}
-}
-
-public class RegisterDateConverter : JsonConverter<DateTimeOffset>
-{
-	public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-	{
-		if (reader.TokenType != JsonTokenType.String)
-			throw new JsonException("Expected string for date.");
-
-		string? value = reader.GetString();
-		return value!.RegisterParse();
-	}
-
-	public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
-	{
-		writer.WriteStringValue(value.ToRegisterFormat());
 	}
 }

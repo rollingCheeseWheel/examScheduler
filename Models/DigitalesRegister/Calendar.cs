@@ -1,5 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using Util;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using Util.Converters;
 
 namespace Models.DigitalesRegister;
 
@@ -16,9 +17,9 @@ public record DetailedSubject(Subject Subject, int Count);
 
 public class Calendar
 {
-	public Calendar(ICollection<CalendarWeek> weeks) => Data = weeks;
+	public Calendar(ICollection<CalendarWeek> weeks) => Weeks = weeks;
 
-	public ICollection<CalendarWeek> Data { get; set; } = [ ];
+	public ICollection<CalendarWeek> Weeks { get; set; } = [ ];
 
 	/// <summary>
 	/// Get an IEnumerable of Teachers, each Teacher has an additional IEnumerable of Subjects they are associated with.
@@ -28,7 +29,7 @@ public class Calendar
 	/// <returns></returns>
 	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.25)
 	{
-		var summedTeacherSubjects = Data
+		var summedTeacherSubjects = Weeks
 			.SelectMany(w => w.CompileTeachersWithSubjects()) // get a list of all TeacherSubjects side-by-side
 			.GroupBy(x => x.Teacher) // group teachers together, is less efficient but more useful
 			.Select(g => new DetailedTeacherSubjects( // reform a single TeacherSubject with the summed up lesson counts
@@ -54,6 +55,20 @@ public class Calendar
 			))
 			.Where(t => t.Subjects.Any());
 	}
+
+	public (int ClassroomId, string Name)? GetClassroomInfo()
+	{
+		return Weeks
+			.SelectMany(w => w.Days)
+			.SelectMany(d => d.HoursInDay)
+			.Select(h => h.Lesson)
+			.Select(l => (ClassroomId: l.ClassId, Name: l.ClassName))
+			.GroupBy(l => l.ClassroomId)
+			.Select(group => (Value: group.FirstOrDefault(), Count: group.Count()))
+			.OrderByDescending(x => x.Count)
+			.Select(x => x.Value)
+			.FirstOrDefault();
+	}
 }
 
 public class CalendarWeek
@@ -61,7 +76,7 @@ public class CalendarWeek
 	public DateTimeOffset StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
 	public required ICollection<CalendarDay> Days { get; set; } = [ ];
 
-	internal IEnumerable<DetailedTeacherSubjects> CompileTeachersWithSubjects()
+	public IEnumerable<DetailedTeacherSubjects> CompileTeachersWithSubjects()
 	{
 		return Days
 			.SelectMany(d => d.HoursInDay)
@@ -82,6 +97,7 @@ public class CalendarWeek
 
 public class CalendarDay
 {
+	[JsonConverter(typeof(DateTimeOffsetConverter))]
 	public required DateTimeOffset Date { get; set; }
 	public required ICollection<HourInDay> HoursInDay { get; set; } = [ ];
 }
@@ -89,10 +105,14 @@ public class CalendarDay
 
 public class HourInDay
 {
+	[Required]
 	[JsonConverter(typeof(IntToBoolConverter))]
 	public required bool IsLesson { get; set; }
+	[Required]
 	public required Lesson Lesson { get; set; }
+	[Required]
 	public required int Hour { get; set; }
+	[Required]
 	public required int LinkedHoursCount { get; set; }
 }
 
@@ -100,13 +120,20 @@ public class HourInDay
 public class Lesson
 {
 	public required int? Id { get; set; }
+	[Required]
 	[JsonConverter(typeof(RegisterDateConverter))]
 	public required DateTimeOffset Date { get; set; }
+	[Required]
 	public required int Hour { get; set; }
+	[Required]
 	public required int ToHour { get; set; }
+	[Required]
 	public required int ClassId { get; set; }
+	[Required]
 	public required string ClassName { get; set; }
+	[Required]
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	[Required]
 	public required Subject Subject { get; set; }
 
 	[JsonConverter(typeof(IntToBoolConverter))]
@@ -115,7 +142,9 @@ public class Lesson
 
 public class Subject
 {
+	[Required]
 	public required int Id { get; set; }
+	[Required]
 	public required string Name { get; set; }
 
 	public static bool operator ==(Subject? a, Subject? b)
@@ -132,8 +161,11 @@ public class Subject
 
 public class Teacher
 {
+	[Required]
 	public required int Id { get; set; }
+	[Required]
 	public required string FirstName { get; set; }
+	[Required]
 	public required string LastName { get; set; }
 
 	public static bool operator ==(Teacher? a, Teacher? b)

@@ -7,13 +7,12 @@ namespace Entities;
 
 public class StudentProfile
 {
-	[Key]
+	[Key] // IMPORTANT: no auto increment, its dependent on UserProfile
 	public int Id { get; private set; }
 
 	// Navigation Properties
 	[Required]
 	public required UserProfile UserProfile { get; init; }
-
 	[Required]
 	public required Classroom Classroom { get; init; }
 	/// <summary>
@@ -21,9 +20,7 @@ public class StudentProfile
 	/// a Student has a Classroom, a Classroom has many (indirect) ExamSlots, an ExamSlot has many Students
 	/// thus a Student has many ExamSlots
 	/// </summary>
-	[Required]
 	public ICollection<ExamSlot> ParticipatingExamSlots { get; internal set; } = [ ];
-	[Required]
 	public ICollection<ExamSlot> ActuallyParticipatedExamSlots { get; internal set; } = [ ];
 
 	public static bool operator ==(StudentProfile? a, StudentProfile? b)

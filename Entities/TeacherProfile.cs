@@ -1,19 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
 public class TeacherProfile
 {
-	[Key]
+	[Key] // IMPORTANT: no auto increment, its dependent on UserProfile
 	public int Id { get; private set; }
 
 	// Navigation Properties
-	[Required]
 	public required UserProfile UserProfile { get; init; }
 
 	public required Teacher? Teacher { get; init; }
-	[Required]
-	public int TeacherId { get; private set; }
+	public int? TeacherId { get; private set; }
 
 	public static bool operator ==(TeacherProfile? a, TeacherProfile? b)
 	{

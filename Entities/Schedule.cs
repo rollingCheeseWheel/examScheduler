@@ -27,7 +27,6 @@ public class Schedule
 	public required Subject Subject { get; init; }
 	[Required]
 	public required Classroom Classroom { get; init; }
-	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; private set; } = [ ];
 
 	public static bool operator ==(Schedule? a, Schedule? b)

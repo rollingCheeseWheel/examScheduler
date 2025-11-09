@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251109021836_postgresql.container_migration_9300")]
+    partial class postgresqlcontainer_migration_9300
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -374,7 +377,12 @@ namespace examScheduler.Migrations
                     b.Property<int>("RegisterId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("TeacherId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TeacherId");
 
                     b.ToTable("Subject");
                 });
@@ -395,10 +403,15 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("RegisterID")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
 
                     b.ToTable("Teacher");
                 });
@@ -408,7 +421,7 @@ namespace examScheduler.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("TeacherId")
+                    b.Property<int>("TeacherId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -526,21 +539,6 @@ namespace examScheduler.Migrations
                     b.HasIndex("ActuallyParticipatedId");
 
                     b.ToTable("ExamSlotStudentProfile1");
-                });
-
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.Property<int>("LessonId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TeachersId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("LessonId", "TeachersId");
-
-                    b.HasIndex("TeachersId");
-
-                    b.ToTable("LessonTeacher");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
@@ -673,21 +671,6 @@ namespace examScheduler.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("SubjectTeacher", b =>
-                {
-                    b.Property<int>("SubjectsId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TeacherId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("SubjectsId", "TeacherId");
-
-                    b.HasIndex("TeacherId");
-
-                    b.ToTable("SubjectTeacher");
                 });
 
             modelBuilder.Entity("ClassroomTeacher", b =>
@@ -840,6 +823,20 @@ namespace examScheduler.Migrations
                     b.Navigation("UserProfile");
                 });
 
+            modelBuilder.Entity("Entities.Subject", b =>
+                {
+                    b.HasOne("Entities.Teacher", null)
+                        .WithMany("Subjects")
+                        .HasForeignKey("TeacherId");
+                });
+
+            modelBuilder.Entity("Entities.Teacher", b =>
+                {
+                    b.HasOne("Entities.Lesson", null)
+                        .WithMany("Teachers")
+                        .HasForeignKey("LessonId");
+                });
+
             modelBuilder.Entity("Entities.TeacherProfile", b =>
                 {
                     b.HasOne("Entities.UserProfile", "UserProfile")
@@ -850,7 +847,9 @@ namespace examScheduler.Migrations
 
                     b.HasOne("Entities.Teacher", "Teacher")
                         .WithOne("TeacherProfile")
-                        .HasForeignKey("Entities.TeacherProfile", "TeacherId");
+                        .HasForeignKey("Entities.TeacherProfile", "TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Teacher");
 
@@ -894,21 +893,6 @@ namespace examScheduler.Migrations
                     b.HasOne("Entities.StudentProfile", null)
                         .WithMany()
                         .HasForeignKey("ActuallyParticipatedId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.HasOne("Entities.Lesson", null)
-                        .WithMany()
-                        .HasForeignKey("LessonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Entities.Teacher", null)
-                        .WithMany()
-                        .HasForeignKey("TeachersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -964,21 +948,6 @@ namespace examScheduler.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SubjectTeacher", b =>
-                {
-                    b.HasOne("Entities.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Entities.Teacher", null)
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Entities.Calendar", b =>
                 {
                     b.Navigation("Weeks");
@@ -1005,6 +974,11 @@ namespace examScheduler.Migrations
                     b.Navigation("Students");
                 });
 
+            modelBuilder.Entity("Entities.Lesson", b =>
+                {
+                    b.Navigation("Teachers");
+                });
+
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
                     b.Navigation("ExamSlots");
@@ -1014,6 +988,8 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
+                    b.Navigation("Subjects");
+
                     b.Navigation("TeacherProfile");
                 });
 

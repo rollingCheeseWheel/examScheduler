@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Storage.Json;
+using Models.DigitalesRegister;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
 
@@ -12,15 +14,49 @@ public class Calendar
 	[Required, Range(0, int.MaxValue)]
 	public int TimesScanned { get; private set; } = 1;
 	[Required]
-	public DateTimeOffset LastScanned { get; private set; } = DateTimeOffset.Now;
+	public DateTimeOffset LastScanned { get; private set; } = DateTimeOffset.UtcNow;
 
-	// Navigation Properties
-	[Required]
+	// Navigation Properties (collection should not be [Required])
 	public ICollection<CalendarWeek> Weeks { get; set; } = [ ];
-	/*[Required]
-	public int ClassroomId { get; private set; }*/
-	[Required]
-	public required Classroom Classroom { get; set; }
+	public Classroom? Classroom { get; set; }
+
+	public static Calendar Parse(
+		Models.DigitalesRegister.Calendar other,
+		out IEnumerable<Subject> subjects,
+		out IEnumerable<Teacher> teachers,
+		out (int ClassroomId, string Name)? classroomInfo
+	)
+	{
+		var teacherSubjects = other.CompileTeachersWithSubjects();
+
+		classroomInfo = other.GetClassroomInfo();
+
+		teachers = teacherSubjects
+			.Select(ts => new Teacher
+			{
+				RegisterID = ts.Teacher.Id,
+				FirstName = ts.Teacher.FirstName,
+				LastName = ts.Teacher.LastName,
+				Subjects = ts.Subjects.Select(s => new Subject { Name = s.Name, RegisterId = s.Id }).ToList(),
+			});
+
+		subjects = teachers
+			.SelectMany(t => t.Subjects)
+			.Distinct();
+
+		var localTeachers = teachers.ToList();
+
+		return new()
+		{
+			Weeks = other.Weeks.Select(w => CalendarWeek.Parse(w, localTeachers)).ToList(),
+		};
+	}
+
+	public void Rescanned()
+	{
+		TimesScanned++;
+		LastScanned = DateTimeOffset.UtcNow;
+	}
 
 	public static bool operator ==(Calendar? a, Calendar? b)
 	{
@@ -40,17 +76,14 @@ public class CalendarWeek
 	public int Id { get; private set; }
 	[Required]
 	public required DateTimeOffset StartDate { get; init; }
-	[NotMapped]
-	public DateTimeOffset MondayDate { get => StartDate.RoundToMonday(); }
-	[Required]
-	public required ICollection<CalendarDay> Days { get; init; } = [ ];
+	public ICollection<CalendarDay> Days { get; set; } = [ ];
 
-	public static implicit operator CalendarWeek(Models.DigitalesRegister.CalendarWeek calendarWeek)
+	public static CalendarWeek Parse(Models.DigitalesRegister.CalendarWeek calendarWeek, ICollection<Teacher> teachers)
 	{
-		return new CalendarWeek
+		return new()
 		{
-			Days = [ .. calendarWeek.Days.Select(d => (CalendarDay)d) ],
-			StartDate = calendarWeek.StartDate
+			StartDate = calendarWeek.StartDate.ToUniversalTime(),
+			Days = calendarWeek.Days.Select(d => CalendarDay.Parse(d, teachers)).ToList(),
 		};
 	}
 
@@ -72,19 +105,17 @@ public class CalendarDay
 	public int Id { get; private set; }
 	[Required]
 	public required DateTimeOffset Date { get; init; }
-	[Required]
 	public DayOfWeek DayOfWeek { get => Date.DayOfWeek; }
-	[Required]
-	public required List<HourInDay> HoursInDay { get; init; } = [ ];
+	public List<HourInDay> HoursInDay { get; set; } = [ ];
 	[NotMapped]
 	public int TotalHourCount { get => HoursInDay.Select(h => h.Duration).Sum(); }
 
-	public static implicit operator CalendarDay(Models.DigitalesRegister.CalendarDay calendarDay)
+	public static CalendarDay Parse(Models.DigitalesRegister.CalendarDay calendarDay, ICollection<Teacher> teachers)
 	{
-		return new CalendarDay
+		return new()
 		{
-			Date = calendarDay.Date,
-			HoursInDay = [ .. calendarDay.HoursInDay.Select(h => (HourInDay)h) ]
+			Date = calendarDay.Date.ToUniversalTime(),
+			HoursInDay = calendarDay.HoursInDay.Select(h => HourInDay.Parse(h, teachers)).ToList(),
 		};
 	}
 
@@ -100,7 +131,6 @@ public class CalendarDay
 	public override int GetHashCode() => HashCode.Combine(Date, HoursInDay.OrderBy(h => h.Hour));
 }
 
-
 public class HourInDay
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -114,13 +144,13 @@ public class HourInDay
 	[NotMapped]
 	public int Duration { get => LinkedHoursCount + 1; }
 
-	public static implicit operator HourInDay(Models.DigitalesRegister.HourInDay hourInDay)
+	public static HourInDay Parse(Models.DigitalesRegister.HourInDay hourInDay, ICollection<Teacher> teachers)
 	{
-		return new HourInDay
+		return new()
 		{
 			Hour = hourInDay.Hour,
-			Lesson = hourInDay.Lesson,
-			LinkedHoursCount = hourInDay.LinkedHoursCount
+			Lesson = Lesson.Parse(hourInDay.Lesson, teachers),
+			LinkedHoursCount = hourInDay.LinkedHoursCount,
 		};
 	}
 
@@ -154,24 +184,23 @@ public class Lesson
 	[Required]
 	public required string ClassName { get; set; }
 	[Required]
-	public required ICollection<Teacher> Teachers { get; set; } = [ ];
-	[Required]
-	public required Subject Subject { get; set; }
-	[Required]
 	public required bool LinkToPreviousHour { get; set; }
 
-	public static implicit operator Lesson(Models.DigitalesRegister.Lesson lesson)
+	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	public required Subject Subject { get; set; }
+
+	public static Lesson Parse(Models.DigitalesRegister.Lesson lesson, ICollection<Teacher> teachers)
 	{
-		return new Lesson
+		return new()
 		{
 			ClassId = lesson.ClassId,
 			ClassName = lesson.ClassName,
-			Date = lesson.Date,
+			Date = lesson.Date.ToUniversalTime(),
 			Hour = lesson.Hour,
 			LinkToPreviousHour = lesson.LinkToPreviousHour,
 			RegisterId = lesson.Id,
 			Subject = lesson.Subject,
-			Teachers = [/*lesson.Teachers*/],
+			Teachers = teachers.Where(t => t.Subjects.Contains(lesson.Subject)).ToList(),
 			ToHour = lesson.ToHour,
 		};
 	}

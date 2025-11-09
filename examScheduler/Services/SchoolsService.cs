@@ -4,12 +4,12 @@ using Models.API;
 
 namespace examScheduler.Services;
 
-public interface ISchoolService
+public interface ISchoolsService
 {
 	Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct);
 }
 
-public class SchoolService(AppDbContext context) : ISchoolService
+public class SchoolsService(AppDbContext context) : ISchoolsService
 {
 	private readonly AppDbContext _context = context;
 

@@ -16,16 +16,16 @@ public class Teacher
 	public required string LastName { get; init; }
 
 	public TeacherProfile? TeacherProfile { get; set; }
-	[Required]
-	public ICollection<Classroom> Classrooms { get; internal set; } = [ ];
-	[Required]
-	public ICollection<Subject> Subjects { get; internal set; } = [ ];
+	public ICollection<Classroom> Classrooms { get; set; } = [ ];
+	public ICollection<Subject> Subjects { get; set; } = [ ];
 
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.RegisterID == b.RegisterID;
+		return a.RegisterID == b.RegisterID
+			&& a.FirstName == b.FirstName
+			&& a.LastName == b.LastName;
 	}
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Teacher other && this == other;

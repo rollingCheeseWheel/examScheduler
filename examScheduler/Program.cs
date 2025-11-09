@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Writers;
 using System.Text;
 using System.Text.Json;
+using Util.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +19,20 @@ builder.AddServiceDefaults();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
 
 builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
-	.AddEntityFrameworkStores<AppDbContext>();
+	.AddEntityFrameworkStores<AppDbContext>()
+	.AddDefaultTokenProviders();
 
 /*////*/
 builder.Services
-	.AddScoped<ISchoolService, SchoolService>()
-	.AddScoped<IAuthService, AuthService>();
+	.AddScoped<ISchoolsService, SchoolsService>()
+	.AddScoped<IAuthService, AuthService>()
+	.AddScoped<IClassroomService, ClassroomService>();
 /*////*/
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+	o.SerializerOptions.Converters.Add(new DateTimeOffsetConverter());
+});
 
 var tokenValidationParameters = new TokenValidationParameters
 {
@@ -72,11 +81,40 @@ if (app.Environment.IsDevelopment())
 {
 	app.MapOpenApi();
 
-	using (var scope = app.Services.CreateScope())
+	using var scope = app.Services.CreateScope();
+	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+	db.Database.Migrate();
+}
+
+using (var schoolScope = app.Services.CreateScope())
+{
+	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+	List<School> schools = [
+		new School()
+		{
+			Name = "WFO Bruneck Innichen",
+			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
+		},
+		new School()
+		{
+			Name = "TFO Bruneck",
+			RegisterUri = new("https://tfo-bruneck.digitalesregister.it/"),
+		},
+		new School()
+		{
+			Name = "SoWi Kunst Gym Bruneck",
+			RegisterUri = new("https://sowikunstgym-bruneck.digitalesregister.it/"),
+		},
+	];
+
+	if (db.Schools.Count() < 3)
 	{
-		var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-		db.Database.Migrate();
+		db.Schools.RemoveRange(db.Schools.ToList());
+		db.Schools.AddRange(schools);
 	}
+
+	db.SaveChanges();
 }
 
 app.UseHttpsRedirection();

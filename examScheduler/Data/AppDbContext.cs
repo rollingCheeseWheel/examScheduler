@@ -6,14 +6,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace examScheduler.Data;
 
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) 
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<int>, int>(options)
 {
-	public DbSet<School> Schools { get; set; }
 	public DbSet<UserProfile> UserProfiles { get; set; }
-	public DbSet<StudentProfile> Students { get; set; }
+	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
+	public DbSet<School> Schools { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
+	/*public DbSet<Teacher> Teachers { get; set; }*/
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -55,6 +56,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne(tp => tp.Teacher)
 			.WithOne(t => t.TeacherProfile)
 			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+
+		// Teacher-Subject many-to-many (prevents shadow FK Subject.TeacherId)
+		modelBuilder.Entity<Teacher>()
+			.HasMany(t => t.Subjects)
+			.WithMany();
+
+		// Lesson-Teacher many-to-many (prevents shadow FK Teacher.LessonId)
+		modelBuilder.Entity<Lesson>()
+			.HasMany(l => l.Teachers)
+			.WithMany();
+
+		// Lesson-Subject: keep as many-to-one
+		modelBuilder.Entity<Lesson>()
+			.HasOne(l => l.Subject)
+			.WithMany();
 
 		// classroom
 		modelBuilder.Entity<Classroom>()
