@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Net;
+using System.Text.Json.Serialization;
 
 namespace Models.API;
 
@@ -8,7 +9,8 @@ public record GenericResponse<T> where T : class
 	public T? Result { get; set; }
 	public bool Success => Result is not null;
 	[JsonIgnore]
-	public bool InternalServerError { get; set; } = false;
+	public HttpStatusCode InternalServerError { get; set; } = HttpStatusCode.BadRequest;
 
 	public GenericResponse(string error) => Error = error;
+	public GenericResponse(T? result) => Result = result;
 }

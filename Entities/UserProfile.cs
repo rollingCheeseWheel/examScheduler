@@ -1,6 +1,7 @@
 ﻿using Models.DigitalesRegister;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Util;
 
 namespace Entities;
 
@@ -20,7 +21,7 @@ public class UserProfile
 	// Argon2id stores the salt in the encoded string
 	// no unique required since the salt already has 2^(8*16) different combinations
 	// and collisions do not garantee the same password and hash
-	public required string Hash { get; set; }
+	public required PasswordHash Hash { get; set; }
 
 	// Permissions - enum flags, can be combined
 	// e.g. Permission.Read | Permission.Write = 3

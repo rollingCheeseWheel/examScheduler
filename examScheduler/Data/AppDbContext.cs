@@ -1,6 +1,7 @@
 ﻿using Entities;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using Util;
 
 namespace examScheduler.Data;
 
@@ -36,6 +37,14 @@ public class AppDbContext : DbContext
 		});
 
 		// user data
+		modelBuilder.Entity<UserProfile>(u =>
+		{
+			u.Property(p => p.Hash)
+			.HasConversion(
+				v => v.Value,
+				v => new PasswordHash(v));
+		});
+
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{

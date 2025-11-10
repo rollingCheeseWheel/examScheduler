@@ -1,9 +1,7 @@
 ﻿using Isopoh.Cryptography.Argon2;
 using System.Security.Cryptography;
-using System.Text;
-using Util;
 
-namespace examScheduler.Services.Auth;
+namespace Util;
 
 public static class PasswordHelper
 {
@@ -38,10 +36,10 @@ public static class PasswordHelper
 		return new(config.EncodeString(hash.Buffer));
 	}
 
-	public static bool Verify(this EncodedHash encodedHash, string password)
+	public static bool Verify(this PasswordHash encodedHash, string password)
 	{
 		return Argon2.Verify(encodedHash.Value, password);
 	}
 }
 
-public record EncodedHash(string Value);
+public record PasswordHash(string Value);

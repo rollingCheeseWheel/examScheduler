@@ -70,9 +70,9 @@ public class AuthService(AppDbContext context) : IAuthService
 			return new("User profiles do not match");
 		}
 
-		
+		dbUserProfile.Hash = PasswordHelper.Hash(request.NewPassword);
 
-		throw new NotImplementedException();
+		return new(userProfile);
 	}
 
 	public Task<GenericResponse<TokenResponse>> LoginAsync(AuthRequest request, CancellationToken ct)
