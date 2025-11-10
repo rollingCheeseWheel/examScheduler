@@ -43,7 +43,7 @@ public static class Extensions
 		return output;
 	}
 
-	public static Uri GetBaseApiPath(this Uri uri) => uri.GetSchemeAndAuthority().AppendRelativePath(RegisterPath.Api);
+	public static Uri GetBaseApiPath(this Uri uri) => uri.GetSchemeAndAuthority().AppendRelativePath(RegisterPathWeb.Api);
 
 	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 

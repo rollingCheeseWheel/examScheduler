@@ -56,7 +56,7 @@ public class AuthService(
 			.FirstOrDefaultAsync(ct);
 	}
 
-	private async Task<GenericResponse<UserProfile>> RegisterStudentAsync(RegisterClient client, Entities.School school, CancellationToken ct)
+	private async Task<GenericResponse<UserProfile>> RegisterStudentAsync(RegisterClientWeb client, Entities.School school, CancellationToken ct)
 	{
 		// get calendar
 		var calendar = await client.GetCompleteCalendarAsync(ct);
@@ -105,7 +105,7 @@ public class AuthService(
 		return new(user, HttpStatusCode.OK);
 	}
 
-	private async Task<GenericResponse<UserProfile>> RegisterTeacherAsync(RegisterClient client, Entities.School school, CancellationToken ct)
+	private async Task<GenericResponse<UserProfile>> RegisterTeacherAsync(RegisterClientWeb client, Entities.School school, CancellationToken ct)
 	{
 		throw new NotImplementedException();
 	}
@@ -128,7 +128,7 @@ public class AuthService(
 		}
 
 		// validate credentials
-		using var client = new RegisterClient(request);
+		using var client = new RegisterClientWeb(request);
 		if (!await client.ValidateCredentials(ct))
 		{
 			return new("Invalid credentials");
@@ -194,7 +194,7 @@ public class AuthService(
 		}
 
 		// check if credentials are valid
-		using var registerClient = new RegisterClient(request);
+		using var registerClient = new RegisterClientWeb(request);
 		if (!await registerClient.ValidateCredentials(ct))
 		{
 			return new("Invalid credentials");
