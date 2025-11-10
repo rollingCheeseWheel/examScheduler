@@ -1,13 +1,13 @@
-﻿using examScheduler.Services.School;
+﻿using examScheduler.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class SchoolController(ISchoolService schoolService) : ControllerBase
+public class SchoolsController(ISchoolsService schoolService) : ControllerBase
 {
-	private readonly ISchoolService _schoolService = schoolService;
+	private readonly ISchoolsService _schoolService = schoolService;
 
 	[HttpGet]
 	public async Task<IActionResult> Get(CancellationToken ct)

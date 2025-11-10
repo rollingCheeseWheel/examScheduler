@@ -1,17 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using examScheduler.Data;
+﻿using examScheduler.Services;
+using Microsoft.AspNetCore.Mvc;
 using Models.API;
 
 namespace examScheduler.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
+	private readonly IAuthService _authService = authService;
+
 	[Route("register")]
 	[HttpPost]
-	public IActionResult Register([FromBody] AuthRequest registerRequest, AppDbContext dbContext)
+	public async Task<IActionResult> Register([FromBody] SignupRequest request, CancellationToken ct)
 	{
-		throw new NotImplementedException();
+		return await _authService.RegisterAsync(request, ct);
+	}
+
+	[Route("reset")]
+	[HttpPost]
+	public async Task<IActionResult> PasswordReset([FromBody] SignupRequest request, CancellationToken ct)
+	{
+		return await _authService.ResetPasswordAsync(request, ct);
 	}
 
 	[Route("login")]

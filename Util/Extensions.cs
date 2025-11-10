@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Net.Http.Headers;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -68,4 +71,17 @@ public static class Extensions
 	}
 
 	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * double.Ceiling(value / multiple) );
+
+	public static bool TryValidate(this object value, [NotNullWhen(false)] out ICollection<ValidationResult>? results)
+	{
+		var validationResults = new List<ValidationResult>();
+		var isValid = Validator.TryValidateObject(value, new(value), validationResults, true);
+		results = validationResults;
+		return isValid;
+	}
+
+	public static bool TryValidate(this object value)
+	{
+		return value.TryValidate(out var _);
+	}
 }

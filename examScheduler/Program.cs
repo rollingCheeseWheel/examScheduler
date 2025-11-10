@@ -1,10 +1,14 @@
-using examScheduler.Services.Auth;
-using examScheduler.Services.School;
+using Entities;
+using examScheduler.Data;
+using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Writers;
 using System.Text;
 using System.Text.Json;
+using Util.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +16,23 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 
-builder.Services.AddDbContext<examScheduler.Data.AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DatabaseConnection")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
+
+builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
+	.AddEntityFrameworkStores<AppDbContext>()
+	.AddDefaultTokenProviders();
 
 /*////*/
 builder.Services
-	.AddScoped<ISchoolService, SchoolService>()
-	.AddScoped<IAuthService, AuthService>();
+	.AddScoped<ISchoolsService, SchoolsService>()
+	.AddScoped<IAuthService, AuthService>()
+	.AddScoped<IClassroomService, ClassroomService>();
 /*////*/
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+	o.SerializerOptions.Converters.Add(new DateTimeOffsetConverter());
+});
 
 var tokenValidationParameters = new TokenValidationParameters
 {
@@ -66,6 +80,41 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
 	app.MapOpenApi();
+
+	using var scope = app.Services.CreateScope();
+	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+	db.Database.Migrate();
+}
+
+using (var schoolScope = app.Services.CreateScope())
+{
+	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+	List<School> schools = [
+		new School()
+		{
+			Name = "WFO Bruneck Innichen",
+			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
+		},
+		new School()
+		{
+			Name = "TFO Bruneck",
+			RegisterUri = new("https://tfo-bruneck.digitalesregister.it/"),
+		},
+		new School()
+		{
+			Name = "SoWi Kunst Gym Bruneck",
+			RegisterUri = new("https://sowikunstgym-bruneck.digitalesregister.it/"),
+		},
+	];
+
+	if (db.Schools.Count() < 3)
+	{
+		db.Schools.RemoveRange(db.Schools.ToList());
+		db.Schools.AddRange(schools);
+	}
+
+	db.SaveChanges();
 }
 
 app.UseHttpsRedirection();

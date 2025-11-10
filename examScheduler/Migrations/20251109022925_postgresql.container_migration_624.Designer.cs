@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251109022925_postgresql.container_migration_624")]
+    partial class postgresqlcontainer_migration_624
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -720,8 +723,7 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.Classroom", "Classroom")
                         .WithMany("Calendars")
-                        .HasForeignKey("ClassroomId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ClassroomId");
 
                     b.Navigation("Classroom");
                 });
@@ -730,16 +732,14 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.CalendarWeek", null)
                         .WithMany("Days")
-                        .HasForeignKey("CalendarWeekId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CalendarWeekId");
                 });
 
             modelBuilder.Entity("Entities.CalendarWeek", b =>
                 {
                     b.HasOne("Entities.Calendar", null)
                         .WithMany("Weeks")
-                        .HasForeignKey("CalendarId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CalendarId");
                 });
 
             modelBuilder.Entity("Entities.Classroom", b =>
@@ -776,8 +776,7 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.CalendarDay", null)
                         .WithMany("HoursInDay")
-                        .HasForeignKey("CalendarDayId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CalendarDayId");
 
                     b.HasOne("Entities.Lesson", "Lesson")
                         .WithMany()
