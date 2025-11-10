@@ -38,6 +38,7 @@ public record GenericResponse<T> : IActionResult
 			StatusCode = (int)StatusCode,
 			DeclaredType = typeof(GenericResponse<T>)
 		};
+	}
 
-	public GenericResponse(string error) => Error = error;
+	public GenericResponse(string error) => Errors = [error];
 }

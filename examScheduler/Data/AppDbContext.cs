@@ -34,14 +34,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		});
 
 		// user data
-		modelBuilder.Entity<UserProfile>(u =>
-		{
-			u.Property(p => p.Hash)
-			.HasConversion(
-				v => v.Value,
-				v => new PasswordHash(v));
-		});
-
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{
