@@ -14,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+builder.Configuration.AddAzureKeyVaultSecrets(builder.Configuration.GetConnectionString("keyvault")!);
+
 // Add services to the container.
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
