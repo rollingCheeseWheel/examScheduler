@@ -1,14 +1,31 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgresServer = builder.AddAzurePostgresFlexibleServer("database"); // server resource name
-var postgresDb = postgresServer.AddDatabase("postgres");
+var (resourceName, dbName) = ("database", "postgres");
 
-var keyvault = builder.AddAzureKeyVault("keyvault");
+if (Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") is null) // runs locally
+{
 
-builder.AddProject<Projects.examScheduler>("examscheduler")
-	.WithReference(postgresDb)
-	.WaitFor(postgresDb)
-	.WithReference(keyvault)
-	.WaitFor(keyvault);
+	var postgres = builder.AddPostgres(resourceName) // container name
+		.WithLifetime(ContainerLifetime.Persistent)
+		.WithDataVolume()
+		.WithHostPort(5432)
+		.AddDatabase(dbName);
+
+	builder.AddProject<Projects.examScheduler>("examscheduler")
+		.WithReference(postgres)
+		.WaitFor(postgres);
+}
+else
+{
+	var postgres = builder.AddAzurePostgresFlexibleServer(resourceName).AddDatabase(dbName);
+
+	var keyvault = builder.AddAzureKeyVault("keyvault");
+
+	builder.AddProject<Projects.examScheduler>("examscheduler")
+		.WithReference(postgres)
+		.WaitFor(postgres)
+		.WithReference(keyvault)
+		.WaitFor(keyvault);
+}
 
 builder.Build().Run();

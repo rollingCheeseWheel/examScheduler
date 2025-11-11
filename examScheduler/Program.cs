@@ -14,7 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Configuration.AddAzureKeyVaultSecrets(builder.Configuration.GetConnectionString("keyvault")!);
+var keyVaultConnectionString = builder.Configuration.GetConnectionString("keyvault");
+if (keyVaultConnectionString is not null)
+{
+	builder.Configuration.AddAzureKeyVaultSecrets(keyVaultConnectionString);
+}
 
 // Add services to the container.
 
