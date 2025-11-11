@@ -1,14 +1,22 @@
 ﻿namespace Util;
 
-public sealed class RegisterPath(string value) : StringEnum(value)
+public interface IRegisterPath
 {
-	public static readonly RegisterPath Api = new("v2/api");
+	Uri GetAPI(Uri @base);
+	Uri GetPath(Uri @base, string path) => GetAPI(@base).AppendRelativePath(path);
+}
 
-	public static readonly RegisterPath LoginPage = new("login");
+public sealed class RegisterPathWeb(string value) : StringEnum(value), IRegisterPath
+{
+	public static readonly RegisterPathWeb Api = new("v2/api");
 
-	public static readonly RegisterPath Login = new("auth/login");
-	public static readonly RegisterPath Calendar = new("calendar/student");
-	public static readonly RegisterPath ProfileDetails = new("profile/get");
+	public static readonly RegisterPathWeb LoginPage = new("login");
+
+	public static readonly RegisterPathWeb Login = new("auth/login");
+	public static readonly RegisterPathWeb Calendar = new("calendar/student");
+	public static readonly RegisterPathWeb ProfileDetails = new("profile/get");
+
+	public Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
 
 	public override string ToString()
 	{
@@ -16,4 +24,11 @@ public sealed class RegisterPath(string value) : StringEnum(value)
 			? throw new Exception("Paths cannot end in slashes")
 			: base.ToString();
 	}
+}
+
+public sealed class RegisterPathAPI(string value) : StringEnum(value), IRegisterPath
+{
+	public static readonly RegisterPathAPI Api = new("v2/api/v1");
+
+	public Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
 }

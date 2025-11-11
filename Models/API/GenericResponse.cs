@@ -30,7 +30,9 @@ public record GenericResponse<T> : IActionResult
 	public GenericResponse(object error) : this(error, HttpStatusCode.BadRequest) { }
 
 	// Allow direct return from controller actions: return new GenericResponse<T>(...)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 	public async Task ExecuteResultAsync(ActionContext context)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 	{
 		// Reuse MVC's normal formatter pipeline.
 		var objectResult = new ObjectResult(this)

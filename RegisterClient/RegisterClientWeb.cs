@@ -33,7 +33,7 @@ public interface IRegisterClient
 	Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
 }
 
-public class RegisterClient : IDisposable, IRegisterClient
+public class RegisterClientWeb : IDisposable, IRegisterClient
 {
 	private bool _disposed = false;
 
@@ -48,14 +48,14 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 	public bool LoggedIn { get; private set; }
 
-	public RegisterClient(string registerUsername, string registerPassword, Uri registerURI)
+	public RegisterClientWeb(string registerUsername, string registerPassword, Uri registerURI)
 	{
 		if (registerURI.Scheme != Uri.UriSchemeHttps)
 		{
 			throw new ArgumentException(nameof(registerURI), "Invalid URI scheme, must be HTTPS");
 		}
 
-		RegisterBaseURI = registerURI.GetBaseApiPath();
+		RegisterBaseURI = registerURI.GetSchemeAndAuthority();
 
 		_registerUsername = registerUsername;
 		_registerPassword = registerPassword;
@@ -82,10 +82,10 @@ public class RegisterClient : IDisposable, IRegisterClient
 		};
 	}
 
-	public RegisterClient(string registerUsername, string registerPassword, string registerURI)
+	public RegisterClientWeb(string registerUsername, string registerPassword, string registerURI)
 		: this(registerUsername, registerPassword, new Uri(registerURI)) { }
 
-	public RegisterClient(SignupRequest loginRequest)
+	public RegisterClientWeb(SignupRequest loginRequest)
 		: this(loginRequest.Username, loginRequest.Password, loginRequest.RegisterUri) { }
 
 	public async Task<bool> ValidateCredentials(CancellationToken ct) => await TryLoginIfNotAlreadyAsync(ct);
@@ -138,7 +138,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 			Username = _registerUsername
 		};
 
-		var (loginResponse, response, error) = await PostJsonAsync<LoginResponse>(RegisterPath.Login, credentials, true, ct);
+		var (loginResponse, response, error) = await PostJsonAsync<LoginResponse>(RegisterPathWeb.Login, credentials, true, ct);
 
 		var cookies = _httpClientHandler.CookieContainer.GetAllCookies();
 
@@ -162,7 +162,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 	private async Task<string> GetUserProfileStringAsync(CancellationToken ct = default)
 	{
-		var (response, error) = await PostJsonAsync(RegisterPath.ProfileDetails, new { }, ct: ct);
+		var (response, error) = await PostJsonAsync(RegisterPathWeb.ProfileDetails, new { }, ct: ct);
 
 		if (error is not null) return error.Message;
 
@@ -171,7 +171,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 	private async Task<string?> GetCalendarWeekStringAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
-		var (response, error) = await PostJsonAsync(RegisterPath.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
+		var (response, error) = await PostJsonAsync(RegisterPathWeb.Calendar, new CalendarRequest { StartDate = date.RoundToMonday() }, ct: ct);
 
 		if (response is null)
 			return null;
@@ -237,7 +237,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 		return new() { Days = calendarDays };
 	}
 
-	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
+	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPathWeb path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{
 		try
 		{
@@ -250,10 +250,11 @@ public class RegisterClient : IDisposable, IRegisterClient
 				Headers = { ContentType = new("application/json") }
 			};
 
-			var request = new HttpRequestMessage(HttpMethod.Post, RegisterBaseURI.AppendRelativePath(path))
+			var request = new HttpRequestMessage(HttpMethod.Post, ( (IRegisterPath)path ).GetPath(RegisterBaseURI, path))
 			{
 				Content = stringContent
-			};
+			}
+			;
 
 			return (await _httpClient.SendAsync(request, ct), null);
 		}
@@ -263,7 +264,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 		}
 	}
 
-	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
+	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPathWeb path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
 	{
 		try
 		{
@@ -294,7 +295,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 		}
 	}
 
-	~RegisterClient() => Dispose();
+	~RegisterClientWeb() => Dispose();
 	public void Dispose()
 	{
 		Dispose(true);
