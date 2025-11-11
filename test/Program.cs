@@ -18,7 +18,7 @@ var sw = new Stopwatch();
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
-using var client = new RegisterClient(config[ "test:username" ]!, config[ "test:password" ]!, config[ "test:url" ]!);
+using var client = new RegisterClient(config[ "username" ]!, config[ "password" ]!, "https://wfo-bruneck.digitalesregister.it/");
 //using var client = new RegisterClient(username, password, "https://wfo-bruneck.digitalesregister.it/");
 
 //Console.WriteLine("profile details: " + (await client.GetUserProfileAsync()).ToJson(options));
