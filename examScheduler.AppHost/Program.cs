@@ -2,9 +2,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var (resourceName, dbName) = ("database", "postgres");
 
-if (Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") is null) // runs locally
+if (Environment.GetEnvironmentVariable("AZURE_ENV_NAME") is null) // runs locally
 {
-
+	Console.WriteLine("Being run locally");
 	var postgres = builder.AddPostgres(resourceName) // container name
 		.WithLifetime(ContainerLifetime.Persistent)
 		.WithDataVolume()
@@ -17,6 +17,7 @@ if (Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") is null) // runs l
 }
 else
 {
+	Console.WriteLine("Being built for azure");
 	var postgres = builder.AddAzurePostgresFlexibleServer(resourceName).AddDatabase(dbName);
 
 	var keyvault = builder.AddAzureKeyVault("keyvault");

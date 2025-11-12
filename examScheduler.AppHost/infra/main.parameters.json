@@ -5,6 +5,9 @@
       "principalId": {
         "value": "${AZURE_PRINCIPAL_ID}"
       },
+      "database_password": {
+        "value": "${AZURE_DATABASE_PASSWORD}"
+      },
       "environmentName": {
         "value": "${AZURE_ENV_NAME}"
       },
