@@ -101,16 +101,19 @@ using (var schoolScope = app.Services.CreateScope())
 		{
 			Name = "WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
+			ClientID = "6767"
 		},
 		new School()
 		{
 			Name = "TFO Bruneck",
 			RegisterUri = new("https://tfo-bruneck.digitalesregister.it/"),
+			ClientID = "6767"
 		},
 		new School()
 		{
 			Name = "SoWi Kunst Gym Bruneck",
 			RegisterUri = new("https://sowikunstgym-bruneck.digitalesregister.it/"),
+			ClientID = "6767"
 		},
 	];
 

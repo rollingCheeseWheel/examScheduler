@@ -1,12 +1,13 @@
 ﻿namespace Util;
 
-public interface IRegisterPath
+public abstract class RegisterPath(string value) : StringEnum(value)
 {
-	Uri GetAPI(Uri @base);
-	Uri GetPath(Uri @base, string path) => GetAPI(@base).AppendRelativePath(path);
+	public abstract	Uri GetAPI(Uri @base);
+	public Uri GetPath(Uri @base, RegisterPath path) => GetAPI(@base).AppendRelativePath(path);
 }
 
-public sealed class RegisterPathWeb(string value) : StringEnum(value), IRegisterPath
+[Obsolete]
+public sealed class RegisterPathWeb(string value) : RegisterPath(value)
 {
 	public static readonly RegisterPathWeb Api = new("v2/api");
 
@@ -16,7 +17,7 @@ public sealed class RegisterPathWeb(string value) : StringEnum(value), IRegister
 	public static readonly RegisterPathWeb Calendar = new("calendar/student");
 	public static readonly RegisterPathWeb ProfileDetails = new("profile/get");
 
-	public Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
+	public override Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
 
 	public override string ToString()
 	{
@@ -26,9 +27,21 @@ public sealed class RegisterPathWeb(string value) : StringEnum(value), IRegister
 	}
 }
 
-public sealed class RegisterPathAPI(string value) : StringEnum(value), IRegisterPath
+public sealed class RegisterPathAPI(string value) : RegisterPath(value)
 {
 	public static readonly RegisterPathAPI Api = new("v2/api/v1");
+	public static readonly RegisterPathAPI Token = new("token");
+	public static readonly RegisterPathAPI TokenRefresh = new("refresh_token");
 
-	public Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
+	public static readonly RegisterPathAPI UserProfile = new("user/me");
+
+	public static readonly RegisterPathAPI Classes = new("class/all");
+	public static readonly RegisterPathAPI Subjects = new("subject/all");
+	public static readonly RegisterPathAPI LessonMonth = new("lesson/my_lesson");
+	/// <summary>
+	/// <b>IMPORTANT</b> the date needs to be formatted YYYY-MM-DD and passed as the url parameter <b>startDate</b>
+	/// </summary>
+	public static readonly RegisterPathAPI LessonDate = new("lesson/my_calendar");
+
+	public override Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
 }

@@ -10,6 +10,8 @@ public class School
 	public required string Name { get; init; }
 	[Required]
 	public required Uri RegisterUri { get; init; }
+	[Required]
+	public required string ClientID { get; init; }
 
 	public static bool operator ==(School? a, School? b)
 	{

@@ -1,8 +1,10 @@
-﻿using System.Net;
-using System.Text.Json;
-using Models.API;
+﻿using Models.API;
 using Models.DigitalesRegister;
+using Models.DigitalesRegister.old;
+using System.Net;
+using System.Text.Json;
 using Util;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace registerClient;
 
@@ -14,18 +16,7 @@ public interface IRegisterClient
 	/// </summary>
 	/// <param name="profile"></param>
 	/// <returns></returns>
-	public static Entities.UserProfileRoles GetUserRole(RegisterProfileModel profile)
-	{
-		string[ ] student = [ "schüler/in", "alunno", "student" ];
-		string[ ] teacher = [ ];
-
-		return profile.RoleName.ToLower() switch
-		{
-			var f when student.Contains(f) => Entities.UserProfileRoles.Student,
-			var f when teacher.Contains(f) => Entities.UserProfileRoles.Teacher,
-			_ => Entities.UserProfileRoles.Unknown,
-		};
-	}
+	Entities.UserProfileRoles GetUserRole(RegisterProfileModel profile);
 
 	Task<bool> ValidateCredentials(CancellationToken ct);
 	Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct);
@@ -89,6 +80,19 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 		: this(loginRequest.Username, loginRequest.Password, loginRequest.RegisterUri) { }
 
 	public async Task<bool> ValidateCredentials(CancellationToken ct) => await TryLoginIfNotAlreadyAsync(ct);
+
+	public Entities.UserProfileRoles GetUserRole(RegisterProfileModel profile)
+	{
+		string[ ] student = [ "schüler/in", "alunno", "student" ];
+		string[ ] teacher = [ ];
+
+		return profile.RoleName.ToLower() switch
+		{
+			var f when student.Contains(f) => Entities.UserProfileRoles.Student,
+			var f when teacher.Contains(f) => Entities.UserProfileRoles.Teacher,
+			_ => Entities.UserProfileRoles.Unknown,
+		};
+	}
 
 	public async Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct = default)
 	{
@@ -237,7 +241,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 		return new() { Days = calendarDays };
 	}
 
-	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPathWeb path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
+	private async Task<(HttpResponseMessage?, Exception?)> PostJsonAsync(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default)
 	{
 		try
 		{
@@ -250,7 +254,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 				Headers = { ContentType = new("application/json") }
 			};
 
-			var request = new HttpRequestMessage(HttpMethod.Post, ( (IRegisterPath)path ).GetPath(RegisterBaseURI, path))
+			var request = new HttpRequestMessage(HttpMethod.Post, path.GetPath(RegisterBaseURI, path))
 			{
 				Content = stringContent
 			}
@@ -264,7 +268,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 		}
 	}
 
-	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPathWeb path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
+	private async Task<(T?, HttpResponseMessage?, Exception?)> PostJsonAsync<T>(RegisterPath path, object? value, bool isAuthRequest = false, CancellationToken ct = default) where T : class
 	{
 		try
 		{

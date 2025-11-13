@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Models.DigitalesRegister;
+namespace Models.DigitalesRegister.old;
 
+[Obsolete]
 public class RegisterProfileModel
 {
 	[Required]

@@ -147,7 +147,7 @@ public class AuthService(
 
 		// get role
 		using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-		var registerProfileRole = IRegisterClient.GetUserRole(userProfile);
+		var registerProfileRole = client.GetUserRole(userProfile);
 		GenericResponse<UserProfile> newUserGenericRequest = registerProfileRole switch
 		{
 			UserProfileRoles.Student => await RegisterStudentAsync(client, school, ct),
