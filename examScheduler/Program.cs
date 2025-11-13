@@ -1,4 +1,5 @@
 using Entities;
+using examScheduler;
 using examScheduler.Data;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,11 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var keyVaultConnectionString = builder.Configuration.GetConnectionString("keyvault");
-if (keyVaultConnectionString is not null)
-{
-	builder.Configuration.AddAzureKeyVaultSecrets(keyVaultConnectionString);
-}
+builder.Services.AddKeyVaultCache(builder.Configuration.GetConnectionString("keyvault"));
 
 // Add services to the container.
 
