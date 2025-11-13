@@ -9,4 +9,6 @@ public class School
 	public required string Name { get; set; }
 	[Required, Url, UriValidator, MaxLength(300)]
 	public required Uri RegisterUri { get; set; }
+	[Required]
+	public required string ClientId { get; set; }
 }

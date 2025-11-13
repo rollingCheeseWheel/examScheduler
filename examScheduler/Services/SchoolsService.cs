@@ -19,7 +19,8 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 			.Select(s => new School
 			{
 				Name = s.Name,
-				RegisterUri = s.RegisterUri
+				RegisterUri = s.RegisterUri,
+				ClientId = s.ClientID,
 			})
 			.ToListAsync(ct);
 	}

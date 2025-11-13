@@ -254,7 +254,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 				Headers = { ContentType = new("application/json") }
 			};
 
-			var request = new HttpRequestMessage(HttpMethod.Post, path.GetPath(RegisterBaseURI, path))
+			var request = new HttpRequestMessage(HttpMethod.Post, path.Get(RegisterBaseURI))
 			{
 				Content = stringContent
 			}

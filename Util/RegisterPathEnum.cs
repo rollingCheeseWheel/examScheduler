@@ -3,7 +3,8 @@
 public abstract class RegisterPath(string value) : StringEnum(value)
 {
 	public abstract	Uri GetAPI(Uri @base);
-	public Uri GetPath(Uri @base, RegisterPath path) => GetAPI(@base).AppendRelativePath(path);
+	public static Uri GetPath(Uri @base, RegisterPath path) => path.GetAPI(@base).AppendRelativePath(path);
+	public Uri Get(Uri @base) => GetPath(@base, this);
 }
 
 [Obsolete]
@@ -17,7 +18,7 @@ public sealed class RegisterPathWeb(string value) : RegisterPath(value)
 	public static readonly RegisterPathWeb Calendar = new("calendar/student");
 	public static readonly RegisterPathWeb ProfileDetails = new("profile/get");
 
-	public override Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
+	public override Uri GetAPI(Uri @base) => @base.GetSchemeAndAuthority().AppendRelativePath(Api);
 
 	public override string ToString()
 	{
@@ -30,7 +31,7 @@ public sealed class RegisterPathWeb(string value) : RegisterPath(value)
 public sealed class RegisterPathAPI(string value) : RegisterPath(value)
 {
 	public static readonly RegisterPathAPI Api = new("v2/api/v1");
-	public static readonly RegisterPathAPI Token = new("token");
+	public static readonly RegisterPathAPI TokenCreate = new("token");
 	public static readonly RegisterPathAPI TokenRefresh = new("refresh_token");
 
 	public static readonly RegisterPathAPI UserProfile = new("user/me");
@@ -43,5 +44,5 @@ public sealed class RegisterPathAPI(string value) : RegisterPath(value)
 	/// </summary>
 	public static readonly RegisterPathAPI LessonDate = new("lesson/my_calendar");
 
-	public override Uri GetAPI(Uri @base) => @base.AppendRelativePath(Api);
+	public override Uri GetAPI(Uri @base) => @base.GetSchemeAndAuthority().AppendRelativePath(Api);
 }
