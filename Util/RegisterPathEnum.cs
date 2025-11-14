@@ -39,10 +39,6 @@ public sealed class RegisterPathAPI(string value) : RegisterPath(value)
 	public static readonly RegisterPathAPI Classes = new("class/all");
 	public static readonly RegisterPathAPI Subjects = new("subject/all");
 	public static readonly RegisterPathAPI LessonMonth = new("lesson/my_lesson");
-	/// <summary>
-	/// <b>IMPORTANT</b> the date needs to be formatted YYYY-MM-DD and passed as the url parameter <b>startDate</b>
-	/// </summary>
-	public static readonly RegisterPathAPI LessonDate = new("lesson/my_calendar");
 
 	public override Uri GetAPI(Uri @base) => @base.GetSchemeAndAuthority().AppendRelativePath(Api);
 }

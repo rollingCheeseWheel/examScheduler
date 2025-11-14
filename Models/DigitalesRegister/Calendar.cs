@@ -6,7 +6,7 @@ namespace Models.DigitalesRegister;
 
 public class CalendarRequest
 {
-	[JsonConverter(typeof(RegisterDateConverter))]
+	[JsonConverter(typeof(RegisterDateTimeOffsetConverter))]
 	public DateTimeOffset StartDate { get; set; }
 }
 
@@ -14,12 +14,9 @@ public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
 public record DetailedTeacherSubjects(Teacher Teacher, IEnumerable<DetailedSubject> Subjects);
 public record DetailedSubject(Subject Subject, int Count);
 
-
-public class Calendar
+public class Calendar(ICollection<CalendarWeek> days)
 {
-	public Calendar(ICollection<CalendarWeek> weeks) => Weeks = weeks;
-
-	public ICollection<CalendarWeek> Weeks { get; set; } = [ ];
+	public required ICollection<CalendarWeek> Days { get; set; } = days;
 
 	/// <summary>
 	/// Get an IEnumerable of Teachers, each Teacher has an additional IEnumerable of Subjects they are associated with.
@@ -29,7 +26,7 @@ public class Calendar
 	/// <returns></returns>
 	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.25)
 	{
-		var summedTeacherSubjects = Weeks
+		var summedTeacherSubjects = Days
 			.SelectMany(w => w.CompileTeachersWithSubjects()) // get a list of all TeacherSubjects side-by-side
 			.GroupBy(x => x.Teacher) // group teachers together, is less efficient but more useful
 			.Select(g => new DetailedTeacherSubjects( // reform a single TeacherSubject with the summed up lesson counts
@@ -58,7 +55,7 @@ public class Calendar
 
 	public (int ClassroomId, string Name)? GetClassroomInfo()
 	{
-		return Weeks
+		return Days
 			.SelectMany(w => w.Days)
 			.SelectMany(d => d.HoursInDay)
 			.Select(h => h.Lesson)
@@ -71,6 +68,7 @@ public class Calendar
 	}
 }
 
+[Obsolete("just use a flat list of days with their lessons, the added dimensions just complicate things")]
 public class CalendarWeek
 {
 	public DateTimeOffset StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
@@ -99,7 +97,7 @@ public class CalendarDay
 {
 	[JsonConverter(typeof(DateTimeOffsetConverter))]
 	public required DateTimeOffset Date { get; set; }
-	public required ICollection<HourInDay> HoursInDay { get; set; } = [ ];
+	public required ICollection<HourInDay> HoursInDay { get; set; }
 }
 
 
@@ -121,7 +119,7 @@ public class Lesson
 {
 	public required int? Id { get; set; }
 	[Required]
-	[JsonConverter(typeof(RegisterDateConverter))]
+	[JsonConverter(typeof(RegisterDateTimeOffsetConverter))]
 	public required DateTimeOffset Date { get; set; }
 	[Required]
 	public required int Hour { get; set; }
@@ -132,7 +130,7 @@ public class Lesson
 	[Required]
 	public required string ClassName { get; set; }
 	[Required]
-	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	public required ICollection<Teacher> Teachers { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
 

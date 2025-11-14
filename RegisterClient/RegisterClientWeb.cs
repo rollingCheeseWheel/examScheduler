@@ -4,27 +4,10 @@ using Models.DigitalesRegister.old;
 using System.Net;
 using System.Text.Json;
 using Util;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace registerClient;
 
-// when extended to multiple Digitales Register versions could be used to implement multiple adapters
-public interface IRegisterClient
-{
-	/// <summary>
-	/// Returns the Role of the user, Unknown by default
-	/// </summary>
-	/// <param name="profile"></param>
-	/// <returns></returns>
-	Entities.UserProfileRoles GetUserRole(RegisterProfileModel profile);
-
-	Task<bool> ValidateCredentials(CancellationToken ct);
-	Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct);
-	Task<Calendar?> GetCompleteCalendarAsync(CancellationToken ct);
-	Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
-}
-
-public class RegisterClientWeb : IDisposable, IRegisterClient
+public class RegisterClientWeb : IDisposable
 {
 	private bool _disposed = false;
 
@@ -123,7 +106,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 			}
 		}
 
-		return calendarWeeks.Count != 0 ? new(calendarWeeks) : null;
+		return default; /*calendarWeeks.Count != 0 ? new(calendarWeeks) : null;*/
 	}
 
 	public async Task<CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
@@ -197,7 +180,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 				continue;
 			}
 
-			List<Models.DigitalesRegister.HourInDay> hoursInDay = new();
+			List<HourInDay> hoursInDay = new();
 
 			List<JsonProperty> flattenedEnumeratedObject = [ ];
 
@@ -213,7 +196,7 @@ public class RegisterClientWeb : IDisposable, IRegisterClient
 			{
 				try
 				{
-					var parsedHour = hour.Value.Deserialize<Models.DigitalesRegister.HourInDay>(Constants.SerializerOptions)!;
+					var parsedHour = hour.Value.Deserialize<HourInDay>(Constants.SerializerOptions)!;
 
 
 					if (parsedHour.IsLesson)

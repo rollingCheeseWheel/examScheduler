@@ -48,7 +48,7 @@ public class Calendar
 
 		return new()
 		{
-			Weeks = other.Weeks.Select(w => CalendarWeek.Parse(w, localTeachers)).ToList(),
+			Weeks = other.Days.Select(w => CalendarWeek.Parse(w, localTeachers)).ToList(),
 		};
 	}
 

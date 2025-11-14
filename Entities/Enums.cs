@@ -14,6 +14,9 @@ public enum UserPermissions
 	Write = 1 << 1,   // 2
 }
 
+/// <summary>
+/// Obsolete
+/// </summary>
 public enum UserProfileRoles
 {
 	Unknown,

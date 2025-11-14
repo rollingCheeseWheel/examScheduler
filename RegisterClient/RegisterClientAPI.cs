@@ -1,83 +1,127 @@
-﻿using Entities;
-using Microsoft.AspNetCore.DataProtection;
+﻿using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
-using Models.DigitalesRegister.old;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Util;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace registerClient;
 
-public class RegisterClientAPI(
-	Uri schoolUri,
-	int schoolId,
-	string code
-) : IDisposable, IRegisterClient
+public partial class RegisterClientAPI : IDisposable, IRegisterClient
 {
-	public readonly Uri SchoolUri = schoolUri.GetSchemeAndAuthority();
-	public readonly int SchoolId = schoolId;
-	private readonly HttpClient _httpClient = new HttpClient();
+	public readonly Uri SchoolUri;
+	public readonly int SchoolId;
+	private readonly HttpClient _httpClient;
+	private readonly HttpClientHandler _clientHandler;
 
-	private string _authCode = code;
+	private readonly string _authCode;
+	private readonly string _secret;
 	private string? _accessToken;
 	private string? _refreshToken;
-	private DateTimeOffset? _tokenExpiration;
-	private int? _userId;
+	public DateTimeOffset? TokenExpiration { get; private set; }
+	public int? UserId { get; private set; }
 
-	public async Task<bool> AuthenticateAsync(string apiSecret, CancellationToken ct = default)
+	public RegisterUserProfile? UserProfile { get; private set; }
+	public RegisterUserProfileRole? Role { get => UserProfile?.Role; }
+
+	public RegisterClientAPI(Uri schoolUri, string code, string secret)
 	{
-		var authResponse = await PostJsonAsync<TokenCreateResponse>(RegisterPathAPI.TokenCreate, new TokenCreateRequest { Code = _authCode }, apiSecret, ct);
+		SchoolUri = schoolUri.GetSchemeAndAuthority();
 
-		if (authResponse is null)
+		var match = SchoolIdRegex().Match(schoolUri.AbsoluteUri).Groups[ 1 ];
+		SchoolId = match.Success ? int.Parse(match.Value) : throw new InvalidDataException("Could not extract school id");
+
+		_authCode = code;
+		_clientHandler = new()
 		{
-			return false;
+			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+			{
+				if (errors != System.Net.Security.SslPolicyErrors.None)
+					return false;
+
+				if (message.RequestUri?.Scheme != Uri.UriSchemeHttps)
+					return false;
+
+				return true;
+			}
+		};
+		_httpClient = new(_clientHandler);
+		_secret = secret;
+	}
+
+	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
+	{
+		var response = await GetAsync<RegisterUserProfile>(RegisterPathAPI.UserProfile, ct);
+		UserProfile = response;
+		return response;
+	}
+
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct);
+
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<IEnumerable<CalendarDay>?> GetUpcomingCalendar(CancellationToken ct)
+	{
+		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
+		if (response is null) return null;
+		var stringContent = await response.ReadContentAsStringAsync(ct);
+		var jsonDoc = JsonDocument.Parse(stringContent);
+		return ParseCalendarDays(jsonDoc);
+	}
+	private IEnumerable<CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
+	{
+		Console.WriteLine(jsonDoc.ToString());
+		throw new NotImplementedException();
+	}
+
+	private async Task<bool> AuthenticateAsync(CancellationToken ct = default)
+	{
+		if (TokenExpiration is null) // not authenticated yet
+		{
+			var authResponse = await PostJsonAsync<TokenCreateResponse>(RegisterPathAPI.TokenCreate, new TokenCreateRequest { Code = _authCode }, true, ct);
+
+			if (authResponse is null)
+			{
+				return false;
+			}
+			else
+			{
+				_accessToken = authResponse.Token;
+				_refreshToken = authResponse.RefreshToken;
+				TokenExpiration = authResponse.ExpirationDate;
+				UserId = authResponse.UserId;
+				return true;
+			}
 		}
-		else if (authResponse.TryValidate())
+		else if (TokenExpiration >= DateTimeOffset.UtcNow) // not expired
 		{
-			return false;
+			return true;
 		}
 		else
 		{
-			_accessToken = authResponse.Token;
-			_refreshToken = authResponse.RefreshToken;
-			_tokenExpiration = authResponse.ExpirationDate;
-			_userId = authResponse.UserId;
-			return true;
+			return await RefreshTokenAsync(ct); // expired, refresh
 		}
 	}
 
-	public Task<Models.DigitalesRegister.CalendarWeek?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct)
+	private async Task<bool> RefreshTokenAsync(CancellationToken ct = default)
 	{
-		throw new NotImplementedException();
+		if (_refreshToken is null || UserId is null) return false;
+		var request = new TokenRefreshRequest { RefreshToken = _refreshToken, UserId = (int)UserId! };
+		var response = await PostJsonAsync<TokenRefreshResponse>(RegisterPathAPI.TokenRefresh, request, true, ct: ct);
+		if (response is null) return false;
+		_accessToken = response.Token;
+		TokenExpiration = response.Expiration;
+		return true;
 	}
 
-	public Task<Models.DigitalesRegister.Calendar?> GetCompleteCalendarAsync(CancellationToken ct)
+	/// <summary>
+	/// Posts the json and automatically validates the object
+	/// </summary>
+	private async Task<T?> PostJsonAsync<T>(RegisterPath path, object? data, bool authRequest = false, CancellationToken ct = default)
 	{
-		throw new NotImplementedException();
-	}
+		var response = await PostJsonAsync(path, data, authRequest, ct);
 
-	public Task<RegisterProfileModel?> GetUserProfileAsync(CancellationToken ct)
-	{
-		throw new NotImplementedException();
-	}
-
-	public UserProfileRoles GetUserRole(RegisterProfileModel profile)
-	{
-		throw new NotImplementedException();
-	}
-
-	public Task<bool> ValidateCredentials(CancellationToken ct)
-	{
-		throw new NotImplementedException();
-	}
-
-
-	private async Task<T?> PostJsonAsync<T>(RegisterPath path, object? data, string? apiSecret = null, CancellationToken ct = default)
-	{
-		var response = await PostJsonAsync(path, data, apiSecret, ct);
-		var responseString = await response.Content.ReadAsStringAsync();
-
-		if (responseString is null)
+		if (response is null || !response.TryValidate())
 		{
 			return default;
 		}
@@ -85,7 +129,7 @@ public class RegisterClientAPI(
 		{
 			try
 			{
-				return JsonSerializer.Deserialize<T>(responseString, Constants.SerializerOptions);
+				return JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync(ct), Constants.SerializerOptions);
 			}
 			catch
 			{
@@ -94,28 +138,80 @@ public class RegisterClientAPI(
 		}
 	}
 
-	private async Task<HttpResponseMessage> PostJsonAsync(RegisterPath path, object? data, string? apiSecret = null, CancellationToken ct = default)
+	private async Task<HttpResponseMessage?> PostJsonAsync(RegisterPath path, object? data, bool authRequest = false, CancellationToken ct = default)
 	{
-		if (apiSecret is not null)
+		try
 		{
-			ConfigureHeadersAuth(apiSecret);
+			if (authRequest)
+			{
+				ConfigureHeadersAuth();
+			}
+			else
+			{
+				if (!( await AuthenticateAsync(ct) ))
+				{
+					return null;
+				}
+				ConfigureHeadersDefault();
+			}
+			return await _httpClient.PostAsJsonAsync(path.Get(SchoolUri), data, Constants.SerializerOptions, ct);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Gets and automatically validates the object
+	/// </summary>
+	private async Task<T?> GetAsync<T>(RegisterPath path, CancellationToken ct = default)
+	{
+		var response = await GetAsync(path, ct: ct);
+
+		if (response is null || !response.TryValidate())
+		{
+			return default;
 		}
 		else
 		{
-			ConfigureHeardsDefault();
+			try
+			{
+				return JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync(ct), Constants.SerializerOptions);
+			}
+			catch
+			{
+				return default;
+			}
 		}
-
-		return await _httpClient.PostAsJsonAsync(path.Get(SchoolUri), data, Constants.SerializerOptions, ct);
 	}
 
-	private void ConfigureHeadersAuth(string secret)
+	private async Task<HttpResponseMessage?> GetAsync(RegisterPath path, Dictionary<string, string>? uriArgs = null, CancellationToken ct = default)
+	{
+		var uri = path.Get(SchoolUri);
+		if (uriArgs is not null)
+		{
+			uri = new(QueryHelpers.AddQueryString(uri.AbsoluteUri, uriArgs));
+		}
+		try
+		{
+			ConfigureHeadersDefault();
+			return await _httpClient.GetAsync(uri, ct);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private void ConfigureHeadersAuth()
 	{
 		_httpClient.DefaultRequestHeaders.Clear();
 		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId.ToString());
-		_httpClient.DefaultRequestHeaders.Add(ApiSecretHeader, secret);
+		_httpClient.DefaultRequestHeaders.Add(ApiSecretHeader, _secret);
 	}
 
-	private void ConfigureHeardsDefault()
+	private void ConfigureHeadersDefault()
 	{
 		_httpClient.DefaultRequestHeaders.Clear();
 		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId.ToString());
@@ -128,16 +224,25 @@ public class RegisterClientAPI(
 
 	private bool _disposed = false;
 	~RegisterClientAPI() => Dispose(false);
-	public void Dispose() => Dispose(true);
-	protected void Dispose(bool finalizing)
+	public void Dispose()
+	{
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
+	protected void Dispose(bool disposing)
 	{
 		if (_disposed)
 		{
 			return;
 		}
-		if (finalizing)
+		if (disposing)
 		{
-			GC.SuppressFinalize(this);
+			_clientHandler.Dispose();
+			_httpClient.Dispose();
 		}
+		_disposed = true;
 	}
+
+	[GeneratedRegex(@"^https://(.*?).digitalesregister.it.*$")]
+	private static partial Regex SchoolIdRegex();
 }
