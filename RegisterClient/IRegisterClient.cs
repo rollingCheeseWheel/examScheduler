@@ -13,5 +13,6 @@ public interface IRegisterClient
 	Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct);
 	Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct);
 
-	Task<IEnumerable<CalendarDay>?> GetUpcomingCalendar(CancellationToken ct);
+	Task<IEnumerable<CalendarDay>> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
+	Task<IEnumerable<CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct);
 }

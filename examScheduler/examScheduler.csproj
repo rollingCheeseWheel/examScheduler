@@ -22,6 +22,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Aspire.Azure.Security.KeyVault" Version="9.5.2" />
+		<PackageReference Include="FluffySpoon.AspNet.EncryptWeMust" Version="1.171.0" />
 		<PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />

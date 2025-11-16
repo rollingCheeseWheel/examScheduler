@@ -2,6 +2,7 @@ using Entities;
 using examScheduler;
 using examScheduler.Data;
 using examScheduler.Services;
+using FluffySpoon.AspNet.EncryptWeMust;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,15 @@ builder.AddServiceDefaults();
 builder.Services.AddKeyVaultCache(builder.Configuration.GetConnectionString("keyvault"));
 
 // Add services to the container.
+
+builder.Services.AddFluffySpoonLetsEncrypt(new()
+{
+	Email = "manuel.sinner0608@wfo-bruneck.info",
+	UseStaging = true, // true for testing, false for prod
+	Domains = [ "examscheduler.app" ],
+	TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
+	TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
+});
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
 

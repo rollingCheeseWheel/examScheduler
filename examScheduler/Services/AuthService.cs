@@ -33,11 +33,11 @@ public class AuthService(
 			return new("Unknown School ID");
 		}
 
-		
 
 
-		using var client = new RegisterClient();
 
+		/*using var client = new RegisterClient();*/
+		throw new NotImplementedException();
 	}
 
 	public Task<GenericResponse<TokenResponse>> ExtendTokenAsync(TokenExtendRequest request, CancellationToken ct)

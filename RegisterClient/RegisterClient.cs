@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.WebUtilities;
-using Models.API;
 using Models.DigitalesRegister;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -60,7 +59,13 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct);
 
 	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
-	public async Task<IEnumerable<CalendarDay>?> GetUpcomingCalendar(CancellationToken ct)
+
+	public Task<IEnumerable<CalendarDay>> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct)
+	{
+		throw new NotImplementedException();
+	}
+
+	public async Task<IEnumerable<CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct)
 	{
 		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
 		if (response is null) return null;
@@ -68,10 +73,64 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		var jsonDoc = JsonDocument.Parse(stringContent);
 		return ParseCalendarDays(jsonDoc);
 	}
+
 	private IEnumerable<CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		Console.WriteLine(jsonDoc.ToString());
 		throw new NotImplementedException();
+
+		/*List<CalendarDay> calendarDays = [ ];
+		var root = jsonDoc.RootElement;
+
+		foreach (var prop in root.EnumerateObject()) // date
+		{
+			if (!prop.Name.RegisterTryParse(out var DateTimeOffset))
+			{
+				continue;
+			}
+
+			List<HourInDay> hoursInDay = [ ];
+
+			List<JsonProperty> flattenedEnumeratedObject = [ ];
+
+			foreach (var nestedProp in prop.Value.EnumerateObject())
+			{
+				foreach (var innerMostProp in nestedProp.Value.EnumerateObject())
+				{
+					flattenedEnumeratedObject.AddRange(innerMostProp.Value.EnumerateObject());
+				}
+			}
+
+			foreach (var hour in flattenedEnumeratedObject)
+			{
+				try
+				{
+					var parsedHour = hour.Value.Deserialize<HourInDay>(Constants.SerializerOptions)!;
+
+
+					if (parsedHour.IsLesson)
+					{
+						hoursInDay.Add(parsedHour);
+					}
+					else
+					{
+						continue;
+					}
+				}
+				catch
+				{
+					continue;
+				}
+			}
+
+			calendarDays.Add(new()
+			{
+				Date = (DateTimeOffset)DateTimeOffset!,
+				HoursInDay = hoursInDay
+			});
+		}
+
+		return calendarDays;*/
 	}
 
 	private async Task<bool> AuthenticateAsync(CancellationToken ct = default)
@@ -245,4 +304,5 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	[GeneratedRegex(@"^https://(.*?).digitalesregister.it.*$")]
 	private static partial Regex SchoolIdRegex();
+
 }
