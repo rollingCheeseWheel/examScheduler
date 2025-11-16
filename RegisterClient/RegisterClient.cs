@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.WebUtilities;
+using Models.API;
 using Models.DigitalesRegister;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Util;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace registerClient;
 
-public partial class RegisterClientAPI : IDisposable, IRegisterClient
+public partial class RegisterClient : IDisposable, IRegisterClient
 {
 	public readonly Uri SchoolUri;
 	public readonly int SchoolId;
@@ -25,7 +25,7 @@ public partial class RegisterClientAPI : IDisposable, IRegisterClient
 	public RegisterUserProfile? UserProfile { get; private set; }
 	public RegisterUserProfileRole? Role { get => UserProfile?.Role; }
 
-	public RegisterClientAPI(Uri schoolUri, string code, string secret)
+	public RegisterClient(Uri schoolUri, string code, string secret)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();
 
@@ -223,7 +223,7 @@ public partial class RegisterClientAPI : IDisposable, IRegisterClient
 	public const string TokenHeader = "API-TOKEN";
 
 	private bool _disposed = false;
-	~RegisterClientAPI() => Dispose(false);
+	~RegisterClient() => Dispose(false);
 	public void Dispose()
 	{
 		Dispose(true);

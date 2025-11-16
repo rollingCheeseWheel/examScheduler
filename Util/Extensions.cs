@@ -43,8 +43,6 @@ public static class Extensions
 		return output;
 	}
 
-	public static Uri GetBaseApiPath(this Uri uri) => uri.GetSchemeAndAuthority().AppendRelativePath(RegisterPathWeb.Api);
-
 	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 
 	public static byte[ ] GetBytes(this string str) => Encoding.UTF8.GetBytes(str);
@@ -84,4 +82,6 @@ public static class Extensions
 	{
 		return value.TryValidate(out var _);
 	}
+
+	public static bool SequenceEqual<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 }

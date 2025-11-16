@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Storage.Json;
-using Models.DigitalesRegister;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
 
@@ -16,87 +14,31 @@ public class Calendar
 	[Required]
 	public DateTimeOffset LastScanned { get; private set; } = DateTimeOffset.UtcNow;
 
-	// Navigation Properties (collection should not be [Required])
-	public ICollection<CalendarWeek> Weeks { get; set; } = [ ];
+	[Required]
+	public required ICollection<CalendarDay> Days { get; set; } = [ ];
 	public Classroom? Classroom { get; set; }
 
-	public static Calendar Parse(
-		Models.DigitalesRegister.Calendar other,
-		out IEnumerable<Subject> subjects,
-		out IEnumerable<Teacher> teachers,
-		out (int ClassroomId, string Name)? classroomInfo
-	)
+	public static Calendar Parse(Classroom classroom, Models.DigitalesRegister.Calendar calendar, ICollection<Teacher> teachers) => Parse(classroom, calendar.Days, teachers);
+
+	public static Calendar Parse(Classroom classroom, ICollection<Models.DigitalesRegister.CalendarDay> days, ICollection<Teacher> teachers)
 	{
-		var teacherSubjects = other.CompileTeachersWithSubjects();
-
-		classroomInfo = other.GetClassroomInfo();
-
-		teachers = teacherSubjects
-			.Select(ts => new Teacher
-			{
-				RegisterID = ts.Teacher.Id,
-				FirstName = ts.Teacher.FirstName,
-				LastName = ts.Teacher.LastName,
-				Subjects = ts.Subjects.Select(s => new Subject { Name = s.Name, RegisterId = s.Id }).ToList(),
-			});
-
-		subjects = teachers
-			.SelectMany(t => t.Subjects)
-			.Distinct();
-
-		var localTeachers = teachers.ToList();
-
 		return new()
 		{
-			Weeks = other.Days.Select(w => CalendarWeek.Parse(w, localTeachers)).ToList(),
+			Days = days.Select(d => CalendarDay.Parse(d, teachers)).ToList(),
+			Classroom = classroom
 		};
 	}
 
-	public void Rescanned()
+	public static bool operator ==(Calendar? a, Calendar? d)
 	{
-		TimesScanned++;
-		LastScanned = DateTimeOffset.UtcNow;
-	}
-
-	public static bool operator ==(Calendar? a, Calendar? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Classroom == b.Classroom
-			&& a.Weeks.OrderBy(w => w.StartDate).SequenceEqual(b.Weeks.OrderBy(w => w.StartDate));
+		if (ReferenceEquals(a, d)) return true;
+		if (a is null || d is null) return false;
+		return a.Classroom == d.Classroom
+			&& a.Days.SequenceEqual(d.Days, x => x.Date);
 	}
 	public static bool operator !=(Calendar? a, Calendar? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Calendar other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Classroom, Weeks.OrderBy(w => w.StartDate));
-}
-
-public class CalendarWeek
-{
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
-	[Required]
-	public required DateTimeOffset StartDate { get; init; }
-	public ICollection<CalendarDay> Days { get; set; } = [ ];
-
-	public static CalendarWeek Parse(Models.DigitalesRegister.CalendarWeek calendarWeek, ICollection<Teacher> teachers)
-	{
-		return new()
-		{
-			StartDate = calendarWeek.StartDate.ToUniversalTime(),
-			Days = calendarWeek.Days.Select(d => CalendarDay.Parse(d, teachers)).ToList(),
-		};
-	}
-
-	public static bool operator ==(CalendarWeek? a, CalendarWeek? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.StartDate == b.StartDate
-			&& a.Days.OrderBy(d => d.Date).SequenceEqual(b.Days.OrderBy(d => d.Date));
-	}
-	public static bool operator !=(CalendarWeek? a, CalendarWeek? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is CalendarWeek other && this == other;
-	public override int GetHashCode() => HashCode.Combine(StartDate, Days.OrderBy(d => d.Date));
+	public override int GetHashCode() => HashCode.Combine(Classroom, Days.OrderBy(d => d.Date));
 }
 
 public class CalendarDay
@@ -124,7 +66,7 @@ public class CalendarDay
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.Date == b.Date
-			&& a.HoursInDay.OrderBy(h => h.Hour).SequenceEqual(b.HoursInDay.OrderBy(h => h.Hour));
+			&& a.HoursInDay.SequenceEqual(b.HoursInDay, h => h.Hour);
 	}
 	public static bool operator !=(CalendarDay? a, CalendarDay? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is CalendarDay other && this == other;
@@ -166,7 +108,6 @@ public class HourInDay
 	public override bool Equals(object? obj) => obj is HourInDay other && this == other;
 	public override int GetHashCode() => HashCode.Combine(Lesson, Hour, LinkedHoursCount);
 }
-
 
 public class Lesson
 {
@@ -215,7 +156,7 @@ public class Lesson
 			&& a.LinkToPreviousHour == b.LinkToPreviousHour
 			&& a.ClassId == b.ClassId
 			&& a.Subject == b.Subject
-			&& a.Teachers.OrderBy(a => a.RegisterID).SequenceEqual(b.Teachers.OrderBy(b => b.RegisterID));
+			&& a.Teachers.SequenceEqual(b.Teachers, b => b.RegisterID);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && this == other;

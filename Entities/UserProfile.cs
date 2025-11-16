@@ -25,6 +25,5 @@ public class UserProfile : IdentityUser<int>
 	}
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
-	public bool MatchesRegisterProfile(RegisterProfileModel model) => UserName == model.Username && DisplayName == model.Name;
 	public override int GetHashCode() => HashCode.Combine(School, UserName);
 }

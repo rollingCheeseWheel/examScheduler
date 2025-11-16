@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Util.Converters;
+using Util;
 
 namespace Models.DigitalesRegister;
 
@@ -14,11 +15,11 @@ public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
 public record DetailedTeacherSubjects(Teacher Teacher, IEnumerable<DetailedSubject> Subjects);
 public record DetailedSubject(Subject Subject, int Count);
 
-public class Calendar(ICollection<CalendarWeek> days)
+public class Calendar(ICollection<CalendarDay> days)
 {
-	public required ICollection<CalendarWeek> Days { get; set; } = days;
+	public required ICollection<CalendarDay> Days { get; set; } = days;
 
-	/// <summary>
+	/*/// <summary>
 	/// Get an IEnumerable of Teachers, each Teacher has an additional IEnumerable of Subjects they are associated with.
 	/// This function also filters out noise like substitute teachers, altough this only works (well) when the calendar is long(er)
 	/// </summary>
@@ -51,12 +52,11 @@ public class Calendar(ICollection<CalendarWeek> days)
 				t.Subjects.Where(s => s.Count > ignoreThreshold).Select(s => s.Subject)
 			))
 			.Where(t => t.Subjects.Any());
-	}
+	}*/
 
 	public (int ClassroomId, string Name)? GetClassroomInfo()
 	{
 		return Days
-			.SelectMany(w => w.Days)
 			.SelectMany(d => d.HoursInDay)
 			.Select(h => h.Lesson)
 			.Select(l => (ClassroomId: l.ClassId, Name: l.ClassName))
@@ -68,38 +68,11 @@ public class Calendar(ICollection<CalendarWeek> days)
 	}
 }
 
-[Obsolete("just use a flat list of days with their lessons, the added dimensions just complicate things")]
-public class CalendarWeek
-{
-	public DateTimeOffset StartDate { get => Days.Select(d => d.Date).Order().FirstOrDefault(); }
-	public required ICollection<CalendarDay> Days { get; set; } = [ ];
-
-	public IEnumerable<DetailedTeacherSubjects> CompileTeachersWithSubjects()
-	{
-		return Days
-			.SelectMany(d => d.HoursInDay)
-			.Select(h => h.Lesson) // Lessons
-			.SelectMany(l => l.Teachers.Select(t => new
-			{
-				Teacher = t,
-				l.Subject
-			}))
-			.GroupBy(x => x.Teacher) // make distinct 
-			.Select(g => new DetailedTeacherSubjects
-			(
-				g.Key, // Distinct Teachers
-				g.GroupBy(x => x.Subject).Select(a => new DetailedSubject(a.Key, a.Count())) // Distinct Subjects
-			));
-	}
-}
-
 public class CalendarDay
 {
-	[JsonConverter(typeof(DateTimeOffsetConverter))]
 	public required DateTimeOffset Date { get; set; }
 	public required ICollection<HourInDay> HoursInDay { get; set; }
 }
-
 
 public class HourInDay
 {
@@ -136,6 +109,24 @@ public class Lesson
 
 	[JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
+
+
+	public static bool operator ==(Lesson? a, Lesson? b)
+	{
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.Date == b.Date
+			&& a.Hour == b.Hour
+			&& a.ToHour == b.ToHour
+			&& a.ClassId == b.ClassId
+			&& a.ClassName == b.ClassName
+			&& a.Subject == b.Subject
+			&& a.LinkToPreviousHour == b.LinkToPreviousHour
+			&& a.Teachers.SequenceEqual(b.Teachers, x => x.Id);
+	}
+	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
+	public override bool Equals(object? obj) => obj is Lesson other && this == other;
+	public override int GetHashCode() => HashCode.Combine(Date, Hour, ToHour, ClassId, ClassName, Subject, LinkToPreviousHour, Teachers);
 }
 
 public class Subject

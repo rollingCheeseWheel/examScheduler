@@ -3,31 +3,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Models.API;
 
-public class AuthRequest
+public class OAuthRequest
 {
 	[Required]
-	public required string Username { get; set; }
+	public required string AuthCode { get; set; }
 	[Required]
-	public required string Password { get; set; }
-	[Required, UriValidator/*, Url*/]
-	public required Uri RegisterUri { get; set; }
+	public required string SchoolId { get; set; }
 }
 
-public class SignupRequest : AuthRequest
-{
-	[Required]
-	public required string NewPassword { get; set; }
-}
-
-public class ChangePasswordRequest
-{
-	[Required]
-	public required string OldPassword { get; set; }
-	[Required]
-	public required string NewPassword { get; set; }
-}
-
-public class ExtendTokenRequest
+public class TokenExtendRequest
 {
 	[Required]
 	public required string RefreshToken { get; set; }

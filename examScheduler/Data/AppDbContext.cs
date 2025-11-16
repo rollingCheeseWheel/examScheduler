@@ -122,12 +122,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		// Cascade through Calendar aggregate
 		modelBuilder.Entity<Calendar>()
-			.HasMany(c => c.Weeks)
-			.WithOne()
-			.OnDelete(DeleteBehavior.Cascade);
-
-		modelBuilder.Entity<CalendarWeek>()
-			.HasMany(w => w.Days)
+			.HasMany(c => c.Days)
 			.WithOne()
 			.OnDelete(DeleteBehavior.Cascade);
 

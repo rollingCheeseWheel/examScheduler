@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Writers;
 using System.Text;
 using System.Text.Json;
+using Util;
 using Util.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,11 +32,6 @@ builder.Services
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<IClassroomService, ClassroomService>();
 /*////*/
-
-builder.Services.ConfigureHttpJsonOptions(o =>
-{
-	o.SerializerOptions.Converters.Add(new DateTimeOffsetConverter());
-});
 
 var tokenValidationParameters = new TokenValidationParameters
 {
@@ -96,25 +92,14 @@ using (var schoolScope = app.Services.CreateScope())
 	List<School> schools = [
 		new School()
 		{
-			Name = "WFO Bruneck Innichen",
+			Name = "Test WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
-			ClientID = "6767"
-		},
-		new School()
-		{
-			Name = "TFO Bruneck",
-			RegisterUri = new("https://tfo-bruneck.digitalesregister.it/"),
-			ClientID = "6767"
-		},
-		new School()
-		{
-			Name = "SoWi Kunst Gym Bruneck",
-			RegisterUri = new("https://sowikunstgym-bruneck.digitalesregister.it/"),
+			SchoolId = "wfo-bruneck",
 			ClientID = "6767"
 		},
 	];
 
-	if (db.Schools.Count() < 3)
+	if (!db.Schools.SequenceEqual(schools, x => x))
 	{
 		db.Schools.RemoveRange(db.Schools.ToList());
 		db.Schools.AddRange(schools);

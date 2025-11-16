@@ -1,24 +1,7 @@
-﻿using System.Text.Json.Serialization;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Routing.Constraints;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Models.DigitalesRegister;
-
-[Obsolete]
-public class LoginRequest
-{
-	[JsonPropertyName("username")]
-	public required string Username { get; set; }
-	[JsonPropertyName("password")]
-	public required string Password { get; set; }
-}
-
-[Obsolete]
-public class LoginResponse
-{
-	[JsonPropertyName("loggedIn")]
-	public bool? LoggedIn { get; set; }
-}
 
 public class TokenCreateRequest
 {

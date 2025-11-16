@@ -9,23 +9,16 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
 	private readonly IAuthService _authService = authService;
 
-	[Route("register")]
+	[Route("auth")]
 	[HttpPost]
-	public async Task<IActionResult> Register([FromBody] SignupRequest request, CancellationToken ct)
+	public IActionResult Login([FromBody] OAuthRequest request)
 	{
-		return await _authService.RegisterAsync(request, ct);
+		throw new NotImplementedException();
 	}
 
-	[Route("reset")]
+	[Route("extend")]
 	[HttpPost]
-	public async Task<IActionResult> PasswordReset([FromBody] SignupRequest request, CancellationToken ct)
-	{
-		return await _authService.ResetPasswordAsync(request, ct);
-	}
-
-	[Route("login")]
-	[HttpPost]
-	public IActionResult Login([FromBody] AuthRequest loginRequest)
+	public IActionResult Extend([FromBody] TokenExtendRequest request)
 	{
 		throw new NotImplementedException();
 	}
