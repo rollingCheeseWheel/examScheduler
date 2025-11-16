@@ -1,9 +1,11 @@
 ﻿using examScheduler.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Models.API;
 
 namespace examScheduler.Controllers;
-[Route("api/[controller]")]
+
+[Route("api/[controller]/")]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {

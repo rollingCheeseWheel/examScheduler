@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
+﻿using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,10 +8,10 @@ using Util;
 
 namespace registerClient;
 
-public partial class RegisterClient : IDisposable, IRegisterClient
+public partial class RegisterClient : IDisposable/*, IRegisterClient*/
 {
 	public readonly Uri SchoolUri;
-	public readonly int SchoolId;
+	public readonly string SchoolId;
 	private readonly HttpClient _httpClient;
 	private readonly HttpClientHandler _clientHandler;
 
@@ -24,14 +25,11 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	public RegisterUserProfile? UserProfile { get; private set; }
 	public RegisterUserProfileRole? Role { get => UserProfile?.Role; }
 
-	public RegisterClient(Uri schoolUri, string code, string secret)
+	public RegisterClient(Uri schoolUri, string schoolId, string secret, string authCode)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();
-
-		var match = SchoolIdRegex().Match(schoolUri.AbsoluteUri).Groups[ 1 ];
-		SchoolId = match.Success ? int.Parse(match.Value) : throw new InvalidDataException("Could not extract school id");
-
-		_authCode = code;
+		SchoolId = schoolId;
+		_authCode = authCode;
 		_clientHandler = new()
 		{
 			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
@@ -56,22 +54,26 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		return response;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct);
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct);
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
-	public Task<IEnumerable<CalendarDay>> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct)
+	public async Task<string/*IEnumerable<CalendarDay>*/?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
-		throw new NotImplementedException();
+		var args = new Dictionary<string, string> { { "startDate", date.ToRegisterFormat() } };
+
+		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
+		if (response is null) return null;
+		return await response.ReadContentAsStringAsync(ct);
 	}
 
-	public async Task<IEnumerable<CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct)
+	public async Task<string/*IEnumerable<CalendarDay>*/?> GetUpcomingCalendarAsync(CancellationToken ct = default)
 	{
 		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
 		if (response is null) return null;
 		var stringContent = await response.ReadContentAsStringAsync(ct);
-		var jsonDoc = JsonDocument.Parse(stringContent);
-		return ParseCalendarDays(jsonDoc);
+		/*var jsonDoc = JsonDocument.Parse(stringContent);*/
+		return stringContent/*ParseCalendarDays(jsonDoc)*/;
 	}
 
 	private IEnumerable<CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
@@ -266,7 +268,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	private void ConfigureHeadersAuth()
 	{
 		_httpClient.DefaultRequestHeaders.Clear();
-		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId.ToString());
+		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId);
 		_httpClient.DefaultRequestHeaders.Add(ApiSecretHeader, _secret);
 	}
 

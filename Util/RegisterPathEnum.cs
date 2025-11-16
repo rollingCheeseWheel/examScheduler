@@ -17,7 +17,9 @@ public sealed class RegisterPathAPI(string value) : RegisterPath(value)
 
 	public static readonly RegisterPathAPI Classes = new("class/all");
 	public static readonly RegisterPathAPI Subjects = new("subject/all");
+
 	public static readonly RegisterPathAPI LessonMonth = new("lesson/my_lesson");
+	public static readonly RegisterPathAPI LessonWeek = new("lesson/my_calendar");
 
 	public override Uri GetAPI(Uri @base) => @base.GetSchemeAndAuthority().AppendRelativePath(Api);
 }

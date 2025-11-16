@@ -1,11 +1,11 @@
 meta {
-  name: auth/login
+  name: auth
   type: http
   seq: 1
 }
 
 post {
-  url: https://localhost:7235/api/auth/login
+  url: {{localhost}}/auth
   body: json
   auth: inherit
 }
@@ -19,4 +19,5 @@ body:json {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

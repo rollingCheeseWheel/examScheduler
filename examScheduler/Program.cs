@@ -3,15 +3,14 @@ using examScheduler;
 using examScheduler.Data;
 using examScheduler.Services;
 using FluffySpoon.AspNet.EncryptWeMust;
+using FluffySpoon.AspNet.EncryptWeMust.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Writers;
 using System.Text;
 using System.Text.Json;
 using Util;
-using Util.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,22 +18,49 @@ builder.AddServiceDefaults();
 
 builder.Services.AddKeyVaultCache(builder.Configuration.GetConnectionString("keyvault"));
 
-// Add services to the container.
-
-builder.Services.AddFluffySpoonLetsEncrypt(new()
-{
-	Email = "manuel.sinner0608@wfo-bruneck.info",
-	UseStaging = true, // true for testing, false for prod
-	Domains = [ "examscheduler.app" ],
-	TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
-	TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
-});
-
+// Add services
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
 
 builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
+
+// let's encrypt certificate
+
+if (builder.Environment.IsDevelopment())
+{
+	builder.Services.AddFluffySpoonLetsEncrypt(new()
+	{
+		Email = "manuel.sinner0608@wfo-bruneck.info",
+		UseStaging = true, // true for testing, false for prod
+		Domains = [ "examscheduler.app" ],
+		TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
+		TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
+		RenewalFailMode = FluffySpoon.AspNet.EncryptWeMust.Certes.RenewalFailMode.LogAndContinue
+	});
+	builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
+	builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<AppDbContext>(
+		// creating the certificate
+		async (context, key, bytes) => 
+		{
+			var existingCertificate = context.Certificates.FirstOrDefault(c => c.Key == (int)key);
+			if (existingCertificate is not null)
+			{
+				existingCertificate.Bytes = bytes;
+			}
+			else
+			{
+				context.Certificates.Add(new()
+				{
+					Key = (int)key,
+					Bytes = bytes
+				});
+			}
+		},
+		// retrieving the certificate
+		async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes 
+	);
+}
 
 /*////*/
 builder.Services

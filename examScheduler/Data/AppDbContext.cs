@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 	public DbSet<School> Schools { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
+	public DbSet<Certificate> Certificates { get; set; }
 	/*public DbSet<Teacher> Teachers { get; set; }*/
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)

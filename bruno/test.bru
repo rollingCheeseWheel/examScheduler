@@ -1,0 +1,21 @@
+meta {
+  name: test
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://localhost:443/?code=123123&school_id=123123
+  body: none
+  auth: inherit
+}
+
+params:query {
+  code: 123123
+  school_id: 123123
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
