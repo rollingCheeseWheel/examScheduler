@@ -2,26 +2,27 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Models.API;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace examScheduler.Controllers;
 
-[Route("api/[controller]/")]
+[Route("api/[controller]")]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
 	private readonly IAuthService _authService = authService;
 
-	[Route("auth")]
 	[HttpPost]
-	public IActionResult Login([FromBody] OAuthRequest request)
+	public async Task<IActionResult> Login([FromBody] OAuthRequest request, CancellationToken ct)
 	{
-		throw new NotImplementedException();
+		return await _authService.AuthenticateAsync(request, ct);
 	}
 
 	[Route("extend")]
 	[HttpPost]
-	public IActionResult Extend([FromBody] TokenExtendRequest request)
+	public async Task<IActionResult> Extend([FromBody] TokenExtendRequest request, CancellationToken ct)
 	{
-		throw new NotImplementedException();
+		return await _authService.ExtendTokenAsync(request, ct);
 	}
 }

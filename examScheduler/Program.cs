@@ -16,8 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddKeyVaultCache(builder.Configuration.GetConnectionString("keyvault"));
-
 // Add services
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
 
@@ -25,49 +23,52 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
 
-// let's encrypt certificate
-
-if (builder.Environment.IsDevelopment())
+// key vault
+if (builder.Configuration.GetConnectionString("keyvault") is not null)
 {
-	builder.Services.AddFluffySpoonLetsEncrypt(new()
-	{
-		Email = "manuel.sinner0608@wfo-bruneck.info",
-		UseStaging = true, // true for testing, false for prod
-		Domains = [ "examscheduler.app" ],
-		TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
-		TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
-		RenewalFailMode = FluffySpoon.AspNet.EncryptWeMust.Certes.RenewalFailMode.LogAndContinue
-	});
-	builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
-	builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<AppDbContext>(
-		// creating the certificate
-		async (context, key, bytes) => 
-		{
-			var existingCertificate = context.Certificates.FirstOrDefault(c => c.Key == (int)key);
-			if (existingCertificate is not null)
-			{
-				existingCertificate.Bytes = bytes;
-			}
-			else
-			{
-				context.Certificates.Add(new()
-				{
-					Key = (int)key,
-					Bytes = bytes
-				});
-			}
-		},
-		// retrieving the certificate
-		async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes 
-	);
+	builder.AddAzureKeyVaultClient("keyvault");
 }
 
 /*////*/
 builder.Services
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<IAuthService, AuthService>()
-	.AddScoped<IClassroomService, ClassroomService>();
+	.AddScoped<IClassroomService, ClassroomService>()
+	.AddSingleton<IKeyVaultService, KeyVaultService>();
 /*////*/
+
+// let's encrypt certificate
+/*builder.Services.AddFluffySpoonLetsEncrypt(new()
+{
+	Email = "manuel.sinner0608@wfo-bruneck.info",
+	UseStaging = true, // true for testing, false for prod
+	Domains = [ "examscheduler.app" ],
+	TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
+	TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
+	RenewalFailMode = FluffySpoon.AspNet.EncryptWeMust.Certes.RenewalFailMode.LogAndContinue
+});
+builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
+builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<AppDbContext>(
+	// creating the certificate
+	async (context, key, bytes) => 
+	{
+		var existingCertificate = context.Certificates.FirstOrDefault(c => c.Key == (int)key);
+		if (existingCertificate is not null)
+		{
+			existingCertificate.Bytes = bytes;
+		}
+		else
+		{
+			context.Certificates.Add(new()
+			{
+				Key = (int)key,
+				Bytes = bytes
+			});
+		}
+	},
+	// retrieving the certificate
+	async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes 
+);*/
 
 var tokenValidationParameters = new TokenValidationParameters
 {

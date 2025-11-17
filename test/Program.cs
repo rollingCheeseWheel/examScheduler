@@ -5,10 +5,12 @@ using Util;
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 
+Console.WriteLine($"{config[ "API:schoolUrl" ]}/");
+
 Console.WriteLine("Authcode:");
 var authCode = Console.ReadLine();
 
-using var client = new RegisterClient(new("https://wfo-bruneck.digitalesregister.it"), config["API:schoolId"]!, config["API:secret"]!, authCode!);
+using var client = new RegisterClient(new(config["API:schoolUrl"]!), config["API:schoolId"]!, config["API:secret"]!, authCode!);
 
 Console.WriteLine("UserProfile");
 Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync(Constants.SerializerOptions));
