@@ -1,6 +1,7 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Models.API;
 using registerClient;
 
@@ -29,10 +30,10 @@ public class AuthService(
 	public async Task<GenericResponse<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
 		// verify that the school exists
-		var existingSchool = _context.Schools.FirstOrDefault(s => s.SchoolId == request.SchoolId);
+		var existingSchool = await _context.Schools.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (existingSchool is null)
 		{
-			return new("Unknown School ID");
+			return new("Unknown School ID", System.Net.HttpStatusCode.BadRequest);
 		}
 
 		// get the oAuthSecret
@@ -49,8 +50,8 @@ public class AuthService(
 		{
 			return new("Could not fetch user profile", System.Net.HttpStatusCode.InternalServerError);
 		}
-/*
-		var existingStudent = _context.UserProfiles.FirstOrDefault(p => p.)*/
+
+		/*var existingStudent = _context.UserProfiles.FirstOrDefault(p => p.)*/
 
 		/*using var client = new RegisterClient();*/
 		throw new NotImplementedException();
