@@ -9,7 +9,11 @@ public class UserProfile : IdentityUser<int>
 	public required School School { get; init; }
 	public int SchoolId { get; }
 	[Required]
-	public required string DisplayName { get; set; }
+	public required string FirstName { get; set; }
+	[Required]
+	public required string LastName { get; set; }
+	[Required]
+	public required UserProfileRole Role { get; set; }
 
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }

@@ -12,8 +12,10 @@ public class KeyVaultService : IKeyVaultService
 {
 	private readonly SecretClient? _client;
 
-	public KeyVaultService(SecretClient client) => _client = client;
-	public KeyVaultService() { }
+	public KeyVaultService(IServiceProvider services)
+	{
+		_client = services.GetService<SecretClient>();
+	}
 
 	public string? Get(string key)
 	{
