@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc.ApplicationParts;
+﻿using Entities;
+using Microsoft.AspNetCore.DataProtection.XmlEncryption;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Util;
 
 namespace registerClient;
 
-public partial class RegisterClient : IDisposable/*, IRegisterClient*/
+public partial class RegisterClient : IDisposable, IRegisterClient
 {
 	public readonly Uri SchoolUri;
 	public readonly string SchoolId;
@@ -23,7 +26,6 @@ public partial class RegisterClient : IDisposable/*, IRegisterClient*/
 	public int? UserId { get; private set; }
 
 	public RegisterUserProfile? UserProfile { get; private set; }
-	public RegisterUserProfileRole? Role { get => UserProfile?.Role; }
 
 	public RegisterClient(Uri schoolUri, string schoolId, string secret, string authCode)
 	{
@@ -47,6 +49,23 @@ public partial class RegisterClient : IDisposable/*, IRegisterClient*/
 		_secret = secret;
 	}
 
+	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
+	{
+		if (UserProfile is null)
+		{
+			UserProfile = await GetUserProfileAsync(ct);
+		}
+
+		return UserProfile?.Role switch
+		{
+			"student" => UserProfileRole.Student,
+			"teacher" => UserProfileRole.Teacher,
+			"admin" => UserProfileRole.Admin,
+			"parent" => UserProfileRole.Parent,
+			_ => null
+		};
+	}
+
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
 		var response = await GetAsync<RegisterUserProfile>(RegisterPathAPI.UserProfile, ct);
@@ -58,25 +77,23 @@ public partial class RegisterClient : IDisposable/*, IRegisterClient*/
 
 	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
-	public async Task<string/*IEnumerable<CalendarDay>*/?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var args = new Dictionary<string, string> { { "startDate", date.ToRegisterFormat() } };
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null) return null;
-		return await response.ReadContentAsStringAsync(ct);
+		return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 	}
 
-	public async Task<string/*IEnumerable<CalendarDay>*/?> GetUpcomingCalendarAsync(CancellationToken ct = default)
+	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct = default)
 	{
 		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
 		if (response is null) return null;
-		var stringContent = await response.ReadContentAsStringAsync(ct);
-		/*var jsonDoc = JsonDocument.Parse(stringContent);*/
-		return stringContent/*ParseCalendarDays(jsonDoc)*/;
+		return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 	}
 
-	private IEnumerable<CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
+	private IEnumerable<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		Console.WriteLine(jsonDoc.ToString());
 		throw new NotImplementedException();

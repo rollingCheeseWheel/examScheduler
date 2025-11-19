@@ -14,9 +14,11 @@ public enum UserPermissions
 	Write = 1 << 1,   // 2
 }
 
-public enum UserProfileRoles
+public enum UserProfileRole
 {
-	Unknown,
+	None,
 	Student,
 	Teacher,
+	Admin,
+	Parent,
 }

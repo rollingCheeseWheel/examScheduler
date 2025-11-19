@@ -7,14 +7,17 @@ namespace Models.DigitalesRegister;
 
 public class RegisterUserProfile
 {
+	/// <summary>
+	/// Maps to UserProfile.Username
+	/// </summary>
 	[Required]
 	public required int Id { get; set; }
 	[Required]
 	public required string FirstName { get; set; }
 	[Required]
 	public required string LastName { get; set; }
-	[Required, JsonConverter(typeof(StringEnumConverter<RegisterUserProfileRole>))]
-	public required RegisterUserProfileRole Role { get; set; }
+	[Required]
+	public required string Role { get; set; }
 
 	public string? Picture { get; set; }
 }

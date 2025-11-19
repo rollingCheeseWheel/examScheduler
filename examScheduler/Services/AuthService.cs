@@ -51,9 +51,10 @@ public class AuthService(
 			return new("Could not fetch user profile", System.Net.HttpStatusCode.InternalServerError);
 		}
 
-		/*var existingStudent = _context.UserProfiles.FirstOrDefault(p => p.)*/
+		//var existingStudent = _context.UserProfiles.FirstOrDefault(p => p.);
 
-		/*using var client = new RegisterClient();*/
+
+		//using var client = new RegisterClient();
 		throw new NotImplementedException();
 	}
 
