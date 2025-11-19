@@ -2,10 +2,11 @@
 using examScheduler.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Models.API;
 using registerClient;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Util;
 
 namespace examScheduler.Services;
 
@@ -21,7 +22,8 @@ public class AuthService(
 	RoleManager<IdentityRole<int>> roleManager,
 	IClassroomService classroomService,
 	IKeyVaultService keyVaultService,
-	IServiceProvider serviceProvider
+	IServiceProvider serviceProvider,
+	IJwtService jwtService
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -30,6 +32,7 @@ public class AuthService(
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly IKeyVaultService _keyVaultService = keyVaultService;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
+	private readonly IJwtService _jwtService = jwtService;
 
 	public async Task<GenericResponse<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
@@ -57,24 +60,39 @@ public class AuthService(
 			return new("Could not fetch user profile", System.Net.HttpStatusCode.InternalServerError);
 		}
 
-		var tokenOptions = _serviceProvider.GetRequiredService<TokenOptions>();
-
-		var existingUser = _context.UserProfiles
-			.FirstOrDefault(p => p.UserName == userProfile.ToString() && p.SchoolId == existingSchool.Id);
+		var existingUser = await _userManager.Users
+			.Include(u => u.StudentProfile)
+			.Include(u => u.TeacherProfile)
+			.FirstOrDefaultAsync(u => u.SchoolId == existingSchool.Id && u.UserName == userProfile.Id.ToString(), ct);
 		if (existingUser is not null) // user found 
 		{
-			//var claims = [
-			//	new Claim(ClaimTypes.NameIdentifier, existingUser.Id)
-			//];
-
-			//new JwtSecurityToken()
+			return await LoginAsync(existingUser, ct);
 		}
 
-		//using var client = new RegisterClient();
+		return await RegisterAsync(client, request, ct);
+	}
+
+	public async Task<GenericResponse<TokenResponse>> ExtendTokenAsync(TokenExtendRequest request, CancellationToken ct = default)
+	{
 		throw new NotImplementedException();
 	}
 
-	public Task<GenericResponse<TokenResponse>> ExtendTokenAsync(TokenExtendRequest request, CancellationToken ct = default)
+	private async Task<GenericResponse<TokenResponse>> LoginAsync(UserProfile user, CancellationToken ct = default)
+	{
+		var roles = await _userManager.GetRolesAsync(user);
+
+		List<Claim> claims = [
+			new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+			new(ClaimTypes.GroupSid, user.SchoolId.ToString()),
+			new(ClaimTypes.Name, user.FirstName),
+			new(ClaimTypes.Surname, user.LastName),
+			..roles.Select(r => new Claim(ClaimTypes.Role, r))
+		];
+
+		return new(await _jwtService.GetTokensAsync(claims, user, ct));
+	}
+
+	private async Task<GenericResponse<TokenResponse>> RegisterAsync(RegisterClient registerClient, OAuthRequest request, CancellationToken ct = default)
 	{
 		throw new NotImplementedException();
 	}

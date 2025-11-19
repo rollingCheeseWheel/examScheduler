@@ -82,7 +82,7 @@ var tokenValidationParameters = new TokenValidationParameters
 	ValidIssuer = builder.Configuration[ "JWT:issuer" ],
 
 	ValidateAudience = true,
-	ValidAudience = builder.Configuration[ "JWT:audience" ]
+	ValidAudience = builder.Configuration[ "JWT:audience" ],
 };
 
 builder.Services.AddSingleton(tokenValidationParameters);
@@ -95,6 +95,8 @@ builder.Services.AddAuthentication(options =>
 {
 	options.TokenValidationParameters = tokenValidationParameters;
 });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
 	.AddJsonOptions(options =>
@@ -145,10 +147,12 @@ using (var schoolScope = app.Services.CreateScope())
 	db.SaveChanges();
 }
 
+app.MapControllers();
+
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseAuthentication();
 
-app.MapControllers();
+app.UseAuthorization();
 
 app.Run();
