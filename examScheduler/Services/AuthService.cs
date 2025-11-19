@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
 using registerClient;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace examScheduler.Services;
 
@@ -18,7 +20,8 @@ public class AuthService(
 	UserManager<UserProfile> userManager,
 	RoleManager<IdentityRole<int>> roleManager,
 	IClassroomService classroomService,
-	IKeyVaultService keyVaultService
+	IKeyVaultService keyVaultService,
+	IServiceProvider serviceProvider
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -26,11 +29,14 @@ public class AuthService(
 	private readonly RoleManager<IdentityRole<int>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly IKeyVaultService _keyVaultService = keyVaultService;
+	private readonly IServiceProvider _serviceProvider = serviceProvider;
 
 	public async Task<GenericResponse<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
 		// verify that the school exists
-		var existingSchool = await _context.Schools.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
+		var existingSchool = await _context.Schools
+			.Include(s => s.RegisterUri)
+			.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (existingSchool is null)
 		{
 			return new("Unknown School ID", System.Net.HttpStatusCode.BadRequest);
@@ -51,8 +57,18 @@ public class AuthService(
 			return new("Could not fetch user profile", System.Net.HttpStatusCode.InternalServerError);
 		}
 
-		//var existingStudent = _context.UserProfiles.FirstOrDefault(p => p.);
+		var tokenOptions = _serviceProvider.GetRequiredService<TokenOptions>();
 
+		var existingUser = _context.UserProfiles
+			.FirstOrDefault(p => p.UserName == userProfile.ToString() && p.SchoolId == existingSchool.Id);
+		if (existingUser is not null) // user found 
+		{
+			//var claims = [
+			//	new Claim(ClaimTypes.NameIdentifier, existingUser.Id)
+			//];
+
+			//new JwtSecurityToken()
+		}
 
 		//using var client = new RegisterClient();
 		throw new NotImplementedException();
