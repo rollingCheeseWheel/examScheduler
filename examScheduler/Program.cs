@@ -16,6 +16,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("CORS", p =>
+		p.AllowAnyOrigin()
+		.AllowAnyHeader()
+		.AllowAnyMethod()
+	);
+});
+
 // Add services
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
 
@@ -106,18 +115,6 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-app.MapDefaultEndpoints();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-	app.MapOpenApi();
-
-	using var scope = app.Services.CreateScope();
-	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-	db.Database.Migrate();
-}
-
 using (var schoolScope = app.Services.CreateScope())
 {
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -126,7 +123,7 @@ using (var schoolScope = app.Services.CreateScope())
 		new()
 		{
 			Name = "Test WFO Bruneck Innichen",
-			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
+			RegisterUri = new("https://wfo-test-bruneck.digitalesregister.it/"),
 			SchoolId = "wfo-bruneck",
 			ClientId = "QYffPSN5bcsrZ9yL",
 			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!
@@ -142,7 +139,21 @@ using (var schoolScope = app.Services.CreateScope())
 	db.SaveChanges();
 }
 
+app.MapDefaultEndpoints();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+	app.MapOpenApi();
+
+	using var scope = app.Services.CreateScope();
+	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+	db.Database.Migrate();
+}
+
 app.MapControllers();
+
+app.UseCors("CORS");
 
 app.UseHttpsRedirection();
 
