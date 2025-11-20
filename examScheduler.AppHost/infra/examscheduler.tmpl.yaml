@@ -21,8 +21,10 @@ properties:
       - server: {{ .Env.AZURE_CONTAINER_REGISTRY_ENDPOINT }}
         identity: {{ .Env.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}
     secrets:
-      - name: connectionstrings--postgres
-        value: Host=database;Port=5432;Username=postgres;Password={{ securedParameter "database_password" }};Database=postgres
+      - name: connectionstrings--keyvault
+        value: '{{ .Env.KEYVAULT_VAULTURI }}'
+      - name: connectionstrings--postgresdb
+        value: '{{ .Env.POSTGRESRESOURCE_CONNECTIONSTRING }};Database=postgresdb'
   template:
     containers:
       - image: {{ .Image }}
@@ -40,8 +42,10 @@ properties:
             value: "true"
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY
             value: in_memory
-          - name: ConnectionStrings__postgres
-            secretRef: connectionstrings--postgres
+          - name: ConnectionStrings__keyvault
+            secretRef: connectionstrings--keyvault
+          - name: ConnectionStrings__postgresdb
+            secretRef: connectionstrings--postgresdb
     scale:
       minReplicas: 1
 tags:

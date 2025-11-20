@@ -1,8 +1,8 @@
 @description('The location for the resource(s) to be deployed.')
 param location string = resourceGroup().location
 
-resource database 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
-  name: take('database-${uniqueString(resourceGroup().id)}', 63)
+resource postgresresource 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
+  name: take('postgresresource-${uniqueString(resourceGroup().id)}', 63)
   location: location
   properties: {
     authConfig: {
@@ -27,7 +27,7 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
     tier: 'Burstable'
   }
   tags: {
-    'aspire-resource-name': 'database'
+    'aspire-resource-name': 'postgresresource'
   }
 }
 
@@ -37,16 +37,16 @@ resource postgreSqlFirewallRule_AllowAllAzureIps 'Microsoft.DBforPostgreSQL/flex
     endIpAddress: '0.0.0.0'
     startIpAddress: '0.0.0.0'
   }
-  parent: database
+  parent: postgresresource
 }
 
-resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
-  name: 'postgres'
-  parent: database
+resource postgresdb 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
+  name: 'postgresdb'
+  parent: postgresresource
 }
 
-output connectionString string = 'Host=${database.properties.fullyQualifiedDomainName}'
+output connectionString string = 'Host=${postgresresource.properties.fullyQualifiedDomainName}'
 
-output name string = database.name
+output name string = postgresresource.name
 
-output hostName string = database.properties.fullyQualifiedDomainName
+output hostName string = postgresresource.properties.fullyQualifiedDomainName

@@ -1,9 +1,6 @@
 using Entities;
-using examScheduler;
 using examScheduler.Data;
 using examScheduler.Services;
-using FluffySpoon.AspNet.EncryptWeMust;
-using FluffySpoon.AspNet.EncryptWeMust.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +22,14 @@ builder.Services.AddCors(options =>
 	);
 });
 
+var keyvaultConnectionString = builder.Configuration.GetConnectionString(ResourceNames.KeyVault);
+if (keyvaultConnectionString is not null)
+{
+	builder.Configuration.AddAzureKeyVaultSecrets(keyvaultConnectionString);
+}
+
 // Add services
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("postgres")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName)));
 
 builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
 	.AddEntityFrameworkStores<AppDbContext>()
@@ -40,52 +43,19 @@ builder.Services
 	.AddScoped<IJwtService, JwtService>();
 /*////*/
 
-// let's encrypt certificate
-/*builder.Services.AddFluffySpoonLetsEncrypt(new()
-{
-	Email = "manuel.sinner0608@wfo-bruneck.info",
-	UseStaging = true, // true for testing, false for prod
-	Domains = [ "examscheduler.app" ],
-	TimeUntilExpiryBeforeRenewal = TimeSpan.FromDays(60),
-	TimeAfterIssueDateBeforeRenewal = TimeSpan.FromDays(30),
-	RenewalFailMode = FluffySpoon.AspNet.EncryptWeMust.Certes.RenewalFailMode.LogAndContinue
-});
-builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
-builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<AppDbContext>(
-	// creating the certificate
-	async (context, key, bytes) =>
-	{
-		var existingCertificate = context.Certificates.FirstOrDefault(c => c.Key == (int)key);
-		if (existingCertificate is not null)
-		{
-			existingCertificate.Bytes = bytes;
-		}
-		else
-		{
-			context.Certificates.Add(new()
-			{
-				Key = (int)key,
-				Bytes = bytes
-			});
-		}
-	},
-	// retrieving the certificate
-	async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes
-);*/
-
 var tokenValidationParameters = new TokenValidationParameters
 {
 	ValidateLifetime = true,
 	ClockSkew = TimeSpan.FromSeconds(30),
 
 	ValidateIssuerSigningKey = true,
-	IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[ "JWT:key" ]!)),
+	IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[ "jsonwebtokensigningkey" ]! ?? Guid.NewGuid().ToString("N"))),
 
 	ValidateIssuer = true,
-	ValidIssuer = builder.Configuration[ "JWT:issuer" ],
+	ValidIssuer = "examscheduler.app",
 
 	ValidateAudience = true,
-	ValidAudience = builder.Configuration[ "JWT:audience" ],
+	ValidAudience = "examscheduler.app",
 };
 
 builder.Services.AddSingleton(tokenValidationParameters);
@@ -115,7 +85,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-using (var schoolScope = app.Services.CreateScope())
+/*using (var schoolScope = app.Services.CreateScope())
 {
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -137,7 +107,7 @@ using (var schoolScope = app.Services.CreateScope())
 	}
 
 	db.SaveChanges();
-}
+}*/
 
 app.MapDefaultEndpoints();
 

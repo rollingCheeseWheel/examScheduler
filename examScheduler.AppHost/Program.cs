@@ -1,23 +1,28 @@
+using examScheduler.AppHost;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var (resourceName, dbName) = ("database", "postgres");
-
-/* Local */
-var postgres = builder.AddPostgres(resourceName) // container name
+//Local
+/*var postgres = builder.AddPostgres(ResourceNames.DBResourceName) // container name
 	.WithLifetime(ContainerLifetime.Persistent)
 	.WithDataVolume()
 	.WithHostPort(5432)
-	.AddDatabase(dbName);
-
-builder.AddProject<Projects.examScheduler>("examscheduler")
-	.WithReference(postgres)
-	.WaitFor(postgres);
-
-/* Azure */
-/*var postgres = builder.AddAzurePostgresFlexibleServer(resourceName).AddDatabase(dbName);
+	.AddDatabase(ResourceNames.DBName);
 
 builder.AddProject<Projects.examScheduler>("examscheduler")
 	.WithReference(postgres)
 	.WaitFor(postgres);*/
+
+//Azure
+var postgres = builder.AddAzurePostgresFlexibleServer(ResourceNames.DBResourceName)
+	.AddDatabase(ResourceNames.DBName);
+
+var keyvault = builder.AddAzureKeyVault(ResourceNames.KeyVault);
+
+builder.AddProject<Projects.examScheduler>("examscheduler")
+	.WithReference(postgres)
+	.WithReference(keyvault)
+	.WaitFor(postgres)
+	.WaitFor(keyvault);
 
 builder.Build().Run();

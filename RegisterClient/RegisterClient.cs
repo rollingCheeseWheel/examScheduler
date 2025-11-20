@@ -85,14 +85,28 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null) return null;
-		return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+		try
+		{
+			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+		}
+		catch
+		{
+			return default;
+		}
 	}
 
 	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct = default)
 	{
 		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
 		if (response is null) return null;
-		return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+		try
+		{
+			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+		}
+		catch
+		{
+			return default;
+		}
 	}
 
 	private IEnumerable<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
@@ -154,7 +168,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		return calendarDays;*/
 	}
 
-	private async Task<bool> AuthenticateAsync(CancellationToken ct = default)
+	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
 	{
 		if (TokenExpiration is null) // not authenticated yet
 		{
@@ -209,10 +223,12 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		{
 			try
 			{
-				return JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync(ct), Constants.SerializerOptions);
+				return JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
 			}
-			catch
+			catch (Exception ex) 
 			{
+				Console.WriteLine("Response:" + await response.ReadContentAsStringAsync(ct));
+				Console.WriteLine("JSON deserialization\t" + ex.Message);
 				return default;
 			}
 		}
@@ -236,8 +252,9 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			}
 			return await _httpClient.PostAsJsonAsync(path.Get(SchoolUri), data, Constants.SerializerOptions, ct);
 		}
-		catch
+		catch (Exception ex)
 		{
+			Console.WriteLine("POST\t:" + ex.Message);
 			return null;
 		}
 	}
@@ -257,7 +274,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		{
 			try
 			{
-				return JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync(ct), Constants.SerializerOptions);
+				return JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
 			}
 			catch
 			{
@@ -278,8 +295,9 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			ConfigureHeadersDefault();
 			return await _httpClient.GetAsync(uri, ct);
 		}
-		catch
+		catch (Exception ex)
 		{
+			Console.WriteLine("exception:\t" + ex.Message);
 			return null;
 		}
 	}
