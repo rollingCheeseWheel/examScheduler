@@ -27,6 +27,8 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public RegisterUserProfile? UserProfile { get; private set; }
 
+	public RegisterClient(Entities.School school, string authCode) : this(school.RegisterUri, school.SchoolId, school.Secret, authCode) { }
+
 	public RegisterClient(Uri schoolUri, string schoolId, string secret, string authCode)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();

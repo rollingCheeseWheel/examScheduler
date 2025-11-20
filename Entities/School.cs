@@ -13,7 +13,9 @@ public class School : IComparable<School>
 	[Required]
 	public required string SchoolId { get; init; }
 	[Required]
-	public required string ClientID { get; init; }
+	public required string ClientId { get; init; }
+	[Required]
+	public required string Secret { get; init; }
 
 	public static bool operator ==(School? a, School? b)
 	{

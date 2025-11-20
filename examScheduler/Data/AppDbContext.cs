@@ -53,6 +53,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne(tp => tp.UserProfile)
 			.HasForeignKey<TeacherProfile>(tp => tp.Id);
 
+		modelBuilder.Entity<UserProfile>()
+			.HasMany(up => up.RefreshTokens)
+			.WithOne(rts => rts.UserProfile);
+
 		// Ensure UserProfile -> School cascades when School is deleted
 		modelBuilder.Entity<UserProfile>()
 			.HasOne(u => u.School)

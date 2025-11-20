@@ -20,7 +20,7 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 			{
 				Name = s.Name,
 				RegisterUri = s.RegisterUri,
-				ClientId = s.ClientID,
+				ClientId = s.ClientId,
 			})
 			.ToListAsync(ct);
 	}

@@ -16,12 +16,8 @@ builder.AddProject<Projects.examScheduler>("examscheduler")
 /* Azure */
 /*var postgres = builder.AddAzurePostgresFlexibleServer(resourceName).AddDatabase(dbName);
 
-var keyvault = builder.AddAzureKeyVault("keyvault");
-
 builder.AddProject<Projects.examScheduler>("examscheduler")
 	.WithReference(postgres)
-	.WaitFor(postgres)
-	.WithReference(keyvault)
-	.WaitFor(keyvault);*/
+	.WaitFor(postgres);*/
 
 builder.Build().Run();

@@ -21,7 +21,6 @@ public class AuthService(
 	UserManager<UserProfile> userManager,
 	RoleManager<IdentityRole<int>> roleManager,
 	IClassroomService classroomService,
-	IKeyVaultService keyVaultService,
 	IServiceProvider serviceProvider,
 	IJwtService jwtService
 ) : IAuthService
@@ -30,7 +29,6 @@ public class AuthService(
 	private readonly UserManager<UserProfile> _userManager = userManager;
 	private readonly RoleManager<IdentityRole<int>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
-	private readonly IKeyVaultService _keyVaultService = keyVaultService;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly IJwtService _jwtService = jwtService;
 
@@ -45,15 +43,8 @@ public class AuthService(
 			return new("Unknown School ID", System.Net.HttpStatusCode.BadRequest);
 		}
 
-		// get the oAuthSecret
-		var oAuthSecret = await _keyVaultService.GetAsync(request.SchoolId, ct);
-		if (oAuthSecret is null)
-		{
-			return new(System.Net.HttpStatusCode.InternalServerError);
-		}
-
 		// create the client and fetch the userprofile
-		using var client = new RegisterClient(existingSchool.RegisterUri, request.SchoolId, oAuthSecret, request.AuthCode);
+		using var client = new RegisterClient(existingSchool, request.AuthCode);
 		var userProfile = await client.GetUserProfileAsync(ct);
 		if (userProfile is null)
 		{

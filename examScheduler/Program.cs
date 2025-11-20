@@ -23,18 +23,12 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
 
-// key vault
-if (builder.Configuration.GetConnectionString("keyvault") is not null)
-{
-	builder.AddAzureKeyVaultClient("keyvault");
-}
-
 /*////*/
 builder.Services
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<IClassroomService, ClassroomService>()
-	.AddSingleton<IKeyVaultService, KeyVaultService>();
+	.AddScoped<IJwtService, JwtService>();
 /*////*/
 
 // let's encrypt certificate
@@ -50,7 +44,7 @@ builder.Services
 builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
 builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<AppDbContext>(
 	// creating the certificate
-	async (context, key, bytes) => 
+	async (context, key, bytes) =>
 	{
 		var existingCertificate = context.Certificates.FirstOrDefault(c => c.Key == (int)key);
 		if (existingCertificate is not null)
@@ -67,7 +61,7 @@ builder.Services.AddFluffySpoonLetsEncryptEntityFrameworkCertificatePersistence<
 		}
 	},
 	// retrieving the certificate
-	async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes 
+	async (context, key) => context.Certificates.FirstOrDefault(c => c.Key == (int)key)?.Bytes
 );*/
 
 var tokenValidationParameters = new TokenValidationParameters
@@ -128,13 +122,14 @@ using (var schoolScope = app.Services.CreateScope())
 {
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-	List<School> schools = [
-		new School()
+	List<Entities.School> schools = [
+		new()
 		{
 			Name = "Test WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-bruneck.digitalesregister.it/"),
 			SchoolId = "wfo-bruneck",
-			ClientID = "6767"
+			ClientId = "QYffPSN5bcsrZ9yL",
+			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!
 		},
 	];
 

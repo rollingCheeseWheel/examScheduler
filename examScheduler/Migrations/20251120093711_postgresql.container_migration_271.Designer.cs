@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251120093711_postgresql.container_migration_271")]
+    partial class postgresqlcontainer_migration_271
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -250,28 +253,6 @@ namespace examScheduler.Migrations
                     b.HasIndex("SubjectId");
 
                     b.ToTable("Lesson");
-                });
-
-            modelBuilder.Entity("Entities.RefreshTokenSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UserProfileId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserProfileId");
-
-                    b.ToTable("RefreshTokenSession");
                 });
 
             modelBuilder.Entity("Entities.Schedule", b =>
@@ -834,17 +815,6 @@ namespace examScheduler.Migrations
                     b.Navigation("Subject");
                 });
 
-            modelBuilder.Entity("Entities.RefreshTokenSession", b =>
-                {
-                    b.HasOne("Entities.UserProfile", "UserProfile")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("UserProfile");
-                });
-
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
                     b.HasOne("Entities.Classroom", "Classroom")
@@ -1064,8 +1034,6 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.UserProfile", b =>
                 {
-                    b.Navigation("RefreshTokens");
-
                     b.Navigation("StudentProfile");
 
                     b.Navigation("TeacherProfile");

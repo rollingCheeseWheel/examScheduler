@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Entities;
 
@@ -14,7 +15,11 @@ public class UserProfile : IdentityUser<int>
 	public required string LastName { get; set; }
 	[Required]
 	public required UserProfileRole Role { get; set; }
+	public required string? RegisterAPIRefreshToken { get; set; }
+	public required DateTimeOffset? RegisterAPIRefreshTokenExpiration { get; set; }
 
+	[Required]
+	public ICollection<RefreshTokenSession> RefreshTokens { get; set; } = [ ];
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }
 
