@@ -7,8 +7,8 @@ namespace Models.DigitalesRegister;
 
 public class CalendarRequest
 {
-	[JsonConverter(typeof(RegisterDateTimeOffsetConverter))]
-	public DateTimeOffset StartDate { get; set; }
+	[JsonConverter(typeof(RegisterDateTimeConverter))]
+	public DateTime StartDate { get; set; }
 }
 
 public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
@@ -92,8 +92,8 @@ public class Lesson
 {
 	public required int? Id { get; set; }
 	[Required]
-	[JsonConverter(typeof(RegisterDateTimeOffsetConverter))]
-	public required DateTimeOffset Date { get; set; }
+	[JsonConverter(typeof(RegisterDateTimeConverter))]
+	public required DateTime Date { get; set; }
 	[Required]
 	public required int Hour { get; set; }
 	[Required]

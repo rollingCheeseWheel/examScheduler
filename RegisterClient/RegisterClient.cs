@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,7 +17,7 @@ namespace registerClient;
 public partial class RegisterClient : IDisposable, IRegisterClient
 {
 	public readonly Uri SchoolUri;
-	public readonly string SchoolId;
+	public readonly string ClientId;
 	private readonly HttpClient _httpClient;
 	private readonly HttpClientHandler _clientHandler;
 
@@ -27,13 +30,15 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public RegisterUserProfile? UserProfile { get; private set; }
 
-	public RegisterClient(Entities.School school, string authCode) : this(school.RegisterUri, school.SchoolId, school.Secret, authCode) { }
+	public RegisterClient(Entities.School school, string authCode) : this(school.RegisterUri, school.ClientId, school.Secret, authCode) { }
 
-	public RegisterClient(Uri schoolUri, string schoolId, string secret, string authCode)
+	public RegisterClient(Uri schoolUri, string clientId, string secret, string authCode)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();
-		SchoolId = schoolId;
+		ClientId = clientId;
 		_authCode = authCode;
+		_secret = secret;
+
 		_clientHandler = new()
 		{
 			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
@@ -48,7 +53,6 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			}
 		};
 		_httpClient = new(_clientHandler);
-		_secret = secret;
 	}
 
 	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
@@ -87,6 +91,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		if (response is null) return null;
 		try
 		{
+			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
 			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 		}
 		catch
@@ -101,6 +106,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		if (response is null) return null;
 		try
 		{
+			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
 			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 		}
 		catch
@@ -111,8 +117,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	private IEnumerable<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
-		Console.WriteLine(jsonDoc.ToString());
-		throw new NotImplementedException();
+		return default;
 
 		/*List<CalendarDay> calendarDays = [ ];
 		var root = jsonDoc.RootElement;
@@ -172,7 +177,15 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	{
 		if (TokenExpiration is null) // not authenticated yet
 		{
-			var authResponse = await PostJsonAsync<TokenCreateResponse>(RegisterPathAPI.TokenCreate, new TokenCreateRequest { Code = _authCode }, true, ct);
+			var authResponse = await PostJsonAsync<TokenCreateResponse>(
+				RegisterPathAPI.TokenCreate,
+				new TokenCreateRequest
+				{
+					Code = _authCode
+				},
+				true,
+				ct
+			);
 
 			if (authResponse is null)
 			{
@@ -187,7 +200,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				return true;
 			}
 		}
-		else if (TokenExpiration >= DateTimeOffset.UtcNow) // not expired
+		else if (TokenExpiration >= DateTime.Now.AddMinutes(5)) // not expired
 		{
 			return true;
 		}
@@ -199,10 +212,10 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	private async Task<bool> RefreshTokenAsync(CancellationToken ct = default)
 	{
-		if (_refreshToken is null || UserId is null) return false;
+		if (_refreshToken is null || UserId is null) { return false; }
 		var request = new TokenRefreshRequest { RefreshToken = _refreshToken, UserId = (int)UserId! };
 		var response = await PostJsonAsync<TokenRefreshResponse>(RegisterPathAPI.TokenRefresh, request, true, ct: ct);
-		if (response is null) return false;
+		if (response is null) { return false; }
 		_accessToken = response.Token;
 		TokenExpiration = response.Expiration;
 		return true;
@@ -215,7 +228,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	{
 		var response = await PostJsonAsync(path, data, authRequest, ct);
 
-		if (response is null || !response.TryValidate())
+		if (response is null)
 		{
 			return default;
 		}
@@ -223,12 +236,18 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		{
 			try
 			{
-				return JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
+				var deserialized = JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
+				if (deserialized is not null && deserialized.TryValidate())
+				{
+					return deserialized;
+				}
+				else
+				{
+					return default;
+				}
 			}
-			catch (Exception ex) 
+			catch
 			{
-				Console.WriteLine("Response:" + await response.ReadContentAsStringAsync(ct));
-				Console.WriteLine("JSON deserialization\t" + ex.Message);
 				return default;
 			}
 		}
@@ -238,9 +257,11 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	{
 		try
 		{
+			var request = new HttpRequestMessage(HttpMethod.Post, path.Get(SchoolUri));
+
 			if (authRequest)
 			{
-				ConfigureHeadersAuth();
+				ConfigureHeadersAuth(ref request);
 			}
 			else
 			{
@@ -248,13 +269,19 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				{
 					return null;
 				}
-				ConfigureHeadersDefault();
+				ConfigureHeadersDefault(ref request);
 			}
-			return await _httpClient.PostAsJsonAsync(path.Get(SchoolUri), data, Constants.SerializerOptions, ct);
+			request.Content = new StringContent(
+				JsonSerializer.Serialize(data, Constants.SerializerOptions),
+				Encoding.UTF8,
+				"application/json"
+			);
+
+			var response = await _httpClient.SendAsync(request);
+			return response;
 		}
-		catch (Exception ex)
+		catch
 		{
-			Console.WriteLine("POST\t:" + ex.Message);
 			return null;
 		}
 	}
@@ -290,30 +317,30 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		{
 			uri = new(QueryHelpers.AddQueryString(uri.AbsoluteUri, uriArgs));
 		}
+
+		var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
 		try
 		{
-			ConfigureHeadersDefault();
-			return await _httpClient.GetAsync(uri, ct);
+			ConfigureHeadersDefault(ref request);
+			return await _httpClient.SendAsync(request, ct);
 		}
-		catch (Exception ex)
+		catch
 		{
-			Console.WriteLine("exception:\t" + ex.Message);
 			return null;
 		}
 	}
 
-	private void ConfigureHeadersAuth()
+	private void ConfigureHeadersAuth(ref HttpRequestMessage request)
 	{
-		_httpClient.DefaultRequestHeaders.Clear();
-		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId);
-		_httpClient.DefaultRequestHeaders.Add(ApiSecretHeader, _secret);
+		request.Headers.Add(ClientIdHeader, ClientId);
+		request.Headers.Add(ApiSecretHeader, _secret);
 	}
 
-	private void ConfigureHeadersDefault()
+	private void ConfigureHeadersDefault(ref HttpRequestMessage request)
 	{
-		_httpClient.DefaultRequestHeaders.Clear();
-		_httpClient.DefaultRequestHeaders.Add(ClientIdHeader, SchoolId.ToString());
-		_httpClient.DefaultRequestHeaders.Add(TokenHeader, _accessToken);
+		request.Headers.Add(ClientIdHeader, ClientId);
+		request.Headers.Add(TokenHeader, _accessToken);
 	}
 
 	public const string ClientIdHeader = "API-CLIENT-ID";

@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Models.API;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Util.Converters;
 
 namespace Models.DigitalesRegister;
 
@@ -11,16 +13,13 @@ public class TokenCreateRequest
 
 public class TokenCreateResponse
 {
-	[Required]
-	[JsonPropertyName("user_id")]
+	[Required, JsonPropertyName("user_id")]
 	public required int UserId { get; set; }
-	[Required]
-	[JsonPropertyName("expiration")]
-	public required DateTimeOffset ExpirationDate { get; set; }
+	[Required, JsonPropertyName("expiration"), JsonConverter(typeof(RegisterAPIDateTimeConverter))]
+	public required DateTime ExpirationDate { get; set; }
 	[Required]
 	public required string Token { get; set; }
-	[Required]
-	[JsonPropertyName("refresh_token")]
+	[Required, JsonPropertyName("refresh_token")]
 	public required string RefreshToken { get; set; }
 }
 
@@ -39,5 +38,5 @@ public class TokenRefreshResponse
 	[Required]
 	public required string Token { get; set; }
 	[Required]
-	public required DateTimeOffset Expiration { get; set; }
+	public required DateTime Expiration { get; set; }
 }

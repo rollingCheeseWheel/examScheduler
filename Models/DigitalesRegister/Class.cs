@@ -26,8 +26,8 @@ public class RegisterSubject
 
 public class RegisterLessonSubstitute
 {
-	[Required, JsonConverter(typeof(RegisterDateTimeOffsetConverter))]
-	public required DateTimeOffset Date { get; set; }
+	[Required, JsonConverter(typeof(RegisterDateTimeConverter))]
+	public required DateTime Date { get; set; }
 	[Required]
 	public required int Hour { get; set; }
 	[Required, JsonPropertyName("class")]

@@ -12,15 +12,15 @@ namespace Util;
 
 public static class Extensions
 {
-	public const string Format = "yyyy-MM-dd";
+	public const string RegisterDateTimeFormat = "yyyy-MM-dd";
 
-	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(Format);
+	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(RegisterDateTimeFormat);
 
-	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, Format, null);
+	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
 
 	public static bool RegisterTryParse(this string dateTime, [NotNullWhen(true)] out DateTimeOffset? result)
 	{
-		if (DateTimeOffset.TryParseExact(dateTime, Format, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
+		if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
 		{
 			result = temp;
 			return true;

@@ -94,7 +94,7 @@ var app = builder.Build();
 		{
 			Name = "Test WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-test-bruneck.digitalesregister.it/"),
-			SchoolId = "wfo-bruneck",
+			ClientId = "wfo-bruneck",
 			ClientId = "QYffPSN5bcsrZ9yL",
 			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!
 		},
