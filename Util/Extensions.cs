@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Util;
 
@@ -59,6 +60,24 @@ public static class Extensions
 	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
 
 	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
+
+	public static T? Json<T>(this string str, JsonSerializerOptions options)
+	{
+		try
+		{
+			return JsonSerializer.Deserialize<T>(str, options);
+		}
+		catch
+		{
+			return default;
+		}
+	}
+
+	public static T? Json<T>(this string str) => str.Json<T>(Constants.SerializerOptions);
+
+	public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>(options);
+
+	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
 
 	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 

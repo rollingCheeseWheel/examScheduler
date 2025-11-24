@@ -1,0 +1,43 @@
+{
+	"id": 4,
+	"firstName": "Laurin",
+	"lastName": "Feichter",
+	"picture": null,
+	"role": "student",
+	"studentData": {
+		"id": 4,
+		"name": "Feichter Laurin",
+		"firstName": "Laurin",
+		"lastName": "Feichter",
+		"mainClass": {
+			"id": 1,
+			"name": "4E WI",
+			"choiceSubject": 0,
+			"belongsTo": 0,
+			"schoolTypeArrayID": 0,
+			"showGrades": 2,
+			"showAbsenceStats": 1
+		},
+		"classes": [
+			{
+				"id": 1,
+				"name": "4E WI",
+				"choiceSubject": 0,
+				"belongsTo": 0,
+				"schoolTypeArrayID": 0,
+				"showGrades": 2,
+				"showAbsenceStats": 1
+			},
+			{
+				"id": 2,
+				"name": "4E WI",
+				"choiceSubject": 0,
+				"belongsTo": 1,
+				"schoolTypeArrayID": 0,
+				"showGrades": 2,
+				"showAbsenceStats": 1
+			}
+		],
+		"isLegalResonsible": false
+	}
+}

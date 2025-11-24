@@ -1,15 +1,9 @@
 ﻿using Entities;
-using Microsoft.AspNetCore.DataProtection.XmlEncryption;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Util;
 
 namespace registerClient;
@@ -74,14 +68,48 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
-		var response = await GetAsync<RegisterUserProfile>(RegisterPathAPI.UserProfile, ct);
-		UserProfile = response;
-		return response;
+		var response = await GetAsync(RegisterPathAPI.UserProfile, ct: ct);
+		if (response is not null && !string.IsNullOrEmpty(await response.ReadContentAsStringAsync(ct)))
+		{
+			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
+			UserProfile = await response.ReadContentAsStringAsync(ct).JsonAsync<RegisterUserProfile>(ct);
+		}
+		else if (response is null)
+		{
+			Console.WriteLine("null");
+		}
+		else
+		{
+			Console.WriteLine("empty");
+		}
+		return UserProfile;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct);
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default)
+	{
+		var response = await GetAsync(RegisterPathAPI.Classes, ct: ct);
+		if (response is not null && !string.IsNullOrEmpty(await response.ReadContentAsStringAsync(ct)))
+		{
+			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
+			return await response.ReadContentAsStringAsync(ct).JsonAsync<IEnumerable<RegisterClass>>(ct);
+		}
+		else if (response is null)
+		{
+			Console.WriteLine("null");
+		}
+		else
+		{
+			Console.WriteLine("empty");
+		}
+		return default;
+	}
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default)
+	{
+		var response = await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+		Console.WriteLine(response.ToJson());
+		return response;
+	}
 
 	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
