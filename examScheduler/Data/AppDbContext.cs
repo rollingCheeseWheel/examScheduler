@@ -131,7 +131,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.OnDelete(DeleteBehavior.Cascade);
 
 		modelBuilder.Entity<CalendarDay>()
-			.HasMany(d => d.HoursInDay)
+			.HasMany(d => d.Lessons)
 			.WithOne()
 			.OnDelete(DeleteBehavior.Cascade);
 

@@ -57,8 +57,7 @@ public class Calendar(ICollection<CalendarDay> days)
 	public (int ClassroomId, string Name)? GetClassroomInfo()
 	{
 		return Days
-			.SelectMany(d => d.HoursInDay)
-			.Select(h => h.Lesson)
+			.SelectMany(d => d.Lessons)
 			.Select(l => (ClassroomId: l.ClassId, Name: l.ClassName))
 			.GroupBy(l => l.ClassroomId)
 			.Select(group => (Value: group.FirstOrDefault(), Count: group.Count()))
@@ -71,26 +70,13 @@ public class Calendar(ICollection<CalendarDay> days)
 public class CalendarDay
 {
 	public required DateTimeOffset Date { get; set; }
-	public required ICollection<HourInDay> HoursInDay { get; set; }
-}
-
-public class HourInDay
-{
-	[Required]
-	[JsonConverter(typeof(IntToBoolConverter))]
-	public required bool IsLesson { get; set; }
-	[Required]
-	public required Lesson Lesson { get; set; }
-	[Required]
-	public required int Hour { get; set; }
-	[Required]
-	public required int LinkedHoursCount { get; set; }
+	public required ICollection<Lesson> Lessons { get; set; }
 }
 
 
 public class Lesson
 {
-	public required int? Id { get; set; }
+	public int? Id { get; set; }
 	[Required]
 	[JsonConverter(typeof(RegisterDateTimeConverter))]
 	public required DateTime Date { get; set; }

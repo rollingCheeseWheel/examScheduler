@@ -48,16 +48,14 @@ public class CalendarDay
 	[Required]
 	public required DateTimeOffset Date { get; init; }
 	public DayOfWeek DayOfWeek { get => Date.DayOfWeek; }
-	public List<HourInDay> HoursInDay { get; set; } = [ ];
-	[NotMapped]
-	public int TotalHourCount { get => HoursInDay.Select(h => h.Duration).Sum(); }
+	public List<Lesson> Lessons { get; set; } = [ ];
 
 	public static CalendarDay Parse(Models.DigitalesRegister.CalendarDay calendarDay, ICollection<Teacher> teachers)
 	{
 		return new()
 		{
 			Date = calendarDay.Date.ToUniversalTime(),
-			HoursInDay = calendarDay.HoursInDay.Select(h => HourInDay.Parse(h, teachers)).ToList(),
+			Lessons = calendarDay.Lessons.Select(l => Lesson.Parse(l, teachers)).ToList(),
 		};
 	}
 
@@ -66,13 +64,14 @@ public class CalendarDay
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.Date == b.Date
-			&& a.HoursInDay.SequenceEqual(b.HoursInDay, h => h.Hour);
+			&& a.Lessons.SequenceEqual(b.Lessons, h => h.Hour);
 	}
 	public static bool operator !=(CalendarDay? a, CalendarDay? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is CalendarDay other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Date, HoursInDay.OrderBy(h => h.Hour));
+	public override int GetHashCode() => HashCode.Combine(Date, Lessons.OrderBy(h => h.Hour));
 }
 
+[Obsolete]
 public class HourInDay
 {
 	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -85,16 +84,6 @@ public class HourInDay
 	public required int LinkedHoursCount { get; init; }
 	[NotMapped]
 	public int Duration { get => LinkedHoursCount + 1; }
-
-	public static HourInDay Parse(Models.DigitalesRegister.HourInDay hourInDay, ICollection<Teacher> teachers)
-	{
-		return new()
-		{
-			Hour = hourInDay.Hour,
-			Lesson = Lesson.Parse(hourInDay.Lesson, teachers),
-			LinkedHoursCount = hourInDay.LinkedHoursCount,
-		};
-	}
 
 	public static bool operator ==(HourInDay? a, HourInDay? b)
 	{

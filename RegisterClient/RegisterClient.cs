@@ -145,40 +145,27 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	private IEnumerable<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
-		return default;
+		List<Models.DigitalesRegister.CalendarDay> result = [ ];
+		var rootElement = jsonDoc.RootElement;
 
-		/*List<CalendarDay> calendarDays = [ ];
-		var root = jsonDoc.RootElement;
-
-		foreach (var prop in root.EnumerateObject()) // date
+		foreach (var dateProp in rootElement.EnumerateObject()) // date
 		{
-			if (!prop.Name.RegisterTryParse(out var DateTimeOffset))
+			if (!dateProp.Name.RegisterTryParse(out var DateTimeOffset))
 			{
 				continue;
 			}
 
-			List<HourInDay> hoursInDay = [ ];
+			List<Models.DigitalesRegister.Lesson> lessons = [ ];
 
-			List<JsonProperty> flattenedEnumeratedObject = [ ];
-
-			foreach (var nestedProp in prop.Value.EnumerateObject())
-			{
-				foreach (var innerMostProp in nestedProp.Value.EnumerateObject())
-				{
-					flattenedEnumeratedObject.AddRange(innerMostProp.Value.EnumerateObject());
-				}
-			}
-
-			foreach (var hour in flattenedEnumeratedObject)
+			foreach (var hour in dateProp.Value.EnumerateObject())
 			{
 				try
 				{
-					var parsedHour = hour.Value.Deserialize<HourInDay>(Constants.SerializerOptions)!;
+					var parsedLesson = hour.Value.Deserialize<Models.DigitalesRegister.Lesson>(Constants.SerializerOptions)!;
 
-
-					if (parsedHour.IsLesson)
+					if (parsedLesson is not null)
 					{
-						hoursInDay.Add(parsedHour);
+						lessons.Add(parsedLesson);
 					}
 					else
 					{
@@ -191,14 +178,14 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				}
 			}
 
-			calendarDays.Add(new()
+			result.Add(new()
 			{
-				Date = (DateTimeOffset)DateTimeOffset!,
-				HoursInDay = hoursInDay
+				Date = DateTimeOffset,
+				Lessons = lessons
 			});
 		}
 
-		return calendarDays;*/
+		return result;
 	}
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
