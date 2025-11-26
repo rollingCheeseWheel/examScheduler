@@ -1,41 +1,11 @@
 {
 	"1": {
 		"id": null,
-		"ttcid": 10045,
 		"date": "2025-11-24",
 		"hour": 1,
 		"toHour": 1,
-		"timeStart": 27600,
-		"timeEnd": 31200,
-		"timeToEnd": 31200,
-		"timeStartObject": {
-			"h": "08",
-			"m": "40",
-			"ts": 27600,
-			"text": "08:40",
-			"html": "08<sup>40<\/sup>"
-		},
-		"timeEndObject": {
-			"h": "09",
-			"m": "40",
-			"ts": 31200,
-			"text": "09:40",
-			"html": "09<sup>40<\/sup>"
-		},
-		"timeToEndObject": {
-			"h": "09",
-			"m": "40",
-			"ts": 31200,
-			"text": "09:40",
-			"html": "09<sup>40<\/sup>"
-		},
-		"timeShowEnabled": false,
 		"classId": 1,
 		"className": "4E WI",
-		"classComment": "",
-		"description": "",
-		"note": "",
-		"lessonShow": true,
 		"teachers": [
 			{
 				"id": 31,
@@ -43,11 +13,6 @@
 				"lastName": "Lehrer"
 			}
 		],
-		"teachersToNotify": [],
-		"teacherMyself": null,
-		"isAutoNotify": false,
-		"isLessonTypeNotifyOn": false,
-		"exp_lt_default": false,
 		"isSecretary": false,
 		"subject": {
 			"id": 3,
@@ -56,20 +21,8 @@
 			"defaultLessonContent": "",
 			"defaultLessonContentType": 0
 		},
-		"homeworkExams": [],
-		"homeworkExamsOther": [],
-		"lessonContents": [],
-		"rooms": [],
-		"readOnly": true,
 		"isSubstitute": 0,
-		"linkToPreviousHour": 0,
-		"linkedHours": [],
-		"criticalObservations": [],
-		"missingStudents": [],
-		"students": [],
-		"grades": [],
-		"observations": [],
-		"absenceOpenAbsencesStudents": []
+		"linkToPreviousHour": 0
 	},
 	"2": {
 		"id": null,

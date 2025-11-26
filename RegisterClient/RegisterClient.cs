@@ -51,10 +51,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
 	{
-		if (UserProfile is null)
-		{
-			UserProfile = await GetUserProfileAsync(ct);
-		}
+		UserProfile ??= await GetUserProfileAsync(ct);
 
 		return UserProfile?.Role switch
 		{
@@ -68,58 +65,22 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
-		var response = await GetAsync(RegisterPathAPI.UserProfile, ct: ct);
-		if (response is not null && !string.IsNullOrEmpty(await response.ReadContentAsStringAsync(ct)))
-		{
-			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
-			UserProfile = await response.ReadContentAsStringAsync(ct).JsonAsync<RegisterUserProfile>(ct);
-		}
-		else if (response is null)
-		{
-			Console.WriteLine("null");
-		}
-		else
-		{
-			Console.WriteLine("empty");
-		}
+		UserProfile = await GetAsync<RegisterUserProfile>(RegisterPathAPI.UserProfile, ct: ct);
 		return UserProfile;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default)
-	{
-		var response = await GetAsync(RegisterPathAPI.Classes, ct: ct);
-		if (response is not null && !string.IsNullOrEmpty(await response.ReadContentAsStringAsync(ct)))
-		{
-			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
-			return await response.ReadContentAsStringAsync(ct).JsonAsync<IEnumerable<RegisterClass>>(ct);
-		}
-		else if (response is null)
-		{
-			Console.WriteLine("null");
-		}
-		else
-		{
-			Console.WriteLine("empty");
-		}
-		return default;
-	}
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default)
-	{
-		var response = await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
-		Console.WriteLine(response.ToJson());
-		return response;
-	}
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
 	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
-		var args = new Dictionary<string, string> { { "startDate", date.ToRegisterFormat() } };
+		var args = new Dictionary<string, string> { { "startDate", date.RoundToMonday().ToRegisterFormat() } };
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null) return null;
 		try
 		{
-			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
 			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 		}
 		catch
@@ -134,7 +95,6 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		if (response is null) return null;
 		try
 		{
-			Console.WriteLine(await response.ReadContentAsStringAsync(ct));
 			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 		}
 		catch
@@ -143,7 +103,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		}
 	}
 
-	private IEnumerable<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
+	private ICollection<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		List<Models.DigitalesRegister.CalendarDay> result = [ ];
 		var rootElement = jsonDoc.RootElement;
@@ -155,7 +115,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				continue;
 			}
 
-			List<Models.DigitalesRegister.Lesson> lessons = [ ];
+			List<Models.DigitalesRegister.Lesson> rawLessons = [ ];
 
 			foreach (var hour in dateProp.Value.EnumerateObject())
 			{
@@ -165,11 +125,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 					if (parsedLesson is not null)
 					{
-						lessons.Add(parsedLesson);
-					}
-					else
-					{
-						continue;
+						rawLessons.Add(parsedLesson);
 					}
 				}
 				catch
@@ -178,10 +134,40 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				}
 			}
 
+			List<Models.DigitalesRegister.Lesson> compactedLessons = [ ];
+			Models.DigitalesRegister.Lesson? currentLesson = null;
+			foreach (var lesson in rawLessons.OrderBy(l => l.Hour).ThenBy(l => l.ToHour).ToList())
+			{
+				if (currentLesson is null || !lesson.LinkToPreviousHour)
+				{
+					currentLesson = lesson;
+					compactedLessons.Add(currentLesson);
+				}
+				else
+				{
+					currentLesson = new()
+					{
+						Hour = currentLesson.Hour,
+						ToHour = lesson.ToHour,
+						LinkToPreviousHour = currentLesson.LinkToPreviousHour,
+
+						Date = currentLesson.Date,
+						Id = currentLesson.Id,
+						ClassId = currentLesson.ClassId,
+						ClassName = currentLesson.ClassName,
+						Subject = currentLesson.Subject,
+						Teachers = currentLesson.Teachers,
+						IsSubstitute = currentLesson.IsSubstitute,
+						IsSecretary = currentLesson.IsSecretary,
+					};
+					compactedLessons[ ^1 ] = currentLesson;
+				}
+			}
+
 			result.Add(new()
 			{
 				Date = DateTimeOffset,
-				Lessons = lessons
+				Lessons = compactedLessons
 			});
 		}
 
@@ -280,7 +266,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			}
 			else
 			{
-				if (!( await AuthenticateAsync(ct) ))
+				if (!await AuthenticateAsync(ct))
 				{
 					return null;
 				}
@@ -327,6 +313,11 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	private async Task<HttpResponseMessage?> GetAsync(RegisterPath path, Dictionary<string, string>? uriArgs = null, CancellationToken ct = default)
 	{
+		if (!await AuthenticateAsync(ct))
+		{
+			return null;
+		}
+
 		var uri = path.Get(SchoolUri);
 		if (uriArgs is not null)
 		{
