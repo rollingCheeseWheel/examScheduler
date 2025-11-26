@@ -21,7 +21,13 @@ using var client = new RegisterClient(new(config[ "API:schoolUrl" ]!), config[ "
 //Console.WriteLine(await client.GetClassesAsync().ToJsonAsync());
 //Console.WriteLine("Subjects");
 //Console.WriteLine(await client.GetSubjectsAsync().ToJsonAsync());
-Console.WriteLine("Calendar week");
-Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
+//Console.WriteLine("Calendar week");
+//Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
 //Console.WriteLine("Upcoming Calendar");
 //Console.WriteLine(await client.GetUpcomingCalendarAsync().ToJsonAsync());
+
+var calendar = await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddDays(-30));
+//calendar.Add(new() { Date = DateTimeOffset.UtcNow, Lessons = [ ] });
+Console.WriteLine(calendar.ToJson());
+
+//Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow.AddMonths(2)).ToJsonAsync());

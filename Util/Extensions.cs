@@ -57,9 +57,9 @@ public static class Extensions
 
 	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
+	public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T?> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
+	public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
 
 	public static T? Json<T>(this string str, JsonSerializerOptions options)
 	{

@@ -1,6 +1,7 @@
 ﻿using Entities;
 using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -69,11 +70,14 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		return UserProfile;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
+	public async Task<ICollection<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<IEnumerable<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<ICollection<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
-	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+	/// <summary>
+	/// The calendar is only available for a couple of weeks after the start date
+	/// </summary>
+	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var args = new Dictionary<string, string> { { "startDate", date.RoundToMonday().ToRegisterFormat() } };
 
@@ -81,7 +85,9 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		if (response is null) return null;
 		try
 		{
-			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)))
+				?.Where(d => d.Lessons.Count != 0)
+				?.ToList();
 		}
 		catch
 		{
@@ -89,18 +95,45 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		}
 	}
 
-	public async Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct = default)
+	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int yearDuration = 1, int timeOutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
-		var response = await GetAsync(RegisterPathAPI.LessonMonth, ct: ct);
-		if (response is null) return null;
-		try
+		if (!await AuthenticateAsync(ct)) { return null; }
+
+		List<Models.DigitalesRegister.CalendarDay> result = [ ];
+		var terminationDate = startDate.AddYears(yearDuration);
+
+		var currentTimeOutCount = 0;
+		while (startDate < terminationDate)
 		{
-			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+			if (currentTimeOutCount >= timeOutAfterEmptyWeeks) { break; }
+
+			var tempDays = await GetCalendarWeekAsync(startDate, ct);
+			if (tempDays is not null)
+			{
+				result.AddRange(tempDays);
+				currentTimeOutCount = 0;
+			}
+			else
+			{
+				currentTimeOutCount++;
+			}
+			startDate = startDate.AddDays(7);
 		}
-		catch
+
+		return result;
+
+		// should be parallel but doesnt want to
+		/*ICollection<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>> tasks = [ ];
+		while (startDate < terminationDate)
 		{
-			return default;
+			tasks.Add(GetCalendarWeekAsync(startDate, ct));
+			startDate = startDate.AddDays(7);
 		}
+		return ( await Task.WhenAll(tasks).WaitAsync(ct) )
+			.Where(t => t is not null)
+			.SelectMany(t => t!)
+			.Cast<Models.DigitalesRegister.CalendarDay>()
+			.ToList();*/
 	}
 
 	private ICollection<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)

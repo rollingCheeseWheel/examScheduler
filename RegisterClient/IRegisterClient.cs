@@ -12,9 +12,9 @@ public interface IRegisterClient
 
 	Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct);
 
-	Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct);
-	Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct);
+	Task<ICollection<RegisterClass>?> GetClassesAsync(CancellationToken ct);
+	Task<ICollection<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct);
 
-	Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
-	Task<IEnumerable<Models.DigitalesRegister.CalendarDay>?> GetUpcomingCalendarAsync(CancellationToken ct);
+	Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
+	Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int yearDuration, int timeOutAfterEmptyWeeks, CancellationToken ct);
 }
