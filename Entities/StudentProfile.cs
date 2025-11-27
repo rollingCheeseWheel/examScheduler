@@ -4,8 +4,8 @@ namespace Entities;
 
 public class StudentProfile
 {
-	[Key] // IMPORTANT: no auto increment, its dependent on UserProfile
-	public int Id { get; private set; }
+	[Key] // same as userprofile id
+	public Guid Id { get; private set; }
 
 	// Navigation Properties
 	[Required]

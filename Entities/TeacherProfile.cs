@@ -5,14 +5,14 @@ namespace Entities;
 
 public class TeacherProfile
 {
-	[Key] // IMPORTANT: no auto increment, its dependent on UserProfile
-	public int Id { get; private set; }
+	[Key] // is the same key as the userprofile
+	public Guid Id { get; private set; }
 
 	// Navigation Properties
 	public required UserProfile UserProfile { get; init; }
 
 	public required Teacher? Teacher { get; init; }
-	public int? TeacherId { get; private set; }
+	public Guid? TeacherId { get; private set; }
 
 	public static bool operator ==(TeacherProfile? a, TeacherProfile? b)
 	{

@@ -7,8 +7,8 @@ namespace Entities;
 
 public class Calendar
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 
 	[Required, Range(0, int.MaxValue)]
 	public int TimesScanned { get; private set; } = 1;
@@ -44,8 +44,8 @@ public class Calendar
 
 public class CalendarDay
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 	[Required]
 	public required DateTimeOffset Date { get; init; }
 	[Required]
@@ -78,8 +78,8 @@ public class CalendarDay
 [Obsolete]
 public class HourInDay
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 	[Required]
 	public required Lesson Lesson { get; init; }
 	[Required]
@@ -104,8 +104,8 @@ public class HourInDay
 
 public class Lesson
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 	public required int? RegisterId { get; set; }
 	[Required]
 	public required DateTimeOffset Date { get; set; }
@@ -122,8 +122,10 @@ public class Lesson
 	public bool? IsSecretary { get; set; }
 
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+	[Required]
 	public required Subject Subject { get; set; }
 
+	[NotMapped]
 	public int Duration => ToHour - Hour + 1;
 
 	public static Lesson Parse(Models.DigitalesRegister.Lesson lesson, ICollection<Teacher> teachers)

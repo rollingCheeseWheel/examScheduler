@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Entities;
 
-public class UserProfile : IdentityUser<int>
+public class UserProfile : IdentityUser<Guid>
 {
 	[Required]
 	public required School School { get; init; }
-	public int SchoolId { get; }
+	public Guid SchoolId { get; }
 	[Required]
 	public required string FirstName { get; set; }
 	[Required]

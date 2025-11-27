@@ -5,8 +5,8 @@ namespace Entities;
 
 public class Teacher
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 
 	[Required]
 	public required int RegisterID { get; init; }

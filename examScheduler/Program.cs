@@ -31,7 +31,7 @@ if (keyvaultConnectionString is not null)
 // Add services
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName)));
 
-builder.Services.AddIdentity<UserProfile, IdentityRole<int>>()
+builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
 
@@ -46,8 +46,8 @@ builder.Services
 var tokenValidationParameters = new JwtOptions
 {
 	RefreshTokenBitStrength = 256,
-	TokenExpirationInMinutes = 3,
-	RefreshTokenExpirationOffset = 1,
+	TokenExpirationInMinutes = 10,
+	RefreshTokenExpirationInMinutes = 30,
 	MaxTokensPerUser = 3,
 
 	ValidateLifetime = true,

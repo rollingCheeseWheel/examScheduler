@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Entities;
 public class School : IComparable<School>
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 	[Required]
 	public required string Name { get; init; }
 	[Required]

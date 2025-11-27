@@ -5,13 +5,13 @@ namespace Entities;
 
 public class Classroom
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public Guid Id { get; set; }
 	[Required]
 	public required string Name { get; init; }
 	[Required]
 	public required School School { get; init; }
-	public int SchoolId { get; }
+	public Guid SchoolId { get; }
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]

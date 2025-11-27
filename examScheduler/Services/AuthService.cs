@@ -20,7 +20,7 @@ public interface IAuthService
 public class AuthService(
 	AppDbContext context,
 	UserManager<UserProfile> userManager,
-	RoleManager<IdentityRole<int>> roleManager,
+	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
 	IServiceProvider serviceProvider,
 	IJwtService jwtService
@@ -28,7 +28,7 @@ public class AuthService(
 {
 	private readonly AppDbContext _context = context;
 	private readonly UserManager<UserProfile> _userManager = userManager;
-	private readonly RoleManager<IdentityRole<int>> _roleManager = roleManager;
+	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly IJwtService _jwtService = jwtService;
@@ -81,7 +81,7 @@ public class AuthService(
 			..roles.Select(r => new Claim(ClaimTypes.Role, r))
 		];
 
-		var tokenResponse = _jwtService.GetTokens(claims, user);
+		var tokenResponse = _jwtService.GetTokenPairs(claims, user);
 		if (tokenResponse is null)
 		{
 			return new(HttpStatusCode.Unauthorized);

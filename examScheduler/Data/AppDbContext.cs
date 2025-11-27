@@ -8,7 +8,7 @@ using Util;
 namespace examScheduler.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
-	: IdentityDbContext<UserProfile, IdentityRole<int>, int>(options)
+	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
 	//public DbSet<UserProfile> UserProfiles { get; set; } /* UserManger offers this collection */
 	public DbSet<StudentProfile> StudentProfiles { get; set; }

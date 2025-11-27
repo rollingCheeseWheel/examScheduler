@@ -10,8 +10,8 @@ namespace examScheduler.Services;
 
 public interface IJwtService
 {
-	TokenResponse? GetTokens(ICollection<Claim> claims, UserProfile user);
-	string? GetAccessToken(ICollection<Claim> claims, RefreshTokenSession RefreshToken);
+	TokenResponse? GetTokenPairs(ICollection<Claim> claims, UserProfile user);
+	string? GetAccessToken(ICollection<Claim> claims, Guid refreshTokenId);
 	RefreshTokenSession? GetRefreshToken(UserProfile user);
 
 	TokenResponse? RefreshTokens(ICollection<Claim> claims, string refreshToken, UserProfile user);
@@ -26,22 +26,22 @@ public class JwtService(JwtOptions jwtOptions) : IJwtService
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	public const string JWTRefreshTokenClaimName = "RefreshToken";
 
-	public TokenResponse? GetTokens(ICollection<Claim> claims, UserProfile user)
+	public TokenResponse? GetTokenPairs(ICollection<Claim> claims, UserProfile user)
 	{
 		var refreshToken = GetRefreshToken(user);
 		if (refreshToken is null) { return null; }
-		var accessToken = GetAccessToken(claims, refreshToken);
+		var accessToken = GetAccessToken(claims, refreshToken.Id);
 		if (accessToken is null) { return null; }
 		return new()
 		{
 			Token = accessToken,
-			RefreshToken = refreshToken.RandomString
+			RefreshToken = refreshToken.TokenValue
 		};
 	}
 
-	public string? GetAccessToken(ICollection<Claim> claims, RefreshTokenSession refreshToken)
+	public string? GetAccessToken(ICollection<Claim> claims, Guid refreshTokenId)
 	{
-		claims.Add(new Claim(JWTRefreshTokenClaimName, refreshToken.RandomString));
+		claims.Add(new Claim(JWTRefreshTokenClaimName, refreshTokenId.ToString()));
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
@@ -64,14 +64,13 @@ public class JwtService(JwtOptions jwtOptions) : IJwtService
 		}
 		else
 		{
-			var randomStringBase = Convert.ToBase64String(RandomNumberGenerator.GetBytes((int)( _jwtOptions.RefreshTokenBitStrength / 8 )));
 			var refreshToken = new RefreshTokenSession
 			{
-				ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes + _jwtOptions.RefreshTokenExpirationOffset),
+				Id = Guid.NewGuid(),
+				ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes),
 				UserProfile = user,
-				RandomString = randomStringBase
+				TokenValue = Convert.ToBase64String(RandomNumberGenerator.GetBytes(_jwtOptions.RefreshTokenBitStrength / 8))
 			};
-
 			user.RefreshTokens.Add(refreshToken);
 			return refreshToken;
 		}
@@ -79,12 +78,15 @@ public class JwtService(JwtOptions jwtOptions) : IJwtService
 
 	public TokenResponse? RefreshTokens(ICollection<Claim> claims, string refreshToken, UserProfile user)
 	{
-		throw new NotImplementedException();
+		var existingRefreshSession = GetValidRefreshTokenSession(user, refreshToken);
+		if (existingRefreshSession is null) { return null; }
+		if (!TryDeleteRefreshToken(user, refreshToken)) { return null; }
+		return GetTokenPairs(claims, user);
 	}
 
 	public bool TryDeleteRefreshToken(UserProfile user, string refreshToken)
 	{
-		var token = user.RefreshTokens.FirstOrDefault(t => t.RandomString == refreshToken);
+		var token = user.RefreshTokens.FirstOrDefault(t => t.TokenValue == refreshToken);
 		if (token is null) { return false; }
 		return user.RefreshTokens.Remove(token);
 	}
@@ -98,7 +100,7 @@ public class JwtService(JwtOptions jwtOptions) : IJwtService
 			var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(accessToken, _jwtOptions, out var _);
 			var refreshTokenClaim = claimsPrincipal.FindFirst(JWTRefreshTokenClaimName);
 			if (refreshTokenClaim is null) { return null; }
-			if (!user.RefreshTokens.Any(t => t.RandomString == refreshTokenClaim.Value))
+			if (!user.RefreshTokens.Any(t => t.TokenValue == refreshTokenClaim.Value))
 			{ // invalid refresh accessToken
 				return null;
 			}
@@ -109,6 +111,8 @@ public class JwtService(JwtOptions jwtOptions) : IJwtService
 			return null;
 		}
 	}
+
+	private RefreshTokenSession? GetValidRefreshTokenSession(UserProfile user, string refreshTokenValue) => user.RefreshTokens.FirstOrDefault(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow);
 }
 
 
@@ -116,6 +120,6 @@ public class JwtOptions : TokenValidationParameters
 {
 	public required int RefreshTokenBitStrength { get; set; }
 	public required double TokenExpirationInMinutes { get; set; }
-	public required double RefreshTokenExpirationOffset { get; set; }
+	public required double RefreshTokenExpirationInMinutes { get; set; }
 	public required int MaxTokensPerUser { get; set; }
 }

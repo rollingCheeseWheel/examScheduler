@@ -5,12 +5,12 @@ namespace Entities;
 
 public class RefreshTokenSession
 {
-	[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; private set; }
+	[Key]
+	public required Guid Id { get; set; }
 	[Required]
 	public required DateTimeOffset ExpirationDate { get; set; }
 	[Required]
-	public required string RandomString { get; set; }
+	public required string TokenValue { get; set; }
 	[Required]
 	public required UserProfile UserProfile { get; set; }
 }
