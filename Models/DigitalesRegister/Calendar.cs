@@ -99,7 +99,7 @@ public class Lesson
 	public required bool LinkToPreviousHour { get; set; }
 	public bool? IsSecretary { get; set; }
 
-	public static  bool operator ==(Lesson? a, Lesson? b)
+	public static bool operator ==(Lesson? a, Lesson? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;

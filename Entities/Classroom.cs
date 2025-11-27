@@ -17,12 +17,15 @@ public class Classroom
 	[Required]
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
-	// Navigation Properties (do not mark collections [Required])
+	// Navigation Properties
+	[Required]
 	public ICollection<Calendar> Calendars { get; set; } = [ ];
+	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
+	[Required]
 	public ICollection<Teacher> Teachers { get; set; } = [ ];
+	[Required]
 	public ICollection<Schedule> Schedules { get; set; } = [ ];
-	public ICollection<AuditLog> AuditLogs { get; set; } = [ ];
 
 	public void AddCalendar(Calendar calendar) => Calendars.Add(calendar);
 	public void AddStudent(StudentProfile student) => Students.Add(student);

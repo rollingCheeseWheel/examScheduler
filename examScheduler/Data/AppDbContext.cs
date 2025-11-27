@@ -10,12 +10,11 @@ namespace examScheduler.Data;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<int>, int>(options)
 {
-	public DbSet<UserProfile> UserProfiles { get; set; }
+	//public DbSet<UserProfile> UserProfiles { get; set; } /* UserManger offers this collection */
 	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 	public DbSet<School> Schools { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
-	/*public DbSet<Teacher> Teachers { get; set; }*/
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -33,7 +32,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			s.HasIndex(s => s.RegisterUri).IsUnique();
 		});
 
-		// user data
+		// UserProfile
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{
@@ -56,14 +55,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasMany(up => up.RefreshTokens)
 			.WithOne(rts => rts.UserProfile);
 
-		// Ensure UserProfile -> School cascades when School is deleted
 		modelBuilder.Entity<UserProfile>()
 			.HasOne(u => u.School)
 			.WithMany()
 			.HasForeignKey(u => u.SchoolId)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		// teacher (not Profile)
+		// TeacherProfile
 		modelBuilder.Entity<TeacherProfile>()
 			.HasOne(tp => tp.Teacher)
 			.WithOne(t => t.TeacherProfile)
@@ -93,22 +91,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			})
 			.IsUnique();
 
-		// Ensure Classroom -> School cascades
 		modelBuilder.Entity<Classroom>()
 			.HasOne(c => c.School)
 			.WithMany()
 			.HasForeignKey(c => c.SchoolId)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		// Critical: Cascade Classroom -> Calendars (DB-level)
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Calendars)
 			.WithOne(ca => ca.Classroom)
 			.OnDelete(DeleteBehavior.Cascade);
-
-		modelBuilder.Entity<Classroom>()
-			.HasMany(c => c.AuditLogs)
-			.WithOne(a => a.Classroom);
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Teachers)
@@ -124,7 +116,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne(s => s.Classroom)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		// Cascade through Calendar aggregate
 		modelBuilder.Entity<Calendar>()
 			.HasMany(c => c.Days)
 			.WithOne()

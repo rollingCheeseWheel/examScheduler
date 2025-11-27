@@ -30,7 +30,7 @@ public static class Extensions
 		return false;
 	}
 
-	public static DateTimeOffset RoundToMonday(this DateTimeOffset date)
+	public static DateTimeOffset RoundDownToMonday(this DateTimeOffset date)
 	{
 		int diff = ( 7 + ( date.DayOfWeek - DayOfWeek.Monday ) ) % 7;
 		return date.AddDays(-diff).Date;

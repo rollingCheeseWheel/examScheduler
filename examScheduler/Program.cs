@@ -43,8 +43,13 @@ builder.Services
 	.AddScoped<IJwtService, JwtService>();
 /*////*/
 
-var tokenValidationParameters = new TokenValidationParameters
+var tokenValidationParameters = new JwtOptions
 {
+	RefreshTokenBitStrength = 256,
+	TokenExpirationInMinutes = 3,
+	RefreshTokenExpirationOffset = 1,
+	MaxTokensPerUser = 3,
+
 	ValidateLifetime = true,
 	ClockSkew = TimeSpan.FromSeconds(30),
 

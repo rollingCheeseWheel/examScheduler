@@ -1,66 +1,121 @@
 ﻿using Entities;
-using examScheduler.Data;
 using Microsoft.IdentityModel.Tokens;
 using Models.API;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using Util;
 
 namespace examScheduler.Services;
 
 public interface IJwtService
 {
-	public Task<TokenResponse> GetTokensAsync(ICollection<Claim> claims, UserProfile user, CancellationToken ct);
-	public string GetAccessToken(ICollection<Claim> claims, int expiresInMinutes);
-	public Task<string> GetExtensionTokenAsync(UserProfile user, CancellationToken ct);
+	TokenResponse? GetTokens(ICollection<Claim> claims, UserProfile user);
+	string? GetAccessToken(ICollection<Claim> claims, RefreshTokenSession RefreshToken);
+	RefreshTokenSession? GetRefreshToken(UserProfile user);
 
-	public Task<bool> DeleteExtensionTokenAsync(CancellationToken ct);
-	public bool ValidateToken(string token);
+	TokenResponse? RefreshTokens(ICollection<Claim> claims, string refreshToken, UserProfile user);
+
+	bool TryDeleteRefreshToken(UserProfile user, string refreshToken);
+	void DeleteAllRefreshTokens(UserProfile user);
+	ClaimsPrincipal? TryValidateToken(UserProfile user, string token);
 }
 
-public class JwtService(
-	TokenValidationParameters tokenValidationParameters,
-	AppDbContext appDbContext
-) : IJwtService
+public class JwtService(JwtOptions jwtOptions) : IJwtService
 {
-	private readonly TokenValidationParameters _tokenValidationParameters = tokenValidationParameters;
-	private readonly AppDbContext _context = appDbContext;
+	private readonly JwtOptions _jwtOptions = jwtOptions;
+	public const string JWTRefreshTokenClaimName = "RefreshToken";
 
-	public async Task<TokenResponse> GetTokensAsync(ICollection<Claim> claims, UserProfile user, CancellationToken ct = default)
+	public TokenResponse? GetTokens(ICollection<Claim> claims, UserProfile user)
 	{
+		var refreshToken = GetRefreshToken(user);
+		if (refreshToken is null) { return null; }
+		var accessToken = GetAccessToken(claims, refreshToken);
+		if (accessToken is null) { return null; }
 		return new()
 		{
-			Token = GetAccessToken(claims),
-			RefreshToken = await GetExtensionTokenAsync(user, ct)
+			Token = accessToken,
+			RefreshToken = refreshToken.RandomString
 		};
 	}
 
-	public string GetAccessToken(ICollection<Claim> claims, int expiresInMinutes = 3)
+	public string? GetAccessToken(ICollection<Claim> claims, RefreshTokenSession refreshToken)
 	{
+		claims.Add(new Claim(JWTRefreshTokenClaimName, refreshToken.RandomString));
+
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new ClaimsIdentity(claims),
-			Issuer = _tokenValidationParameters.ValidIssuer,
-			Audience = _tokenValidationParameters.ValidAudience,
-			Expires = DateTime.UtcNow.AddMinutes(expiresInMinutes),
-			SigningCredentials = new(_tokenValidationParameters.IssuerSigningKey, SecurityAlgorithms.HmacSha256)
+			Issuer = _jwtOptions.ValidIssuer,
+			Audience = _jwtOptions.ValidAudience,
+			Expires = DateTime.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes),
+			SigningCredentials = new(_jwtOptions.IssuerSigningKey, SecurityAlgorithms.HmacSha256)
 		};
 
 		var handler = new JwtSecurityTokenHandler();
 		return handler.CreateEncodedJwt(tokenDescriptor);
 	}
 
-	public async Task<string> GetExtensionTokenAsync(UserProfile user, CancellationToken ct = default)
+	public RefreshTokenSession? GetRefreshToken(UserProfile user)
+	{
+		if (user.RefreshTokens.Count >= _jwtOptions.MaxTokensPerUser)
+		{
+			return null;
+		}
+		else
+		{
+			var randomStringBase = Convert.ToBase64String(RandomNumberGenerator.GetBytes((int)( _jwtOptions.RefreshTokenBitStrength / 8 )));
+			var refreshToken = new RefreshTokenSession
+			{
+				ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes + _jwtOptions.RefreshTokenExpirationOffset),
+				UserProfile = user,
+				RandomString = randomStringBase
+			};
+
+			user.RefreshTokens.Add(refreshToken);
+			return refreshToken;
+		}
+	}
+
+	public TokenResponse? RefreshTokens(ICollection<Claim> claims, string refreshToken, UserProfile user)
 	{
 		throw new NotImplementedException();
 	}
 
-	public bool ValidateToken(string token)
+	public bool TryDeleteRefreshToken(UserProfile user, string refreshToken)
 	{
-		throw new NotImplementedException();
+		var token = user.RefreshTokens.FirstOrDefault(t => t.RandomString == refreshToken);
+		if (token is null) { return false; }
+		return user.RefreshTokens.Remove(token);
 	}
 
-	public async Task<bool> DeleteExtensionTokenAsync(CancellationToken ct = default)
+	public void DeleteAllRefreshTokens(UserProfile user) => user.RefreshTokens.Clear();
+
+	public ClaimsPrincipal? TryValidateToken(UserProfile user, string accessToken)
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(accessToken, _jwtOptions, out var _);
+			var refreshTokenClaim = claimsPrincipal.FindFirst(JWTRefreshTokenClaimName);
+			if (refreshTokenClaim is null) { return null; }
+			if (!user.RefreshTokens.Any(t => t.RandomString == refreshTokenClaim.Value))
+			{ // invalid refresh accessToken
+				return null;
+			}
+			return claimsPrincipal;
+		}
+		catch
+		{
+			return null;
+		}
 	}
+}
+
+
+public class JwtOptions : TokenValidationParameters
+{
+	public required int RefreshTokenBitStrength { get; set; }
+	public required double TokenExpirationInMinutes { get; set; }
+	public required double RefreshTokenExpirationOffset { get; set; }
+	public required int MaxTokensPerUser { get; set; }
 }

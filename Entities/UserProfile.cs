@@ -15,8 +15,6 @@ public class UserProfile : IdentityUser<int>
 	public required string LastName { get; set; }
 	[Required]
 	public required UserProfileRole Role { get; set; }
-	public required string? RegisterAPIRefreshToken { get; set; }
-	public required DateTimeOffset? RegisterAPIRefreshTokenExpiration { get; set; }
 
 	[Required]
 	public ICollection<RefreshTokenSession> RefreshTokens { get; set; } = [ ];

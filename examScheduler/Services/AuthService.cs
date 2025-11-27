@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Models.API;
 using registerClient;
+using System.Net;
 using System.Security.Claims;
 using Util;
 
@@ -80,11 +81,17 @@ public class AuthService(
 			..roles.Select(r => new Claim(ClaimTypes.Role, r))
 		];
 
-		return new(await _jwtService.GetTokensAsync(claims, user, ct));
+		var tokenResponse = _jwtService.GetTokens(claims, user);
+		if (tokenResponse is null)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+		return new(tokenResponse);
 	}
 
 	private async Task<GenericResponse<TokenResponse>> RegisterAsync(RegisterClient registerClient, OAuthRequest request, CancellationToken ct = default)
 	{
+		var userProfile = await registerClient.GetUserProfileAsync(ct);
 		throw new NotImplementedException();
 	}
 }

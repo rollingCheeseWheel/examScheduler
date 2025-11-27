@@ -79,7 +79,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	/// </summary>
 	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
-		var args = new Dictionary<string, string> { { "startDate", date.RoundToMonday().ToRegisterFormat() } };
+		var args = new Dictionary<string, string> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null) return null;
