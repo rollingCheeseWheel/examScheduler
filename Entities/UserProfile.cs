@@ -16,8 +16,6 @@ public class UserProfile : IdentityUser<Guid>
 	[Required]
 	public required UserProfileRole Role { get; set; }
 
-	[Required]
-	public ICollection<RefreshTokenSession> RefreshTokens { get; set; } = [ ];
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }
 

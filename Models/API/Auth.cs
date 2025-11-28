@@ -20,7 +20,7 @@ public class TokenExtendRequest
 public class TokenResponse
 {
 	[Required]
-	public required string Token { get; set; }
+	public required string AccessToken { get; set; }
 	[Required]
 	public required string RefreshToken { get; set; }
 }

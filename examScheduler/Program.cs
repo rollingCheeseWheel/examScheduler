@@ -33,14 +33,14 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder
 
 builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
-	.AddDefaultTokenProviders();
+	.AddDefaultTokenProviders(); // TODO: shouldnt be needed because of oauth
 
 /*////*/
 builder.Services
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<IClassroomService, ClassroomService>()
-	.AddScoped<IJwtService, JwtService>();
+	.AddScoped<ITokenProvider, TokenProvider>();
 /*////*/
 
 var tokenValidationParameters = new JwtOptions

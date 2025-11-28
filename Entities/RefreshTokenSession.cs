@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Entities;
 
@@ -12,5 +13,7 @@ public class RefreshTokenSession
 	[Required]
 	public required string TokenValue { get; set; }
 	[Required]
-	public required UserProfile UserProfile { get; set; }
+	public required Guid UserProfileId { get; set; }
+	//[Required]
+	//public required UserProfile UserProfile { get; set; }
 }

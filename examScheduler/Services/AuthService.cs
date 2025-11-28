@@ -23,7 +23,7 @@ public class AuthService(
 	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
 	IServiceProvider serviceProvider,
-	IJwtService jwtService
+	ITokenProvider jwtService
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -31,7 +31,7 @@ public class AuthService(
 	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
-	private readonly IJwtService _jwtService = jwtService;
+	private readonly ITokenProvider _jwtService = jwtService;
 
 	public async Task<GenericResponse<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
@@ -41,7 +41,7 @@ public class AuthService(
 			.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (existingSchool is null)
 		{
-			return new("Unknown School ID", System.Net.HttpStatusCode.BadRequest);
+			return new("Unknown School ID", HttpStatusCode.BadRequest);
 		}
 
 		// create the client and fetch the userprofile
@@ -49,7 +49,7 @@ public class AuthService(
 		var userProfile = await client.GetUserProfileAsync(ct);
 		if (userProfile is null)
 		{
-			return new("Could not fetch user profile", System.Net.HttpStatusCode.InternalServerError);
+			return new("Could not fetch user profile", HttpStatusCode.InternalServerError);
 		}
 
 		var existingUser = await _userManager.Users
@@ -81,7 +81,7 @@ public class AuthService(
 			..roles.Select(r => new Claim(ClaimTypes.Role, r))
 		];
 
-		var tokenResponse = _jwtService.GetTokenPairs(claims, user);
+		var tokenResponse = await _jwtService.GetTokenPairAsync(claims, user, ct);
 		if (tokenResponse is null)
 		{
 			return new(HttpStatusCode.Unauthorized);
@@ -91,7 +91,21 @@ public class AuthService(
 
 	private async Task<GenericResponse<TokenResponse>> RegisterAsync(RegisterClient registerClient, OAuthRequest request, CancellationToken ct = default)
 	{
-		var userProfile = await registerClient.GetUserProfileAsync(ct);
+		return await registerClient.GetRoleAsync(ct) switch
+		{
+			UserProfileRole.Student => await RegisterStudentAsync(registerClient, request, ct),
+			UserProfileRole.Teacher => await RegisterTeacherAsync(registerClient, request, ct),
+			_ => new(HttpStatusCode.BadRequest)
+		};
+	}
+
+	private async Task<GenericResponse<TokenResponse>> RegisterStudentAsync(RegisterClient registerClient, OAuthRequest request, CancellationToken ct = default)
+	{
+		throw new NotImplementedException();
+	}
+
+	private async Task<GenericResponse<TokenResponse>> RegisterTeacherAsync(RegisterClient registerClient, OAuthRequest request, CancellationToken ct = default)
+	{
 		throw new NotImplementedException();
 	}
 }

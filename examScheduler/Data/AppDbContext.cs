@@ -11,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
 	//public DbSet<UserProfile> UserProfiles { get; set; } /* UserManger offers this collection */
+	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
 	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 	public DbSet<School> Schools { get; set; }
@@ -32,6 +33,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			s.HasIndex(s => s.RegisterUri).IsUnique();
 		});
 
+		modelBuilder.Entity<RefreshTokenSession>()
+			.HasIndex(s => s.TokenValue)
+			.IsUnique();
+
 		// UserProfile
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
@@ -50,10 +55,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne(up => up.TeacherProfile)
 			.WithOne(tp => tp.UserProfile)
 			.HasForeignKey<TeacherProfile>(tp => tp.Id);
-
-		modelBuilder.Entity<UserProfile>()
-			.HasMany(up => up.RefreshTokens)
-			.WithOne(rts => rts.UserProfile);
 
 		modelBuilder.Entity<UserProfile>()
 			.HasOne(u => u.School)
