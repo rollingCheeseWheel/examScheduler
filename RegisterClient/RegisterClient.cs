@@ -53,8 +53,12 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
 	{
 		UserProfile ??= await GetUserProfileAsync(ct);
+		return GetRole(UserProfile);
+	}
 
-		return UserProfile?.Role switch
+	public static UserProfileRole? GetRole(RegisterUserProfile? userProfile)
+	{
+		return userProfile?.Role switch
 		{
 			"student" => UserProfileRole.Student,
 			"teacher" => UserProfileRole.Teacher,

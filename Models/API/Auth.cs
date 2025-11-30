@@ -1,5 +1,4 @@
-﻿using DataValidation;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Models.API;
 

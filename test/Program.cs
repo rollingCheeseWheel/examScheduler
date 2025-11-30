@@ -13,8 +13,8 @@ var authCode = Console.ReadLine();
 using var client = new RegisterClient(new(config[ "API:schoolUrl" ]!), config[ "API:clientId" ]!, config[ "API:secret" ]!, authCode!);
 
 //await client.AuthenticateAsync();
-//Console.WriteLine("UserProfile");
-//Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
+Console.WriteLine("UserProfile");
+Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
 //Console.WriteLine("Role");
 //Console.WriteLine(await client.GetRoleAsync());
 //Console.WriteLine("Classes");

@@ -16,6 +16,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 	public DbSet<School> Schools { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
+	public DbSet<Teacher> Teachers { get; set; }
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -82,6 +83,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<Lesson>()
 			.HasOne(l => l.Subject)
 			.WithMany();
+
+		modelBuilder.Entity<Teacher>()
+			.HasOne(t => t.School)
+			.WithMany()
+			.HasForeignKey(t => t.SchoolId);
 
 		// classroom
 		modelBuilder.Entity<Classroom>()

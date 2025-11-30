@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Entities;
 
@@ -10,11 +9,13 @@ public class UserProfile : IdentityUser<Guid>
 	public required School School { get; init; }
 	public Guid SchoolId { get; }
 	[Required]
+	public required long RegiserId { get; init; }
+	[Required]
 	public required string FirstName { get; set; }
 	[Required]
 	public required string LastName { get; set; }
 	[Required]
-	public required UserProfileRole Role { get; set; }
+	public required UserProfileRole Role { get; init; }
 
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }

@@ -14,9 +14,14 @@ public class Teacher
 	public required string FirstName { get; init; }
 	[Required]
 	public required string LastName { get; init; }
+	[Required]
+	public required School School { get; init; }
+	public Guid SchoolId { get; init; }
 
 	public TeacherProfile? TeacherProfile { get; set; }
+	[Required]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
+	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
 
 	public static bool operator ==(Teacher? a, Teacher? b)

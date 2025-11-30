@@ -13,7 +13,7 @@ public class Classroom
 	public required School School { get; init; }
 	public Guid SchoolId { get; }
 	[Required]
-	public required int RegisterId { get; init; }
+	public required long RegisterId { get; init; }
 	[Required]
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
@@ -26,10 +26,6 @@ public class Classroom
 	public ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
 	public ICollection<Schedule> Schedules { get; set; } = [ ];
-
-	public void AddCalendar(Calendar calendar) => Calendars.Add(calendar);
-	public void AddStudent(StudentProfile student) => Students.Add(student);
-	public void AddTeacher(Teacher teacher) => Teachers.Add(teacher);
 
 	public static bool operator ==(Classroom? a, Classroom? b)
 	{
