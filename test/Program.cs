@@ -13,8 +13,8 @@ var authCode = Console.ReadLine();
 using var client = new RegisterClient(new(config[ "API:schoolUrl" ]!), config[ "API:clientId" ]!, config[ "API:secret" ]!, authCode!);
 
 //await client.AuthenticateAsync();
-Console.WriteLine("UserProfile");
-Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
+//Console.WriteLine("UserProfile");
+//Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
 //Console.WriteLine("Role");
 //Console.WriteLine(await client.GetRoleAsync());
 //Console.WriteLine("Classes");
@@ -26,8 +26,8 @@ Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
 //Console.WriteLine("Upcoming Calendar");
 //Console.WriteLine(await client.GetUpcomingCalendarAsync().ToJsonAsync());
 
-/*var calendar = await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddDays(-30));
+var calendar = await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddDays(-30));
 //calendar.Add(new() { Date = DateTimeOffset.UtcNow, Lessons = [ ] });
-Console.WriteLine(calendar.ToJson());*/
+Console.WriteLine(calendar.ToJson());
 
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow.AddMonths(2)).ToJsonAsync());

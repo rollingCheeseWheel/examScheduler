@@ -101,10 +101,14 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int yearDuration = 1, int timeOutAfterEmptyWeeks = 3, CancellationToken ct = default)
 	{
-		if (!await AuthenticateAsync(ct)) { return null; }
-
-		List<Models.DigitalesRegister.CalendarDay> result = [ ];
+		if (!await AuthenticateAsync(ct))
+		{
+			Console.WriteLine("failed to authenticate");
+			return null;
+		}
 		var terminationDate = startDate.AddYears(yearDuration);
+
+		/*List<Models.DigitalesRegister.CalendarDay> result = [ ];
 
 		var currentTimeOutCount = 0;
 		while (startDate < terminationDate)
@@ -124,20 +128,20 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			startDate = startDate.AddDays(7);
 		}
 
-		return result;
+		return result;*/
 
 		// should be parallel but doesnt want to
-		/*ICollection<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>> tasks = [ ];
+		ICollection<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>> tasks = [ ];
 		while (startDate < terminationDate)
 		{
 			tasks.Add(GetCalendarWeekAsync(startDate, ct));
 			startDate = startDate.AddDays(7);
 		}
-		return ( await Task.WhenAll(tasks).WaitAsync(ct) )
+		return ( await Task.WhenAll(tasks) )
 			.Where(t => t is not null)
 			.SelectMany(t => t!)
 			.Cast<Models.DigitalesRegister.CalendarDay>()
-			.ToList();*/
+			.ToList();
 	}
 
 	private ICollection<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
@@ -264,17 +268,18 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	/// </summary>
 	private async Task<T?> PostJsonAsync<T>(RegisterPath path, object? data, bool authRequest = false, CancellationToken ct = default)
 	{
-		var response = await PostJsonAsync(path, data, authRequest, ct);
+		try
+		{
+			var response = await PostJsonAsync(path, data, authRequest, ct);
 
-		if (response is null)
-		{
-			return default;
-		}
-		else
-		{
-			try
+			if (response is null)
 			{
-				var deserialized = JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
+				return default;
+			}
+			else
+			{
+				var content = await response.ReadContentAsStringAsync(ct);
+				var deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
 				if (deserialized is not null && deserialized.TryValidate())
 				{
 					return deserialized;
@@ -284,10 +289,11 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 					return default;
 				}
 			}
-			catch
-			{
-				return default;
-			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+			return default;
 		}
 	}
 
@@ -320,7 +326,8 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		}
 		catch
 		{
-			return null;
+			throw;
+			//return null;
 		}
 	}
 
