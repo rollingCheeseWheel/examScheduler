@@ -1,20 +1,22 @@
 ﻿using Entities;
 using Microsoft.AspNetCore.WebUtilities;
 using Models.DigitalesRegister;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Util;
 
 namespace registerClient;
 
-public partial class RegisterClient : IDisposable, IRegisterClient
+/// <summary>
+/// Cannot really make use of parallelisation since the API limits connections are throttled to 1 second after a certain delay
+/// </summary>
+public class RegisterClient : IDisposable, IRegisterClient
 {
 	public readonly Uri SchoolUri;
 	public readonly string ClientId;
 	private readonly HttpClient _httpClient;
 	private readonly HttpClientHandler _clientHandler;
+	private readonly RequestThrottler _requestThrottler;
 
 	private readonly string _authCode;
 	private readonly string _secret;
@@ -23,11 +25,13 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 	public DateTimeOffset? TokenExpiration { get; private set; }
 	public int? UserId { get; private set; }
 
+	private readonly SemaphoreSlim _authenticationSemaphore = new(1, 1);
+
 	public RegisterUserProfile? UserProfile { get; private set; }
 
-	public RegisterClient(Entities.School school, string authCode) : this(school.RegisterUri, school.ClientId, school.Secret, authCode) { }
+	public RegisterClient(Entities.School school, string authCode, int targetRequestsPerSecond = 1) : this(school.RegisterUri, school.ClientId, school.Secret, authCode, targetRequestsPerSecond) { }
 
-	public RegisterClient(Uri schoolUri, string clientId, string secret, string authCode)
+	public RegisterClient(Uri schoolUri, string clientId, string secret, string authCode, double targetRequestsPerSecond = 1)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();
 		ClientId = clientId;
@@ -48,6 +52,7 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 			}
 		};
 		_httpClient = new(_clientHandler);
+		_requestThrottler = new(targetRequestsPerSecond);
 	}
 
 	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
@@ -99,45 +104,35 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		}
 	}
 
-	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int yearDuration = 1, int timeOutAfterEmptyWeeks = 3, CancellationToken ct = default)
+	// TODO there is a bug where the same data gets outputted multiple times
+	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int upToDaysInFuture = 30, int yearDuration = 1, CancellationToken ct = default)
 	{
-		if (!await AuthenticateAsync(ct))
+		if (!await AuthenticateAsync(ct)) { return null; }
+
+		startDate = startDate.RoundDownToMonday();
+		var iterdate = startDate;
+		var terminationDate = iterdate.AddYears(yearDuration);
+		var dates = new List<DateTimeOffset>();
+		while (iterdate < terminationDate)
 		{
-			Console.WriteLine("failed to authenticate");
-			return null;
-		}
-		var terminationDate = startDate.AddYears(yearDuration);
-
-		/*List<Models.DigitalesRegister.CalendarDay> result = [ ];
-
-		var currentTimeOutCount = 0;
-		while (startDate < terminationDate)
-		{
-			if (currentTimeOutCount >= timeOutAfterEmptyWeeks) { break; }
-
-			var tempDays = await GetCalendarWeekAsync(startDate, ct);
-			if (tempDays is not null)
-			{
-				result.AddRange(tempDays);
-				currentTimeOutCount = 0;
-			}
-			else
-			{
-				currentTimeOutCount++;
-			}
-			startDate = startDate.AddDays(7);
+			dates.Add(iterdate);
+			iterdate = iterdate.AddDays(7);
 		}
 
-		return result;*/
+		var ignoreAfterDate = startDate.AddDays(upToDaysInFuture);
+		dates = dates.Where(d => d <= ignoreAfterDate).ToList();
 
-		// should be parallel but doesnt want to
-		ICollection<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>> tasks = [ ];
-		while (startDate < terminationDate)
+		var tasks = new List<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>>();
+
+		var startTime = DateTimeOffset.UtcNow;
+		foreach (var date in dates)
 		{
-			tasks.Add(GetCalendarWeekAsync(startDate, ct));
-			startDate = startDate.AddDays(7);
+			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
 		}
-		return ( await Task.WhenAll(tasks) )
+
+		var results = await Task.WhenAll(tasks);
+
+		return results
 			.Where(t => t is not null)
 			.SelectMany(t => t!)
 			.Cast<Models.DigitalesRegister.CalendarDay>()
@@ -217,38 +212,48 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
 	{
-		if (TokenExpiration is null) // not authenticated yet
-		{
-			var authResponse = await PostJsonAsync<TokenCreateResponse>(
-				RegisterPathAPI.TokenCreate,
-				new TokenCreateRequest
-				{
-					Code = _authCode
-				},
-				true,
-				ct
-			);
+		await _authenticationSemaphore.WaitAsync(ct);
 
-			if (authResponse is null)
+		try
+		{
+			if (TokenExpiration is null) // not authenticated yet
 			{
-				return false;
+				var authResponse = await PostJsonAsync<TokenCreateResponse>(
+					RegisterPathAPI.TokenCreate,
+					new TokenCreateRequest
+					{
+						Code = _authCode
+					},
+					true,
+					ct
+				);
+
+				if (authResponse is null)
+				{
+					return false;
+				}
+				else
+				{
+					_accessToken = authResponse.Token;
+					_refreshToken = authResponse.RefreshToken;
+					TokenExpiration = authResponse.ExpirationDate;
+					UserId = authResponse.UserId;
+					return true;
+				}
+			}
+			else if (TokenExpiration >= DateTime.Now.AddMinutes(5)) // not expired
+			{
+				return true;
 			}
 			else
 			{
-				_accessToken = authResponse.Token;
-				_refreshToken = authResponse.RefreshToken;
-				TokenExpiration = authResponse.ExpirationDate;
-				UserId = authResponse.UserId;
-				return true;
+				return await RefreshTokenAsync(ct); // expired, refresh
+
 			}
 		}
-		else if (TokenExpiration >= DateTime.Now.AddMinutes(5)) // not expired
+		finally
 		{
-			return true;
-		}
-		else
-		{
-			return await RefreshTokenAsync(ct); // expired, refresh
+			_authenticationSemaphore.Release();
 		}
 	}
 
@@ -321,13 +326,12 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 				"application/json"
 			);
 
-			var response = await _httpClient.SendAsync(request);
+			var response = await SendAsync(request, ct);
 			return response;
 		}
 		catch
 		{
-			throw;
-			//return null;
+			return null;
 		}
 	}
 
@@ -373,6 +377,20 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		try
 		{
 			ConfigureHeadersDefault(ref request);
+			return await SendAsync(request, ct);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private async Task<HttpResponseMessage?> SendAsync(HttpRequestMessage request, CancellationToken ct = default)
+	{
+		await _requestThrottler.WaitAsync(ct);
+		Console.WriteLine($"Sending request to: {request.RequestUri?.LocalPath}\t{DateTime.UtcNow}");
+		try
+		{
 			return await _httpClient.SendAsync(request, ct);
 		}
 		catch
@@ -414,11 +432,8 @@ public partial class RegisterClient : IDisposable, IRegisterClient
 		{
 			_clientHandler.Dispose();
 			_httpClient.Dispose();
+			_requestThrottler.Dispose();
 		}
 		_disposed = true;
 	}
-
-	[GeneratedRegex(@"^https://(.*?).digitalesregister.it.*$")]
-	private static partial Regex SchoolIdRegex();
-
 }

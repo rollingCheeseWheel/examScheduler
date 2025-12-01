@@ -12,7 +12,10 @@ namespace examScheduler.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController(IAuthService authService, AppDbContext context) : ControllerBase
+public class AuthController(
+	IAuthService authService,
+	AppDbContext context
+) : ControllerBase
 {
 	private readonly IAuthService _authService = authService;
 	private readonly AppDbContext _context = context;

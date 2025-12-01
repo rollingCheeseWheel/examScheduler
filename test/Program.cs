@@ -1,17 +1,26 @@
 ﻿using Microsoft.Extensions.Configuration;
 using registerClient;
+using System.Diagnostics;
 using Util;
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
+var sw = new Stopwatch();
 
 Console.WriteLine($"{config[ "API:schoolUrl" ]}v2/login/?client_id={config[ "API:clientId" ]}");
 
 Console.Write("Authcode: ");
 var authCode = Console.ReadLine();
 
-using var client = new RegisterClient(new(config[ "API:schoolUrl" ]!), config[ "API:clientId" ]!, config[ "API:secret" ]!, authCode!);
+using var client = new RegisterClient(
+	new(config[ "API:schoolUrl" ]!),
+	config[ "API:clientId" ]!,
+	config[ "API:secret" ]!,
+	authCode!,
+	400
+);
 
+sw.Start();
 //await client.AuthenticateAsync();
 //Console.WriteLine("UserProfile");
 //Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
@@ -26,8 +35,11 @@ using var client = new RegisterClient(new(config[ "API:schoolUrl" ]!), config[ "
 //Console.WriteLine("Upcoming Calendar");
 //Console.WriteLine(await client.GetUpcomingCalendarAsync().ToJsonAsync());
 
-var calendar = await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddDays(-30));
 //calendar.Add(new() { Date = DateTimeOffset.UtcNow, Lessons = [ ] });
-Console.WriteLine(calendar.ToJson());
+Console.WriteLine(await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddMonths(-4)).ToJsonAsync());
 
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow.AddMonths(2)).ToJsonAsync());
+
+sw.Stop();
+Console.WriteLine();
+Console.WriteLine("Elapsed\t" + sw.Elapsed);
