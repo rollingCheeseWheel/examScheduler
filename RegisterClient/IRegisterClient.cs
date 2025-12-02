@@ -16,5 +16,5 @@ public interface IRegisterClient
 	Task<ICollection<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct);
 
 	Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
-	Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int yearDuration, int timeOutAfterEmptyWeeks, CancellationToken ct);
+	Task<ICollection<Models.DigitalesRegister.CalendarDay>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default);
 }

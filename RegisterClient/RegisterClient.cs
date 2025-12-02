@@ -105,26 +105,21 @@ public class RegisterClient : IDisposable, IRegisterClient
 	}
 
 	// TODO there is a bug where the same data gets outputted multiple times
-	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCompleteCalendarAsync(DateTimeOffset startDate, int upToDaysInFuture = 30, int yearDuration = 1, CancellationToken ct = default)
+	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
 	{
-		if (!await AuthenticateAsync(ct)) { return null; }
+		if (!await AuthenticateAsync(ct)) { return [ ]; }
 
-		startDate = startDate.RoundDownToMonday();
 		var iterdate = startDate;
-		var terminationDate = iterdate.AddYears(yearDuration);
 		var dates = new List<DateTimeOffset>();
-		while (iterdate < terminationDate)
+		while (iterdate < endDate)
 		{
 			dates.Add(iterdate);
 			iterdate = iterdate.AddDays(7);
 		}
 
-		var ignoreAfterDate = startDate.AddDays(upToDaysInFuture);
-		dates = dates.Where(d => d <= ignoreAfterDate).ToList();
+		Console.WriteLine(dates.ToJson());
 
 		var tasks = new List<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>>();
-
-		var startTime = DateTimeOffset.UtcNow;
 		foreach (var date in dates)
 		{
 			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
@@ -135,7 +130,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 		return results
 			.Where(t => t is not null)
 			.SelectMany(t => t!)
-			.Cast<Models.DigitalesRegister.CalendarDay>()
+			.DistinctBy(d => d.Date)
 			.ToList();
 	}
 

@@ -35,8 +35,15 @@ sw.Start();
 //Console.WriteLine("Upcoming Calendar");
 //Console.WriteLine(await client.GetUpcomingCalendarAsync().ToJsonAsync());
 
-//calendar.Add(new() { Date = DateTimeOffset.UtcNow, Lessons = [ ] });
-Console.WriteLine(await client.GetCompleteCalendarAsync(DateTimeOffset.UtcNow.AddMonths(-4)).ToJsonAsync());
+//Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
+//Console.WriteLine(await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7)).ToJsonAsync());
+
+//Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
+
+Console.WriteLine(await client.GetCalendarAsync(
+	DateTimeOffset.UtcNow.AddMonths(-4),
+	DateTimeOffset.UtcNow.AddMonths(1)
+).ToJsonAsync());
 
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow.AddMonths(2)).ToJsonAsync());
 
