@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251127205626_postgresql.container_migration_953")]
-    partial class postgresqlcontainer_migration_953
+    [Migration("20251203111831_postgresql.container_migration_335")]
+    partial class postgresqlcontainer_migration_335
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -124,8 +124,8 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("RegisterId")
-                        .HasColumnType("integer");
+                    b.Property<long>("RegisterId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("SchoolId")
                         .HasColumnType("uuid");
@@ -228,9 +228,10 @@ namespace examScheduler.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserProfileId");
+                    b.HasIndex("TokenValue")
+                        .IsUnique();
 
-                    b.ToTable("RefreshTokenSession");
+                    b.ToTable("RefreshSessions");
                 });
 
             modelBuilder.Entity("Entities.Schedule", b =>
@@ -377,9 +378,14 @@ namespace examScheduler.Migrations
                     b.Property<int>("RegisterID")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("SchoolId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Teacher");
+                    b.HasIndex("SchoolId");
+
+                    b.ToTable("Teachers");
                 });
 
             modelBuilder.Entity("Entities.TeacherProfile", b =>
@@ -448,6 +454,9 @@ namespace examScheduler.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<long>("RegiserId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Role")
                         .HasColumnType("integer");
@@ -766,17 +775,6 @@ namespace examScheduler.Migrations
                     b.Navigation("Subject");
                 });
 
-            modelBuilder.Entity("Entities.RefreshTokenSession", b =>
-                {
-                    b.HasOne("Entities.UserProfile", "UserProfile")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("UserProfile");
-                });
-
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
                     b.HasOne("Entities.Classroom", "Classroom")
@@ -820,6 +818,17 @@ namespace examScheduler.Migrations
                     b.Navigation("Classroom");
 
                     b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("Entities.Teacher", b =>
+                {
+                    b.HasOne("Entities.School", "School")
+                        .WithMany()
+                        .HasForeignKey("SchoolId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("School");
                 });
 
             modelBuilder.Entity("Entities.TeacherProfile", b =>
@@ -996,8 +1005,6 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.UserProfile", b =>
                 {
-                    b.Navigation("RefreshTokens");
-
                     b.Navigation("StudentProfile");
 
                     b.Navigation("TeacherProfile");

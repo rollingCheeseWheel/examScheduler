@@ -90,16 +90,24 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-/*using (var schoolScope = app.Services.CreateScope())
+
+app.MapDefaultEndpoints();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
+	app.MapOpenApi();
+
+	using var schoolScope = app.Services.CreateScope();
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
+	db.Database.Migrate();
 
 	List<Entities.School> schools = [
 		new()
 		{
 			Name = "Test WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-test-bruneck.digitalesregister.it/"),
-			ClientId = "wfo-bruneck",
+			SchoolId = "wfo-bruneck",
 			ClientId = "QYffPSN5bcsrZ9yL",
 			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!
 		},
@@ -112,18 +120,6 @@ var app = builder.Build();
 	}
 
 	db.SaveChanges();
-}*/
-
-app.MapDefaultEndpoints();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-	app.MapOpenApi();
-
-	using var scope = app.Services.CreateScope();
-	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-	db.Database.Migrate();
 }
 
 app.MapControllers();
