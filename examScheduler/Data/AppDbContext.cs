@@ -10,7 +10,6 @@ namespace examScheduler.Data;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
-	//public DbSet<UserProfile> UserProfiles { get; set; } /* UserManger offers this collection */
 	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
 	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
@@ -104,14 +103,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey(c => c.SchoolId)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<Classroom>()
-			.HasMany(c => c.Calendars)
-			.WithOne(ca => ca.Classroom)
-			.OnDelete(DeleteBehavior.Cascade);
-
-		modelBuilder.Entity<Classroom>()
-			.HasMany(c => c.Teachers)
-			.WithMany(t => t.Classrooms);
+		//modelBuilder.Entity<Classroom>()
+		//	.HasMany(c => c.Calendars)
+		//	.WithOne(ca => ca.Classroom)
+		//	.OnDelete(DeleteBehavior.Cascade);
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Schedules)
@@ -124,14 +119,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.OnDelete(DeleteBehavior.Cascade);
 
 		modelBuilder.Entity<Calendar>()
-			.HasMany(c => c.Days)
+			.HasMany(c => c.Lessons)
 			.WithOne()
 			.OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<CalendarDay>()
-			.HasMany(d => d.Lessons)
-			.WithOne()
-			.OnDelete(DeleteBehavior.Cascade);
 
 		// schedule
 		modelBuilder.Entity<Schedule>()
@@ -139,12 +130,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne(e => e.Schedule)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<ExamSlot>()
-			.HasMany(e => e.Participants)
-			.WithMany(s => s.ParticipatingExamSlots);
-		modelBuilder.Entity<ExamSlot>()
-			.HasMany(e => e.ActuallyParticipated)
-			.WithMany(s => s.ActuallyParticipatedExamSlots);
+		//modelBuilder.Entity<ExamSlot>()
+		//	.HasMany(e => e.Participants)
+		//	.WithMany(s => s.ParticipatingExamSlots);
+		//modelBuilder.Entity<ExamSlot>()
+		//	.HasMany(e => e.ActuallyParticipated)
+		//	.WithMany(s => s.ActuallyParticipatedExamSlots);
 	}
 
 	public override int SaveChanges()

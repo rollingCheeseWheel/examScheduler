@@ -92,12 +92,9 @@ public class Lesson
 	public required ICollection<Teacher> Teachers { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
-	[Required, JsonConverter(typeof(IntToBoolConverter))]
-	public required bool IsSubstitute { get; set; }
 
 	[Required, JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
-	public bool? IsSecretary { get; set; }
 
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{

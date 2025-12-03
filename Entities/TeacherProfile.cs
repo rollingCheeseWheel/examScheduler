@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class TeacherProfile
+public class TeacherProfile : IComparable<TeacherProfile>
 {
 	[Key] // is the same key as the userprofile
 	public Guid Id { get; private set; }
@@ -23,4 +23,5 @@ public class TeacherProfile
 	public static bool operator !=(TeacherProfile? a, TeacherProfile? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is TeacherProfile other && this == other;
 	public override int GetHashCode() => UserProfile.GetHashCode();
+	public int CompareTo(TeacherProfile? other) => UserProfile.CompareTo(other?.UserProfile);
 }

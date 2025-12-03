@@ -188,8 +188,6 @@ public class RegisterClient : IDisposable, IRegisterClient
 						ClassName = currentLesson.ClassName,
 						Subject = currentLesson.Subject,
 						Teachers = currentLesson.Teachers,
-						IsSubstitute = currentLesson.IsSubstitute,
-						IsSecretary = currentLesson.IsSecretary,
 					};
 					compactedLessons[ ^1 ] = currentLesson;
 				}

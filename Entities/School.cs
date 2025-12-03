@@ -31,19 +31,11 @@ public class School : IComparable<School>
 
 	public int CompareTo(School? other)
 	{
-		if (other is null) return 1;
-
-		int c;
-
-		c = string.Compare(Name, other.Name, StringComparison.Ordinal);
-		if (c is not 0) return c;
-
-		c = string.Compare(SchoolId, other.SchoolId, StringComparison.Ordinal);
-		if (c is not 0) return c;
-
-		c = string.Compare(RegisterUri.ToString(), other.RegisterUri.ToString(), StringComparison.Ordinal);
-		if (c is not 0) return c;
-
-		return 0;
+		if (other is null) { return 1; }
+		var res = Name.CompareTo(other.Name);
+		if (res != 0) { return res; }
+		res = RegisterUri.AbsoluteUri.CompareTo(other.RegisterUri.AbsoluteUri);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
 	}
 }

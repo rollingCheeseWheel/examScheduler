@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class Teacher
+public class Teacher : IComparable<Teacher>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -20,8 +20,6 @@ public class Teacher
 
 	public TeacherProfile? TeacherProfile { get; set; }
 	[Required]
-	public ICollection<Classroom> Classrooms { get; set; } = [ ];
-	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
 
 	public static bool operator ==(Teacher? a, Teacher? b)
@@ -30,9 +28,11 @@ public class Teacher
 		if (a is null || b is null) return false;
 		return a.RegisterID == b.RegisterID
 			&& a.FirstName == b.FirstName
-			&& a.LastName == b.LastName;
+			&& a.LastName == b.LastName
+			&& a.School == b.School;
 	}
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Teacher other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterID);
+	public override int GetHashCode() => HashCode.Combine(RegisterID, FirstName, LastName, School);
+	public int CompareTo(Teacher? other) => Id.CompareTo(other?.Id);
 }

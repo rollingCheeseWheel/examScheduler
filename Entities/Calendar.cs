@@ -1,114 +1,79 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Util;
 
 namespace Entities;
 
-public class Calendar
+public class Calendar() : IComparable<Calendar>
 {
 	[Key]
 	public Guid Id { get; set; }
 
-	[Required, Range(0, int.MaxValue)]
-	public int TimesScanned { get; private set; } = 1;
 	[Required]
-	public DateTimeOffset LastScanned { get; private set; } = DateTimeOffset.UtcNow;
+	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.UtcNow;
 
 	[Required]
-	public required ICollection<CalendarDay> Days { get; set; } = [ ];
+	public ICollection<Lesson> Lessons { get; set; } = [ ];
 	public Classroom? Classroom { get; set; }
 
-	public static Calendar Parse(Classroom classroom, Models.DigitalesRegister.Calendar calendar, ICollection<Teacher> teachers) => Parse(classroom, calendar.Days, teachers);
-
-	public static Calendar Parse(Classroom classroom, ICollection<Models.DigitalesRegister.CalendarDay> days, ICollection<Teacher> teachers)
+	public void Extend(IEnumerable<Models.DigitalesRegister.CalendarDay> days)
 	{
-		return new()
+		foreach (var iterLesson in days.SelectMany(d => d.Lessons))
 		{
-			Days = days.Select(d => CalendarDay.Parse(d, teachers)).ToList(),
-			Classroom = classroom
-		};
+			var existingLesson = Lessons.Where(l => l.DayOfWeek == iterLesson.Date.DayOfWeek).FirstOrDefault();
+			if (existingLesson is null)
+			{
+				existingLesson = new()
+				{
+					ClassId = iterLesson.ClassId,
+					ClassName = iterLesson.ClassName,
+					Hour = iterLesson.Hour,
+					ToHour = iterLesson.ToHour,
+					Occurances = [ iterLesson.Date ],
+					Subject = iterLesson.Subject,
+					//Teachers = iterLesson.Teachers, // TODO add teacher and subject parser
+					Teachers = [ ]
+				};
+				Lessons.Add(existingLesson);
+			}
+			else
+			{
+
+			}
+		}
 	}
 
-	public static bool operator ==(Calendar? a, Calendar? d)
+	public IEnumerable<Lesson> Normalize()
 	{
-		if (ReferenceEquals(a, d)) return true;
-		if (a is null || d is null) return false;
-		return a.Classroom == d.Classroom
-			&& a.Days.SequenceEqual(d.Days, x => x.Date);
+		throw new NotImplementedException();
+	}
+
+	public static bool operator ==(Calendar? a, Calendar? b)
+	{
+		if (ReferenceEquals(a, b)) return true;
+		if (a is null || b is null) return false;
+		return a.Classroom == b.Classroom
+			&& a.Lessons.SequenceEqual(b.Lessons, x => x.FirstOccurance);
 	}
 	public static bool operator !=(Calendar? a, Calendar? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Calendar other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Classroom, Days.OrderBy(d => d.Date));
+	public override int GetHashCode() => HashCode.Combine(Classroom, Lessons.OrderBy(b => b.FirstOccurance));
+	public int CompareTo(Calendar? other) => Id.CompareTo(other?.Id);
 }
 
-public class CalendarDay
+public class Lesson : IComparable<Lesson>
 {
 	[Key]
 	public Guid Id { get; set; }
-	[Required]
-	public required DateTimeOffset Date { get; init; }
-	[Required]
-	public List<Lesson> Lessons { get; set; } = [ ];
 
 	[NotMapped]
-	public DayOfWeek DayOfWeek { get => Date.DayOfWeek; }
+	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;
 
-	public static CalendarDay Parse(Models.DigitalesRegister.CalendarDay calendarDay, ICollection<Teacher> teachers)
-	{
-		return new()
-		{
-			Date = calendarDay.Date.ToUniversalTime(),
-			Lessons = calendarDay.Lessons.Select(l => Lesson.Parse(l, teachers)).ToList(),
-		};
-	}
-
-	public static bool operator ==(CalendarDay? a, CalendarDay? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Date == b.Date
-			&& a.Lessons.SequenceEqual(b.Lessons, h => h.Hour);
-	}
-	public static bool operator !=(CalendarDay? a, CalendarDay? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is CalendarDay other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Date, Lessons.OrderBy(h => h.Hour));
-}
-
-[Obsolete]
-public class HourInDay
-{
-	[Key]
-	public Guid Id { get; set; }
-	[Required]
-	public required Lesson Lesson { get; init; }
-	[Required]
-	public required int Hour { get; init; }
-	[Required]
-	public required int LinkedHoursCount { get; init; }
 	[NotMapped]
-	public int Duration { get => LinkedHoursCount + 1; }
-
-	public static bool operator ==(HourInDay? a, HourInDay? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Lesson == b.Lesson
-			&& a.Hour == b.Hour
-			&& a.LinkedHoursCount == b.LinkedHoursCount;
-	}
-	public static bool operator !=(HourInDay? a, HourInDay? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is HourInDay other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Lesson, Hour, LinkedHoursCount);
-}
-
-public class Lesson
-{
-	[Key]
-	public Guid Id { get; set; }
-	public required int? RegisterId { get; set; }
+	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
 	[Required]
-	public required DateTimeOffset Date { get; set; }
+	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
 	public required int Hour { get; set; }
 	[Required]
@@ -117,9 +82,6 @@ public class Lesson
 	public required int ClassId { get; set; }
 	[Required]
 	public required string ClassName { get; set; }
-	[Required]
-	public required bool IsSubtitute { get; set; }
-	public bool? IsSecretary { get; set; }
 
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
@@ -134,11 +96,8 @@ public class Lesson
 		{
 			ClassId = lesson.ClassId,
 			ClassName = lesson.ClassName,
-			Date = lesson.Date.ToUniversalTime(),
+			Occurances = [ lesson.Date.ToUniversalTime() ],
 			Hour = lesson.Hour,
-			IsSubtitute = lesson.IsSubstitute,
-			IsSecretary = lesson.IsSecretary,
-			RegisterId = lesson.Id,
 			Subject = lesson.Subject,
 			Teachers = teachers.Where(t => t.Subjects.Contains(lesson.Subject)).ToList(),
 			ToHour = lesson.ToHour,
@@ -149,16 +108,26 @@ public class Lesson
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.Date == b.Date
+		return a.FirstOccurance == b.FirstOccurance
+			&& a.Occurances.SequenceEqual(b.Occurances, x => x)
 			&& a.Hour == b.Hour
 			&& a.ToHour == b.ToHour
-			&& a.IsSubtitute == b.IsSubtitute
-			&& a.IsSecretary == b.IsSecretary
 			&& a.ClassId == b.ClassId
 			&& a.Subject == b.Subject
 			&& a.Teachers.SequenceEqual(b.Teachers, b => b.RegisterID);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Date, Hour, ToHour, IsSubtitute, IsSecretary, ClassId, Subject, Teachers.OrderBy(x => x.RegisterID));
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), Hour, ToHour, ClassId, Subject, Teachers.OrderBy(t => t.RegisterID));
+	public int CompareTo(Lesson? other)
+	{
+		if (other is null) { return 1; }
+		var res = FirstOccurance.CompareTo(other.FirstOccurance);
+		if (res != 0) { return res; }
+		res = Hour.CompareTo(other.Hour);
+		if (res != 0) { return res; }
+		res = ToHour.CompareTo(other.ToHour);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
+	}
 }

@@ -55,7 +55,7 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 	private IQueryable<Classroom> GetClassrooms()
 	{
 		return _context.Classrooms
-			.Include(c => c.Calendars)
+			.Include(c => c.Calendar)
 			.Include(c => c.Students)
 			.Include(c => c.Teachers)
 			.Include(c => c.School)

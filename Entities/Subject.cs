@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class Subject
+public class Subject : IComparable<Subject>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -21,9 +21,16 @@ public class Subject
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.RegisterId == b.RegisterId;
+		return a.Name == b.Name;
 	}
 	public static bool operator !=(Subject? a, Subject? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Subject other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterId);
+	public override int GetHashCode() => HashCode.Combine(Name);
+	public int CompareTo(Subject? other)
+	{
+		if (other is null) { return 1; }
+		var res = Name.CompareTo(other.Name);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
+	}
 }

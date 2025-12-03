@@ -1,9 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Query;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class Schedule
+public class Schedule : IComparable<Schedule>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -42,9 +43,16 @@ public class Schedule
 	public static bool operator !=(Schedule? a, Schedule? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Schedule other && this == other;
 	public override int GetHashCode() => HashCode.Combine(FirstExamination, Subject, Classroom);
+	public int CompareTo(Schedule? other)
+	{
+		if (other is null) { return 1; }
+		var res = FirstExamination.CompareTo(other.FirstExamination);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
+	}
 }
 
-public class ExamSlot
+public class ExamSlot : IComparable<ExamSlot>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -90,9 +98,16 @@ public class ExamSlot
 	public static bool operator !=(ExamSlot? a, ExamSlot? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is ExamSlot other && this == other;
 	public override int GetHashCode() => HashCode.Combine(Schedule);
+	public int CompareTo(ExamSlot? other)
+	{
+		if (other is null) { return 1; }
+		var res = Date.CompareTo(other.Date);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
+	}
 }
 
-public class ScheduleGeneratorSlot
+public class ScheduleGeneratorSlot : IComparable<ScheduleGeneratorSlot>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -115,4 +130,15 @@ public class ScheduleGeneratorSlot
 	public static bool operator !=(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is ScheduleGeneratorSlot other && this == other;
 	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, RequiredParticipants);
+	public int CompareTo(ScheduleGeneratorSlot? other)
+	{
+		if (other is null) { return 1; }
+		var res = Offset.CompareTo(other.Offset);
+		if (res != 0) { return res; }
+		res = RequiredParticipants.CompareTo(other.RequiredParticipants);
+		if (res != 0) { return res; }
+		res = MaxParticipants.CompareTo(other.MaxParticipants);
+		if (res != 0) { return res; }
+		return Id.CompareTo(other.Id);
+	}
 }

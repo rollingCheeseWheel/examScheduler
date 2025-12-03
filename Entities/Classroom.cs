@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
 
-public class Classroom
+public class Classroom : IComparable<Classroom>
 {
 	[Key]
 	public Guid Id { get; set; }
@@ -19,7 +18,7 @@ public class Classroom
 
 	// Navigation Properties
 	[Required]
-	public ICollection<Calendar> Calendars { get; set; } = [ ];
+	public Calendar Calendar { get; set; } = new();
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]
@@ -37,4 +36,5 @@ public class Classroom
 	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Classroom other && this == other;
 	public override int GetHashCode() => HashCode.Combine(RegisterId, School);
+	public int CompareTo(Classroom? other) => Id.CompareTo(other?.Id);
 }
