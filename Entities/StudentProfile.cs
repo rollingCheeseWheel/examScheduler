@@ -17,8 +17,8 @@ public class StudentProfile : IComparable<StudentProfile>
 	/// a Student has a Classroom, a Classroom has many (indirect) ExamSlots, an ExamSlot has many Students
 	/// thus a Student has many ExamSlots
 	/// </summary>
-	//public ICollection<ExamSlot> ParticipatingExamSlots { get; internal set; } = [ ];
-	//public ICollection<ExamSlot> ActuallyParticipatedExamSlots { get; internal set; } = [ ];
+	public ICollection<ExamSlot> ParticipatingExamSlots { get; internal set; } = [ ];
+	public ICollection<ExamSlot> ActuallyParticipatedExamSlots { get; internal set; } = [ ];
 
 	public static bool operator ==(StudentProfile? a, StudentProfile? b)
 	{

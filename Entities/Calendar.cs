@@ -16,6 +16,7 @@ public class Calendar : IComparable<Calendar>
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
 	[Required]
 	public required Classroom Classroom { get; set; }
+	public Guid ClassroomId { get; private set; }
 
 	public void Extend(IEnumerable<Models.DigitalesRegister.Lesson> lessons, out IEnumerable<Teacher> createdTeachers, out IEnumerable<Subject> createdSubjects)
 	{
