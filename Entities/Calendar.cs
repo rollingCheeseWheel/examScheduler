@@ -4,7 +4,7 @@ using Util;
 
 namespace Entities;
 
-public class Calendar : IComparable<Calendar>
+public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 {
 	[Key]
 	public Guid Id { get; private set; } = Guid.NewGuid();
@@ -18,11 +18,17 @@ public class Calendar : IComparable<Calendar>
 	public required Classroom Classroom { get; set; }
 	public Guid ClassroomId { get; private set; }
 
-	public void Extend(IEnumerable<Models.DigitalesRegister.Lesson> lessons, out IEnumerable<Teacher> createdTeachers, out IEnumerable<Subject> createdSubjects)
+	public void Extend(IEnumerable<Models.DigitalesRegister.Lesson> lessons, School school, out IEnumerable<Teacher> createdTeachers, out IEnumerable<Subject> createdSubjects)
 	{
-		(createdTeachers, createdSubjects) = ([ ], [ ]);
+		var existingTeacherSubjects = Lessons
+			.GroupBy(l => l.Subject)
+			.Select(g => (
+				Subject: g.Key,
+				Teachers: g.SelectMany(l => l.Teachers).Distinct(),
+				Lessons: (IEnumerable<Models.DigitalesRegister.Lesson>)[ ]
+			));
 
-		var teacherSubjects = lessons
+		var registerTeacherSubjects = lessons
 			.GroupBy(l => l.Subject)
 			.Select(g => (
 				Subject: new Subject()
@@ -31,26 +37,39 @@ public class Calendar : IComparable<Calendar>
 					RegisterId = g.Key.Id
 				},
 				Teachers: g.SelectMany(l => l.Teachers).Distinct()
+				.Select(t => new Teacher()
+				{
+					FirstName = t.FirstName,
+					LastName = t.LastName,
+					RegisterID = t.Id,
+					School = school,
+				}),
+				Lessons: g.Select(l => l)
 			));
 
-		var existingSubjects = Lessons.Select(l => l.Subject).Distinct();
+		var additionalTeacherSubjects = registerTeacherSubjects.Except(existingTeacherSubjects, g => g.Subject);
 
-		var existingTeachers = Lessons.SelectMany(l => l.Teachers).Distinct();
-		var additionalTeachers = teacherSubjects.SelectMany(g => g.Teachers)
-			.Select(t => new Teacher()
-			{
-				FirstName = t.FirstName,
-				LastName = t.LastName,
-				RegisterID = t.Id,
-				School = Classroom.School,
-			});
+		createdSubjects = additionalTeacherSubjects.Select(g => g.Subject);
+		createdTeachers = additionalTeacherSubjects.SelectMany(g => g.Teachers);
 
+		var combinedTeacherSubjects = existingTeacherSubjects
+			.Concat(additionalTeacherSubjects)
+			.GroupBy(g => g.Subject)
+			.Select(g => (
+				Subject: g.Key,
+				Teachers: g.SelectMany(x => x.Teachers),
+				Lessons: g.SelectMany(x => x.Lessons)
+			));
 
 		foreach (var iterLesson in lessons)
 		{
-			var existingLesson = Lessons.Where(l => l.Occurances.Contains(iterLesson.Date)).FirstOrDefault();
+			var matchingTeacherSubjects = combinedTeacherSubjects.FirstOrDefault(g => g.Lessons.Contains(iterLesson));
+			var existingLesson = Lessons
+				.Where(l => l.EqualsModel(iterLesson))
+				.FirstOrDefault();
 			if (existingLesson is null)
 			{
+
 				existingLesson = new()
 				{
 					ClassId = iterLesson.ClassId,
@@ -58,21 +77,45 @@ public class Calendar : IComparable<Calendar>
 					Hour = iterLesson.Hour,
 					ToHour = iterLesson.ToHour,
 					Occurances = [ iterLesson.Date ],
-					Subject = iterLesson.Subject,
-					//Teachers = iterLesson.Teachers, // TODO add teacher and subject parser
-					Teachers = [ ]
+					Subject = matchingTeacherSubjects.Subject,
+					Teachers = matchingTeacherSubjects.Teachers.ToList(),
 				};
 				Lessons.Add(existingLesson);
 			}
 			else
 			{
-
+				existingLesson.Occurances.Add(iterLesson.Date);
+				existingLesson.Teachers.Clear();
+				foreach (var teacher in matchingTeacherSubjects.Teachers)
+				{
+					existingLesson.Teachers.Add(teacher);
+				}
 			}
 		}
 	}
 
 	public IEnumerable<Lesson> Normalize()
 	{
+		var daysInWeek = Enum.GetValues<DayOfWeek>();
+		var longestDayInWeek = Lessons.Max(l => l.ToHour);
+		var lessonMatrix = new Lesson?[ daysInWeek.Length, longestDayInWeek ];
+
+		for (var day = 0; day < daysInWeek.Length; day++)
+		{
+			for (var hour = 0; hour < longestDayInWeek; hour++)
+			{
+				lessonMatrix[ day, hour ] = Lessons
+					.Where(l
+						=> l.DayOfWeek == daysInWeek[ day ]
+						&& l.Hour <= hour
+						&& l.ToHour >= hour
+					)
+					.MaxBy(l => l.Occurances.Count);
+			}
+
+			// TODO need to filter through the list and split every lesson that spans more than one hour 
+		}
+
 		throw new NotImplementedException();
 	}
 
@@ -84,12 +127,13 @@ public class Calendar : IComparable<Calendar>
 			&& a.Lessons.SequenceEqual(b.Lessons, x => x.FirstOccurance);
 	}
 	public static bool operator !=(Calendar? a, Calendar? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Calendar other && this == other;
+	public override bool Equals(object? obj) => obj is Calendar other && Equals(other);
+	public bool Equals(Calendar? other) => this == other;
 	public override int GetHashCode() => HashCode.Combine(Classroom, Lessons.OrderBy(b => b.FirstOccurance));
 	public int CompareTo(Calendar? other) => Id.CompareTo(other?.Id);
 }
 
-public class Lesson : IComparable<Lesson>
+public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 {
 	[Key]
 	public Guid Id { get; private set; } = Guid.NewGuid();
@@ -117,20 +161,6 @@ public class Lesson : IComparable<Lesson>
 	[NotMapped]
 	public int Duration => ToHour - Hour + 1;
 
-	public static Lesson Parse(Models.DigitalesRegister.Lesson lesson, ICollection<Teacher> teachers)
-	{
-		return new()
-		{
-			ClassId = lesson.ClassId,
-			ClassName = lesson.ClassName,
-			Occurances = [ lesson.Date.ToUniversalTime() ],
-			Hour = lesson.Hour,
-			Subject = lesson.Subject,
-			Teachers = teachers.Where(t => t.Subjects.Contains(lesson.Subject)).ToList(),
-			ToHour = lesson.ToHour,
-		};
-	}
-
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
@@ -144,7 +174,17 @@ public class Lesson : IComparable<Lesson>
 			&& a.Teachers.SequenceEqual(b.Teachers, b => b.RegisterID);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Lesson other && this == other;
+	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
+	public bool Equals(Lesson? other) => this == other;
+	public bool EqualsModel(Models.DigitalesRegister.Lesson? other)
+	{
+		if (other is null) { return false; }
+		return DayOfWeek == other.Date.DayOfWeek
+			&& Hour == other.Hour
+			&& ToHour == other.ToHour
+			&& ClassId == other.ClassId
+			&& Subject.EqualsModel(other.Subject);
+	}
 	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), Hour, ToHour, ClassId, Subject, Teachers.OrderBy(t => t.RegisterID));
 	public int CompareTo(Lesson? other)
 	{

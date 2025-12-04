@@ -44,7 +44,7 @@ public record Result<T> : IActionResult
 		}
 	}
 
-	// Allow direct return from controller actions: return new Data<T>(...)
+	// Allow direct return from controller actions: return new Data<TSource>(...)
 	public async Task ExecuteResultAsync(ActionContext context)
 	{
 		// Reuse MVC's normal formatter pipeline.

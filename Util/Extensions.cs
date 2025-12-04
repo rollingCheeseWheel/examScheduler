@@ -102,5 +102,17 @@ public static class Extensions
 		return value.TryValidate(out var _);
 	}
 
-	public static bool SequenceEqual<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
+	public static bool SequenceEqual<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
+
+	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
+	{
+		var keysInTarget = new HashSet<TKey>(target.Select(selector));
+		foreach (var item in source)
+		{
+			if (!keysInTarget.Contains(selector(item)))
+			{
+				yield return item;
+			}
+		}
+	}
 }

@@ -74,7 +74,7 @@ public class CalendarDay
 }
 
 
-public class Lesson
+public class Lesson : IEquatable<Lesson>
 {
 	public int? Id { get; set; }
 	[Required]
@@ -110,11 +110,12 @@ public class Lesson
 			&& a.Teachers.SequenceEqual(b.Teachers, x => x.Id);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Lesson other && this == other;
+	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
+	public bool Equals(Lesson? other) => this == other;
 	public override int GetHashCode() => HashCode.Combine(Date, Hour, ToHour, ClassId, ClassName, Subject, LinkToPreviousHour, Teachers);
 }
 
-public class Subject
+public class Subject : IEquatable<Subject>
 {
 	[Required]
 	public required int Id { get; set; }
@@ -129,7 +130,8 @@ public class Subject
 	}
 
 	public static bool operator !=(Subject? a, Subject? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Subject other && this == other;
+	public override bool Equals(object? obj) => obj is Subject other && Equals(other);
+	public bool Equals(Subject? other) => this == other;
 	public override int GetHashCode() => HashCode.Combine(Id, Name);
 }
 

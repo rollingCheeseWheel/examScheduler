@@ -1,6 +1,6 @@
 ﻿namespace Util;
 
-public class StringEnum
+public class StringEnum : IEquatable<StringEnum>, IComparable<StringEnum>
 {
 	public readonly string Value;
 
@@ -17,7 +17,12 @@ public class StringEnum
 	}
 	public static bool operator !=(StringEnum? left, StringEnum? right) => !( left == right );
 
-	public override bool Equals(object? obj) => obj is StringEnum other && this == other;
-
+	public override bool Equals(object? obj) => obj is StringEnum other && Equals(other);
+	public bool Equals(StringEnum? other) => this == other;
 	public override int GetHashCode() => Value.GetHashCode();
+	public int CompareTo(StringEnum? other)
+	{
+		if (other is null) { return 1; }
+		return Value.CompareTo(other.Value);
+	}
 }

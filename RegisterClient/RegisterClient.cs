@@ -79,14 +79,15 @@ public class RegisterClient : IDisposable, IRegisterClient
 		return UserProfile;
 	}
 
-	public async Task<ICollection<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
 
-	public async Task<ICollection<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
 	/// <summary>
 	/// The calendar is only available for a couple of weeks after the start date
 	/// </summary>
-	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+
+	public async Task<IEnumerable<Models.DigitalesRegister.Lesson>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var args = new Dictionary<string, string> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
 
@@ -94,9 +95,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 		if (response is null) return null;
 		try
 		{
-			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)))
-				?.Where(d => d.Lessons.Count != 0)
-				?.ToList();
+			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
 		}
 		catch
 		{
@@ -105,7 +104,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 	}
 
 	// TODO there is a bug where the same data gets outputted multiple times
-	public async Task<ICollection<Models.DigitalesRegister.CalendarDay>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
+	public async Task<IEnumerable<Models.DigitalesRegister.Lesson>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
 	{
 		if (!await AuthenticateAsync(ct)) { return [ ]; }
 
@@ -119,7 +118,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 		Console.WriteLine(dates.ToJson());
 
-		var tasks = new List<Task<ICollection<Models.DigitalesRegister.CalendarDay>?>>();
+		var tasks = new List<Task<IEnumerable<Models.DigitalesRegister.Lesson>?>>();
 		foreach (var date in dates)
 		{
 			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
@@ -134,9 +133,9 @@ public class RegisterClient : IDisposable, IRegisterClient
 			.ToList();
 	}
 
-	private ICollection<Models.DigitalesRegister.CalendarDay>? ParseCalendarDays(JsonDocument jsonDoc)
+	private IEnumerable<Models.DigitalesRegister.Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
-		List<Models.DigitalesRegister.CalendarDay> result = [ ];
+		List<Models.DigitalesRegister.Lesson> result = [ ];
 		var rootElement = jsonDoc.RootElement;
 
 		foreach (var dateProp in rootElement.EnumerateObject()) // date
@@ -193,11 +192,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 				}
 			}
 
-			result.Add(new()
-			{
-				Date = DateTimeOffset,
-				Lessons = compactedLessons
-			});
+			result.AddRange(compactedLessons);
 		}
 
 		return result;
