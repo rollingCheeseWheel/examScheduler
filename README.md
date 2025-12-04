@@ -9,6 +9,6 @@ The web-interface for the application can be found [here](https://github.com/rol
 | **examScheduler** | Main ASP.NET Core Web API project. |
 | **Entities** | Contains all EF Core data models. |
 | **Models** | DTOs used for API communication. |
-| **RegisterClient** | Handles external registration or user onboarding logic. |
+| **RegisterClient** | Handles OAuth and data retrieval from <school-id>.digitalesregister.it |
 | **Util** | Helper utilities and shared logic. |
 | **test** | Test project for integration and unit testing. |
