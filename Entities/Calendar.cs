@@ -1,27 +1,53 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.CompilerServices;
 using Util;
 
 namespace Entities;
 
-public class Calendar() : IComparable<Calendar>
+public class Calendar : IComparable<Calendar>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 
 	[Required]
 	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.UtcNow;
 
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
-	public Classroom? Classroom { get; set; }
+	[Required]
+	public required Classroom Classroom { get; set; }
 
-	public void Extend(IEnumerable<Models.DigitalesRegister.CalendarDay> days)
+	public void Extend(IEnumerable<Models.DigitalesRegister.Lesson> lessons, out IEnumerable<Teacher> createdTeachers, out IEnumerable<Subject> createdSubjects)
 	{
-		foreach (var iterLesson in days.SelectMany(d => d.Lessons))
+		(createdTeachers, createdSubjects) = ([ ], [ ]);
+
+		var teacherSubjects = lessons
+			.GroupBy(l => l.Subject)
+			.Select(g => (
+				Subject: new Subject()
+				{
+					Name = g.Key.Name,
+					RegisterId = g.Key.Id
+				},
+				Teachers: g.SelectMany(l => l.Teachers).Distinct()
+			));
+
+		var existingSubjects = Lessons.Select(l => l.Subject).Distinct();
+
+		var existingTeachers = Lessons.SelectMany(l => l.Teachers).Distinct();
+		var additionalTeachers = teacherSubjects.SelectMany(g => g.Teachers)
+			.Select(t => new Teacher()
+			{
+				FirstName = t.FirstName,
+				LastName = t.LastName,
+				RegisterID = t.Id,
+				School = Classroom.School,
+			});
+
+
+		foreach (var iterLesson in lessons)
 		{
-			var existingLesson = Lessons.Where(l => l.DayOfWeek == iterLesson.Date.DayOfWeek).FirstOrDefault();
+			var existingLesson = Lessons.Where(l => l.Occurances.Contains(iterLesson.Date)).FirstOrDefault();
 			if (existingLesson is null)
 			{
 				existingLesson = new()
@@ -65,7 +91,7 @@ public class Calendar() : IComparable<Calendar>
 public class Lesson : IComparable<Lesson>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 
 	[NotMapped]
 	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;

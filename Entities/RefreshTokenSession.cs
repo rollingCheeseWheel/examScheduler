@@ -7,7 +7,7 @@ namespace Entities;
 public class RefreshTokenSession : IComparable<RefreshTokenSession>
 {
 	[Key]
-	public required Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required DateTimeOffset ExpirationDate { get; set; }
 	[Required]

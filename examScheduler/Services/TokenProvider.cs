@@ -87,7 +87,6 @@ public class TokenProvider(
 		{
 			var refreshToken = new RefreshTokenSession
 			{
-				Id = Guid.NewGuid(),
 				ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(_options.RefreshTokenExpirationInMinutes),
 				UserProfileId = user.Id,
 				TokenValue = Convert.ToBase64String(RandomNumberGenerator.GetBytes(_options.RefreshTokenBitStrength / 8))

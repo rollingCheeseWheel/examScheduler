@@ -7,7 +7,7 @@ namespace Entities;
 public class Schedule : IComparable<Schedule>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 
 	[Required]
 	public required DateTimeOffset FirstExamination { get; init; }

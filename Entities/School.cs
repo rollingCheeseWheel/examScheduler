@@ -5,7 +5,7 @@ namespace Entities;
 public class School : IComparable<School>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required string Name { get; init; }
 	[Required]

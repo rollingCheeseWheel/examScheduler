@@ -2,10 +2,10 @@
 
 namespace Entities;
 
-public class Classroom : IComparable<Classroom>
+public class Classroom() : IComparable<Classroom>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required string Name { get; init; }
 	[Required]
@@ -17,8 +17,7 @@ public class Classroom : IComparable<Classroom>
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
 	// Navigation Properties
-	[Required]
-	public Calendar Calendar { get; set; } = new();
+	public Calendar? Calendar { get; set; }
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]

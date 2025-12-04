@@ -6,7 +6,7 @@ namespace Entities;
 public class Subject : IComparable<Subject>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required int RegisterId { get; init; }
 	[Required]

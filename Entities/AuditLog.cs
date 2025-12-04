@@ -5,7 +5,7 @@ namespace Entities;
 public class AuditLog : IComparable<AuditLog>
 {
 	[Key]
-	public Guid Id { get; set; }
+	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]
