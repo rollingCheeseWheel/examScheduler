@@ -79,6 +79,10 @@ public static class Extensions
 
 	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
 
+	public static T JsonClone<T>(this T obj) => obj.ToJson().Json<T>()!;
+
+	public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.ToJson(options).Json<T>(options)!;
+
 	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 
 	public static Stopwatch Print(this Stopwatch stopwatch)
@@ -114,5 +118,26 @@ public static class Extensions
 				yield return item;
 			}
 		}
+	}
+
+	public static bool TrySet<T>(this T?[ , ] grid, int firstDimension, int secondDimension, T? element)
+	{
+		if (firstDimension >= 0 && firstDimension < grid.GetLength(0) &&
+			secondDimension >= 0 && secondDimension < grid.GetLength(1))
+		{
+			grid[ firstDimension, secondDimension ] = element;
+			return true;
+		}
+		return false;
+	}
+
+	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension)
+	{
+		if (firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
+			secondDimension >= 0 && secondDimension < grid.GetLength(1))
+		{
+			return grid[ firstDimsion, secondDimension ];
+		}
+		return default;
 	}
 }

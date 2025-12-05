@@ -12,11 +12,12 @@ public class Classroom() : IComparable<Classroom>
 	public required School School { get; init; }
 	public Guid SchoolId { get; }
 	[Required]
-	public required long RegisterId { get; init; }
+	public required ICollection<int> RegisterId { get; set; } = [ ];
 	[Required]
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
 	// Navigation Properties
+	[Required]
 	public Calendar? Calendar { get; set; }
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
@@ -29,11 +30,11 @@ public class Classroom() : IComparable<Classroom>
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.RegisterId == b.RegisterId
+		return a.Name == b.Name
 			&& a.School == b.School;
 	}
 	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Classroom other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterId, School);
-	public int CompareTo(Classroom? other) => Id.CompareTo(other?.Id);
+	public override int GetHashCode() => HashCode.Combine(Name, School);
+	public int CompareTo(Classroom? other) => Name.CompareTo(other?.Name);
 }

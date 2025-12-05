@@ -166,7 +166,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 			List<Models.DigitalesRegister.Lesson> compactedLessons = [ ];
 			Models.DigitalesRegister.Lesson? currentLesson = null;
-			foreach (var lesson in rawLessons.OrderBy(l => l.Hour).ThenBy(l => l.ToHour).ToList())
+			foreach (var lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ToList())
 			{
 				if (currentLesson is null || !lesson.LinkToPreviousHour)
 				{
@@ -177,7 +177,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 				{
 					currentLesson = new()
 					{
-						Hour = currentLesson.Hour,
+						FromHour = currentLesson.FromHour,
 						ToHour = lesson.ToHour,
 						LinkToPreviousHour = currentLesson.LinkToPreviousHour,
 

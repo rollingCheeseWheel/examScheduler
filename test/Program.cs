@@ -23,20 +23,20 @@ using var client = new RegisterClient(
 sw.Start();
 //await client.AuthenticateAsync();
 //Console.WriteLine("UserProfile");
-//Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
+Console.WriteLine(await client.GetUserProfileAsync().ToJsonAsync());
 //Console.WriteLine("Role");
 //Console.WriteLine(await client.GetRoleAsync());
-//Console.WriteLine("Classes");
-//Console.WriteLine(await client.GetClassesAsync().ToJsonAsync());
-//Console.WriteLine("Subjects");
-//Console.WriteLine(await client.GetSubjectsAsync().ToJsonAsync());
+Console.WriteLine("Classes");
+Console.WriteLine(await client.GetClassesAsync().ToJsonAsync());
+Console.WriteLine("Subjects");
+Console.WriteLine(await client.GetSubjectsAsync().ToJsonAsync());
 //Console.WriteLine("Calendar week");
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
 //Console.WriteLine("Upcoming Calendar");
 //Console.WriteLine(await client.GetUpcomingCalendarAsync().ToJsonAsync());
 
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
-Console.WriteLine(await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7)).ToJsonAsync());
+//Console.WriteLine(await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7)).ToJsonAsync());
 
 //Console.WriteLine(await client.GetCalendarWeekAsync(DateTimeOffset.UtcNow).ToJsonAsync());
 

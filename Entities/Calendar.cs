@@ -74,8 +74,8 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 				{
 					ClassId = iterLesson.ClassId,
 					ClassName = iterLesson.ClassName,
-					Hour = iterLesson.Hour,
-					ToHour = iterLesson.ToHour,
+					FromHour = Math.Clamp(iterLesson.FromHour - 1, 0, 23),
+					ToHour = Math.Clamp(iterLesson.ToHour - 1, 0, 23),
 					Occurances = [ iterLesson.Date ],
 					Subject = matchingTeacherSubjects.Subject,
 					Teachers = matchingTeacherSubjects.Teachers.ToList(),
@@ -96,8 +96,12 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 
 	public IEnumerable<Lesson> Normalize()
 	{
+		var result = new List<Lesson>();
+
 		var daysInWeek = Enum.GetValues<DayOfWeek>();
-		var longestDayInWeek = Lessons.Max(l => l.ToHour);
+		var longestDayInWeek = Lessons
+			.GroupBy(l => l.DayOfWeek)
+			.Max(g => g.Max(l => l.FromHour + l.Duration));
 		var lessonMatrix = new Lesson?[ daysInWeek.Length, longestDayInWeek ];
 
 		for (var day = 0; day < daysInWeek.Length; day++)
@@ -107,16 +111,72 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 				lessonMatrix[ day, hour ] = Lessons
 					.Where(l
 						=> l.DayOfWeek == daysInWeek[ day ]
-						&& l.Hour <= hour
+						&& l.FromHour <= hour
 						&& l.ToHour >= hour
 					)
 					.MaxBy(l => l.Occurances.Count);
 			}
 
-			// TODO need to filter through the list and split every lesson that spans more than one hour 
+			for (var hour = 0; hour < longestDayInWeek; hour++)
+			{
+				var lesson = lessonMatrix.GetOrDefault(day, hour);
+				if (lesson is null) { continue; }
+
+				for (var fromHour = lesson.FromHour; fromHour < lesson.FromHour + lesson.Duration; fromHour++)
+				{
+					var valueToOverride = lessonMatrix.GetOrDefault(day, fromHour);
+					if (valueToOverride is not null && valueToOverride.Occurances.Count > lesson.Occurances.Count)
+					{
+						continue;
+					}
+
+					var replacement = new Lesson
+					{
+						FromHour = fromHour,
+						ToHour = lesson.ToHour,
+
+						ClassId = lesson.ClassId,
+						ClassName = lesson.ClassName,
+						Occurances = lesson.Occurances,
+						Subject = lesson.Subject,
+						Teachers = lesson.Teachers,
+					};
+					lessonMatrix.TrySet(day, fromHour, replacement);
+				}
+			}
+
+			Lesson? cursor = null;
+			var tempResult = new List<Lesson>();
+			for (var hour = 0; hour < longestDayInWeek; hour++)
+			{
+				var lesson = lessonMatrix.GetOrDefault(day, hour);
+				if (lesson is null) { continue; }
+				if (cursor is null || !cursor.ShallowEqual(lesson))
+				{
+					cursor = lesson;
+					tempResult.Add(lesson);
+				}
+				else
+				{
+					cursor = new()
+					{
+						FromHour = cursor.FromHour,
+						ToHour = lesson.ToHour,
+
+
+						ClassId = cursor.ClassId,
+						ClassName = cursor.ClassName,
+						Occurances = cursor.Occurances,
+						Subject = cursor.Subject,
+						Teachers = cursor.Teachers,
+					};
+					tempResult[ ^1 ] = cursor;
+				}
+			}
+			result.AddRange(tempResult);
 		}
 
-		throw new NotImplementedException();
+		return result;
 	}
 
 	public static bool operator ==(Calendar? a, Calendar? b)
@@ -145,10 +205,15 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
 	[Required]
 	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
-	[Required]
-	public required int Hour { get; set; }
-	[Required]
+	/// <summary>
+	/// Zero-Indexed
+	/// </summary>
+	[Required, Range(0, 23)]
+	public required int FromHour { get; set; }
+	[Required, Range(0, 23)]
 	public required int ToHour { get; set; }
+	[NotMapped, Range(1, 24)]
+	public int Duration => Math.Clamp(ToHour - FromHour + 1, 1, 24);
 	[Required]
 	public required int ClassId { get; set; }
 	[Required]
@@ -158,20 +223,17 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 	[Required]
 	public required Subject Subject { get; set; }
 
-	[NotMapped]
-	public int Duration => ToHour - Hour + 1;
-
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.FirstOccurance == b.FirstOccurance
 			&& a.Occurances.SequenceEqual(b.Occurances, x => x)
-			&& a.Hour == b.Hour
-			&& a.ToHour == b.ToHour
+			&& a.FromHour == b.FromHour
+			&& a.Duration == b.Duration
 			&& a.ClassId == b.ClassId
 			&& a.Subject == b.Subject
-			&& a.Teachers.SequenceEqual(b.Teachers, b => b.RegisterID);
+			&& a.Teachers.SequenceEqual(b.Teachers, x => x.RegisterID);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
@@ -180,21 +242,31 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 	{
 		if (other is null) { return false; }
 		return DayOfWeek == other.Date.DayOfWeek
-			&& Hour == other.Hour
-			&& ToHour == other.ToHour
+			&& FromHour == Math.Clamp(other.FromHour - 1, 0, 23)
+			&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
 			&& ClassId == other.ClassId
 			&& Subject.EqualsModel(other.Subject);
 	}
-	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), Hour, ToHour, ClassId, Subject, Teachers.OrderBy(t => t.RegisterID));
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, ClassId, Subject, Teachers.OrderBy(t => t.RegisterID));
 	public int CompareTo(Lesson? other)
 	{
 		if (other is null) { return 1; }
 		var res = FirstOccurance.CompareTo(other.FirstOccurance);
 		if (res != 0) { return res; }
-		res = Hour.CompareTo(other.Hour);
+		res = FromHour.CompareTo(other.FromHour);
 		if (res != 0) { return res; }
-		res = ToHour.CompareTo(other.ToHour);
+		res = Duration.CompareTo(other.Duration);
 		if (res != 0) { return res; }
 		return Id.CompareTo(other.Id);
+	}
+
+	public bool ShallowEqual(Lesson? other)
+	{
+		if (other is null) { return false; }
+		return DayOfWeek == other.DayOfWeek
+			&& ClassId == other.ClassId
+			&& Subject == other.Subject
+			&& Teachers.SequenceEqual(other.Teachers, x => x.RegisterID)
+			&& Occurances.SequenceEqual(other.Occurances, x => x);
 	}
 }

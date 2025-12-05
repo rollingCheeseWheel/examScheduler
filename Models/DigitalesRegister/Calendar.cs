@@ -15,57 +15,6 @@ public record TeacherSubjects(Teacher Teacher, IEnumerable<Subject> Subjects);
 public record DetailedTeacherSubjects(Teacher Teacher, IEnumerable<DetailedSubject> Subjects);
 public record DetailedSubject(Subject Subject, int Count);
 
-public class Calendar(ICollection<CalendarDay> days)
-{
-	public required ICollection<CalendarDay> Days { get; set; } = days;
-
-	/*/// <summary>
-	/// Get an IEnumerable of Teachers, each Teacher has an additional IEnumerable of Subjects they are associated with.
-	/// This function also filters out noise like substitute teachers, altough this only works (well) when the calendar is long(er)
-	/// </summary>
-	/// <param name="ignorePercentage"></param>
-	/// <returns></returns>
-	public IEnumerable<TeacherSubjects> CompileTeachersWithSubjects(double ignorePercentage = 0.25)
-	{
-		var summedTeacherSubjects = Days
-			.SelectMany(w => w.CompileTeachersWithSubjects()) // get a list of all TeacherSubjects side-by-side
-			.GroupBy(x => x.Teacher) // group teachers together, is less efficient but more useful
-			.Select(g => new DetailedTeacherSubjects( // reform a single TeacherSubject with the summed up lesson counts
-				g.Key,
-				g.SelectMany(a => a.Subjects)
-				.GroupBy(x => x.Subject)
-				.Select(a => new DetailedSubject( // sum up lesson counts
-					a.Key,
-					a.Sum(c => c.Count)
-				))
-			));
-
-		var ignoreThreshold = summedTeacherSubjects
-			.SelectMany(t => t.Subjects)
-			.GroupBy(x => x.Subject)
-			.Select(g => g.Sum(s => s.Count))
-			.Average() * ignorePercentage;
-
-		return summedTeacherSubjects
-			.Select(t => new TeacherSubjects(
-				t.Teacher,
-				t.Subjects.Where(s => s.Count > ignoreThreshold).Select(s => s.Subject)
-			))
-			.Where(t => t.Subjects.Any());
-	}*/
-
-	public (int ClassroomId, string Name)? GetClassroomInfo()
-	{
-		return Days
-			.SelectMany(d => d.Lessons)
-			.Select(l => (ClassroomId: l.ClassId, Name: l.ClassName))
-			.GroupBy(l => l.ClassroomId)
-			.Select(group => (Value: group.FirstOrDefault(), Count: group.Count()))
-			.OrderByDescending(x => x.Count)
-			.Select(x => x.Value)
-			.FirstOrDefault();
-	}
-}
 
 public class CalendarDay
 {
@@ -80,9 +29,13 @@ public class Lesson : IEquatable<Lesson>
 	[Required]
 	[JsonConverter(typeof(RegisterDateTimeConverter))]
 	public required DateTime Date { get; set; }
-	[Required]
-	public required int Hour { get; set; }
-	[Required]
+	/// <summary>
+	/// 1-Indexed
+	/// </summary>
+	[Required, Range(1, 24), JsonPropertyName("hour")]
+	public required int FromHour { get; set; }
+	/// <inheritdoc cref="Lesson.FromHour"/>
+	[Required, Range(1, 24)]
 	public required int ToHour { get; set; }
 	[Required]
 	public required int ClassId { get; set; }
@@ -96,12 +49,21 @@ public class Lesson : IEquatable<Lesson>
 	[Required, JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
 
+	public Lesson() { }
+
+	[JsonConstructor]
+	public Lesson(int hour, int toHour)
+	{
+		FromHour = Math.Clamp(hour, 1, 24);
+		ToHour = Math.Clamp(toHour, FromHour, 24);
+	}
+
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.Date == b.Date
-			&& a.Hour == b.Hour
+			&& a.FromHour == b.FromHour
 			&& a.ToHour == b.ToHour
 			&& a.ClassId == b.ClassId
 			&& a.ClassName == b.ClassName
@@ -112,7 +74,7 @@ public class Lesson : IEquatable<Lesson>
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
 	public bool Equals(Lesson? other) => this == other;
-	public override int GetHashCode() => HashCode.Combine(Date, Hour, ToHour, ClassId, ClassName, Subject, LinkToPreviousHour, Teachers);
+	public override int GetHashCode() => HashCode.Combine(Date, FromHour, ToHour, ClassId, ClassName, Subject, LinkToPreviousHour, Teachers);
 }
 
 public class Subject : IEquatable<Subject>

@@ -27,9 +27,11 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 		var newClassroom = new Classroom
 		{
 			Name = userProfile.StudentData.MainClass.Name,
-			RegisterId = userProfile.StudentData.MainClass.Id,
+			RegisterId = [ userProfile.StudentData.MainClass.Id ],
 			School = school,
 		};
+		var newCalendar = new Calendar { Classroom = newClassroom };
+		newClassroom.Calendar = newCalendar;
 
 		_context.Classrooms.Add(newClassroom);
 		return newClassroom;
@@ -40,7 +42,7 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 		return await GetClassrooms()
 			.FirstOrDefaultAsync(c
 			=> c.SchoolId == school.Id
-			&& c.RegisterId == registerId, ct);
+			&& c.RegisterId.Contains(registerId), ct);
 	}
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default)
