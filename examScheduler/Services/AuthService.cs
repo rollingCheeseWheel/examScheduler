@@ -22,7 +22,6 @@ public class AuthService(
 	UserManager<UserProfile> userManager,
 	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
-	IServiceProvider serviceProvider,
 	ITokenProvider jwtProvider
 ) : IAuthService
 {
@@ -30,7 +29,6 @@ public class AuthService(
 	private readonly UserManager<UserProfile> _userManager = userManager;
 	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
-	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
 
 	public async Task<Result<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
@@ -46,9 +44,9 @@ public class AuthService(
 			return new("Unknown School ID", HttpStatusCode.BadRequest);
 		}
 
-		// create the client and fetch the userprofile
-		using var client = new RegisterClient(school, request.AuthCode);
-		var userProfile = await client.GetUserProfileAsync(ct);
+		// create the registerClient and fetch the userprofile
+		using var registerClient = new RegisterClient(school, request.AuthCode);
+		var userProfile = await registerClient.GetUserProfileAsync(ct);
 		if (userProfile is null)
 		{
 			return new("Could not fetch user profile", HttpStatusCode.InternalServerError);
@@ -61,10 +59,13 @@ public class AuthService(
 		Result<TokenResponse>? response = null;
 		if (existingUser is not null) // user found 
 		{
-			response = await LoginAsync(existingUser, ct);
+			response = await LoginAsync(registerClient, existingUser, ct);
+		}
+		else
+		{
+			response = await RegisterAsync(registerClient, school, ct);
 		}
 
-		response = await RegisterAsync(client, request, school, ct);
 		if (response.Success)
 		{
 			transcation.Complete();
@@ -84,9 +85,9 @@ public class AuthService(
 		return new(response, HttpStatusCode.Unauthorized);
 	}
 
-	private async Task<Result<TokenResponse>> LoginAsync(UserProfile user, CancellationToken ct = default)
+	private async Task<Result<TokenResponse>> LoginAsync(RegisterClient registerClient, UserProfile user, CancellationToken ct = default)
 	{
-		using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+		await ExtendCalendar(registerClient, user, ct);
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokenResponse = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
 		return new(tokenResponse, HttpStatusCode.Unauthorized);
@@ -112,17 +113,17 @@ public class AuthService(
 		return claims;
 	}
 
-	private async Task<Result<TokenResponse>> RegisterAsync(RegisterClient registerClient, OAuthRequest request, Entities.School school, CancellationToken ct = default)
+	private async Task<Result<TokenResponse>> RegisterAsync(RegisterClient registerClient, Entities.School school, CancellationToken ct = default)
 	{
 		return await registerClient.GetRoleAsync(ct) switch
 		{
-			UserProfileRole.Student => await RegisterStudentAsync(registerClient, request, school, ct),
-			UserProfileRole.Teacher => await RegisterTeacherAsync(registerClient, request, school, ct),
+			UserProfileRole.Student => await RegisterStudentAsync(registerClient, school, ct),
+			UserProfileRole.Teacher => await RegisterTeacherAsync(registerClient, school, ct),
 			_ => new(HttpStatusCode.BadRequest)
 		};
 	}
 
-	private async Task<Result<TokenResponse>> RegisterStudentAsync(RegisterClient registerClient, OAuthRequest request, Entities.School school, CancellationToken ct = default)
+	private async Task<Result<TokenResponse>> RegisterStudentAsync(RegisterClient registerClient, Entities.School school, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null || // could not fetch
@@ -136,21 +137,79 @@ public class AuthService(
 		if (userProfile is null ||
 			userProfile.Role is not UserProfileRole.Student)
 		{
+			return new(HttpStatusCode.BadRequest);
+		}
+
+		var classroom = await _classroomService.GetOrCreateClassroomAsync(school, registerUserProfile, ct);
+		if (classroom is null)
+		{
 			return new(HttpStatusCode.InternalServerError);
 		}
 
-		// TODO: add classroom creation, signup etc
-		var classroom = await _classroomService.GetOrCreateClassroomAsync(school, registerUserProfile, ct);
-		
-		
+		var studentProfile = new StudentProfile
+		{
+			Classroom = classroom,
+			UserProfile = userProfile,
+		};
 
+		classroom.Students.Add(studentProfile);
+		var userCreateResult = await _userManager.CreateAsync(userProfile);
+		if (!userCreateResult.Succeeded)
+		{
+			return new(userCreateResult.Errors, HttpStatusCode.InternalServerError);
+		}
 
-		throw new NotImplementedException();
+		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
+		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
+		if (!roleAddedResult.Succeeded)
+		{
+			return new(roleAddedResult.Errors, HttpStatusCode.InternalServerError);
+		}
+
+		return await LoginAsync(registerClient, userProfile, ct);
 	}
 
-	private async Task<Result<TokenResponse>> RegisterTeacherAsync(RegisterClient registerClient, OAuthRequest request, Entities.School school, CancellationToken ct = default)
+	private async Task<Result<TokenResponse>> RegisterTeacherAsync(RegisterClient registerClient, Entities.School school, CancellationToken ct = default)
 	{
-		throw new NotImplementedException();
+		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
+		if (registerUserProfile is null)
+		{
+			return new(HttpStatusCode.InternalServerError);
+		}
+
+		var userProfile = await CreateUserProfileAsync(registerUserProfile, school, ct);
+		if (userProfile is null ||
+			userProfile.Role is not UserProfileRole.Teacher)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
+
+		var userCreateResult = await _userManager.CreateAsync(userProfile);
+		if (!userCreateResult.Succeeded)
+		{
+			return new(userCreateResult.Errors, HttpStatusCode.InternalServerError);
+		}
+
+		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
+		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
+		if (!roleAddedResult.Succeeded)
+		{
+			return new(roleAddedResult.Errors, HttpStatusCode.InternalServerError);
+		}
+
+		var existingTeacherProfile = await _context.Teachers
+			.Where(t => t.SchoolId == school.Id && t.FirstName == userProfile.FirstName && t.LastName == userProfile.LastName)
+			.FirstOrDefaultAsync(ct);
+
+		var teacherProfile = new TeacherProfile
+		{
+			UserProfile = userProfile,
+			Teacher = existingTeacherProfile,
+		};
+
+		await _context.TeacherProfiles.AddAsync(teacherProfile);
+
+		return await LoginAsync(registerClient, userProfile, ct);
 	}
 
 	private async Task<UserProfile?> CreateUserProfileAsync(RegisterUserProfile registerUserProfile, Entities.School school, CancellationToken ct = default)
@@ -166,5 +225,35 @@ public class AuthService(
 			School = school,
 		};
 		return userProfile;
+	}
+
+	private async Task<string> EnsureRoleCreatedAsync(UserProfileRole role, CancellationToken ct = default)
+	{
+		var roleName = role.ToString();
+		var existingRole = await _roleManager.FindByNameAsync(roleName).WaitAsync(ct);
+		if (existingRole is null)
+		{
+			await _roleManager.CreateAsync(new(roleName)).WaitAsync(ct);
+		}
+		return roleName;
+	}
+
+	private async Task ExtendCalendar(RegisterClient registerClient, UserProfile user, CancellationToken ct = default)
+	{
+		if (user.Role is not UserProfileRole.Student || user.StudentProfile is null) { return; }
+
+		var userProfile = await registerClient.GetRoleAsync(ct);
+		if (userProfile is not UserProfileRole.Student) { return; }
+
+		var classroom = user.StudentProfile.Classroom;
+
+		if (classroom.Calendar?.LastsUntil <= DateTimeOffset.UtcNow)
+		{
+			var calendar = await registerClient.GetCalendarAsync(classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1));
+			classroom.Calendar.Extend(calendar, user.School, out var createdTeachers, out var createdSubjects);
+
+			await _context.Teachers.AddRangeAsync(createdTeachers, ct);
+			await _context.Subjects.AddRangeAsync(createdSubjects, ct);
+		}
 	}
 }

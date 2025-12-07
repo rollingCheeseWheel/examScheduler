@@ -1,6 +1,7 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Models.DigitalesRegister;
 
 namespace examScheduler.Services;
@@ -58,6 +59,15 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 	{
 		return _context.Classrooms
 			.Include(c => c.Calendar)
+				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
+				.ThenInclude(l => l.Subject)
+			.Include(c => c.Calendar)
+				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
+				.ThenInclude(l => l.Teachers)
+				.ThenInclude(t => t.Subjects)
+			.Include(c => c.Calendar)
+				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
+				.ThenInclude(l => l.Occurances)
 			.Include(c => c.Students)
 			.Include(c => c.Teachers)
 			.Include(c => c.School)

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using Util;
 
 namespace examScheduler.Data;
 
@@ -16,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	public DbSet<School> Schools { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
 	public DbSet<Teacher> Teachers { get; set; }
+	public DbSet<Subject> Subjects { get; set; }
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
