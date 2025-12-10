@@ -21,17 +21,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	{
 		base.OnModelCreating(modelBuilder);
 
-		modelBuilder.Entity<School>(s =>
-		{
-			s.Property(s => s.RegisterUri)
-			  .HasConversion(
-				v => v.ToString(),
-				v => new Uri(v))
-			  .HasMaxLength(2048)
-			  .IsRequired();
-
-			s.HasIndex(s => s.RegisterUri).IsUnique();
-		});
+		modelBuilder.Entity<School>()
+			.HasIndex(s => s.RegisterUri)
+			.IsUnique();
 
 		modelBuilder.Entity<RefreshTokenSession>()
 			.HasIndex(s => s.TokenValue)

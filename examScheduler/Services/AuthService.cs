@@ -37,7 +37,6 @@ public class AuthService(
 
 		// verify that the school exists
 		var school = await _context.Schools
-			.Include(s => s.RegisterUri)
 			.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (school is null)
 		{

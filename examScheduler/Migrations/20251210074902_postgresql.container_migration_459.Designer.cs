@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251204140032_postgresql.container_migration_723")]
-    partial class postgresqlcontainer_migration_723
+    [Migration("20251210074902_postgresql.container_migration_459")]
+    partial class postgresqlcontainer_migration_459
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,8 +81,9 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long>("RegisterId")
-                        .HasColumnType("bigint");
+                    b.PrimitiveCollection<int[]>("RegisterId")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
 
                     b.Property<Guid>("SchoolId")
                         .HasColumnType("uuid");
@@ -137,7 +138,7 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Hour")
+                    b.Property<int>("FromHour")
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<DateTimeOffset[]>("Occurances")
@@ -307,7 +308,7 @@ namespace examScheduler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Subject");
+                    b.ToTable("Subjects");
                 });
 
             modelBuilder.Entity("Entities.Teacher", b =>
@@ -905,7 +906,8 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Classroom", b =>
                 {
-                    b.Navigation("Calendar");
+                    b.Navigation("Calendar")
+                        .IsRequired();
 
                     b.Navigation("Schedules");
 
