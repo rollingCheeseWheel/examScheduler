@@ -57,20 +57,19 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
 	private IQueryable<Classroom> GetClassrooms()
 	{
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 		return _context.Classrooms
 			.Include(c => c.Calendar)
-				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
-				.ThenInclude(l => l.Subject)
+				.ThenInclude(cal => cal.Lessons)
+					.ThenInclude(l => l.Subject)
 			.Include(c => c.Calendar)
-				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
-				.ThenInclude(l => l.Teachers)
-				.ThenInclude(t => t.Subjects)
-			.Include(c => c.Calendar)
-				.ThenInclude(cal => cal != null ? cal.Lessons : Enumerable.Empty<Entities.Lesson>())
-				.ThenInclude(l => l.Occurances)
+				.ThenInclude(cal => cal.Lessons)
+					.ThenInclude(l => l.Teachers)
+						.ThenInclude(t => t.Subjects)
 			.Include(c => c.Students)
 			.Include(c => c.Teachers)
 			.Include(c => c.School)
 			.Include(c => c.Schedules);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 	}
 }

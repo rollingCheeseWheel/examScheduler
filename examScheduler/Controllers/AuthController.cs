@@ -1,12 +1,9 @@
 ﻿using examScheduler.Data;
 using examScheduler.Services;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
 using registerClient;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
 namespace examScheduler.Controllers;
 

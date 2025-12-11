@@ -8,6 +8,7 @@ using registerClient;
 using System.Net;
 using System.Security.Claims;
 using System.Transactions;
+using Util;
 
 namespace examScheduler.Services;
 
@@ -22,7 +23,8 @@ public class AuthService(
 	UserManager<UserProfile> userManager,
 	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
-	ITokenProvider jwtProvider
+	ITokenProvider jwtProvider,
+	ILogger<AuthService> logger
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -30,9 +32,13 @@ public class AuthService(
 	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
+	private readonly ILogger _logger = logger;
+
+	private void Log(string message, params object[ ] args) => _logger.LogInformation(message, args);
 
 	public async Task<Result<TokenResponse>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
+		Log($"received request {DateTime.UtcNow}");
 		using var transcation = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
 		// verify that the school exists
@@ -42,6 +48,7 @@ public class AuthService(
 		{
 			return new("Unknown School ID", HttpStatusCode.BadRequest);
 		}
+		Log($"School: {school.Name}");
 
 		// create the registerClient and fetch the userprofile
 		using var registerClient = new RegisterClient(school, request.AuthCode);
@@ -51,6 +58,8 @@ public class AuthService(
 			return new("Could not fetch user profile", HttpStatusCode.InternalServerError);
 		}
 
+		Log($"UserProfile: {userProfile.ToJson()}");
+
 		var existingUser = await _userManager.Users
 			.Include(u => u.StudentProfile)
 			.Include(u => u.TeacherProfile)
@@ -58,15 +67,18 @@ public class AuthService(
 		Result<TokenResponse>? response = null;
 		if (existingUser is not null) // user found 
 		{
+			Log("Logging user in");
 			response = await LoginAsync(registerClient, existingUser, ct);
 		}
 		else
 		{
+			Log("registering user");
 			response = await RegisterAsync(registerClient, school, ct);
 		}
 
 		if (response.Success)
 		{
+			Log("Successfully authenticated");
 			transcation.Complete();
 		}
 		await _context.SaveChangesAsync(ct);
