@@ -14,7 +14,6 @@ public class AuditLog : IComparable<AuditLog>
 	public required string Action { get; init; }
 	public string? Description { get; init; }
 
-
 	public static bool operator ==(AuditLog? a, AuditLog? b)
 	{
 		if (ReferenceEquals(a, b)) return true;

@@ -1,19 +1,18 @@
 meta {
-  name: auth
+  name: extend
   type: http
-  seq: 1
+  seq: 4
 }
 
 post {
-  url: {{localhost}}/auth
+  url: {{localhost}}/auth/extend
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "authCode": "hDBbALPZzYg9ba3a",
-    "schoolId": "wfo-test-bruneck"
+    "refreshToken":"XJPT3Zy2ulM6LB/jd8YNNvlcHLB/Ax/Kp3EI7YtKmFw="
   }
 }
 

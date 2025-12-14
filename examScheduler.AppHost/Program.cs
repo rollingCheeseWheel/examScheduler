@@ -1,6 +1,6 @@
 using examScheduler.AppHost;
 
-var builder = DistributedApplication.CreateBuilder(args);
+var builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions { EnableResourceLogging = true });
 
 //Local
 var postgres = builder.AddPostgres(ResourceNames.DBResourceName) // container name

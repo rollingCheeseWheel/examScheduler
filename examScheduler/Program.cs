@@ -54,7 +54,7 @@ var tokenValidationParameters = new JwtOptions
 	ClockSkew = TimeSpan.FromSeconds(30),
 
 	ValidateIssuerSigningKey = true,
-	IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[ "jsonwebtokensigningkey" ]! ?? Guid.NewGuid().ToString("N"))),
+	IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[ "JWT:key" ] ?? Guid.NewGuid().ToString("N"))),
 
 	ValidateIssuer = true,
 	ValidIssuer = "examscheduler.app",

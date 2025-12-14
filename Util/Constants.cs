@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Util;
 
@@ -9,6 +10,7 @@ public static class Constants
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
 		PropertyNameCaseInsensitive = true,
 		AllowTrailingCommas = true,
+		ReferenceHandler = ReferenceHandler.Preserve
 	};
 
 	public const string PermissionClaimName = "permissions";
