@@ -11,15 +11,21 @@ public record Result<T> : IActionResult
 	public bool Success =>
 		( Errors is null || !Errors.Any() ) &&
 		(int)StatusCode >= 200 && (int)StatusCode < 300;
-	public HttpStatusCode StatusCode { get; set; }
-	public HttpStatusCode ErrorCode { get; set; } = HttpStatusCode.BadRequest;
+	public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
 
 	public Result(HttpStatusCode statusCode) => StatusCode = statusCode;
-	public Result(T? data, HttpStatusCode errorCode = HttpStatusCode.BadRequest, HttpStatusCode statusCode = HttpStatusCode.OK)
+	public Result(T? data) => Data = data;
+	public Result(T? data, HttpStatusCode errorCode = HttpStatusCode.BadRequest, HttpStatusCode successCode = HttpStatusCode.OK, Func<T?, bool>? isSuccess = null)
+	{
+		isSuccess ??= (d) => d is null;
+		Data = data;
+		StatusCode = isSuccess(data) ? successCode : errorCode;
+	}
+	public Result(T? data, IEnumerable<object>? errors, HttpStatusCode statusCode)
 	{
 		Data = data;
+		Errors = errors;
 		StatusCode = statusCode;
-		ErrorCode = errorCode;
 	}
 	public Result(object error, HttpStatusCode errorCode = HttpStatusCode.BadRequest) : this([ error ], errorCode) { }
 	public Result(IEnumerable<object> errors, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
@@ -28,23 +34,11 @@ public record Result<T> : IActionResult
 		StatusCode = statusCode;
 	}
 
-	//public static implicit operator Result<T>(T? data)
-	//{
-	//	if (data is null)
-	//	{
-	//		return new(HttpStatusCode.BadRequest);
-	//	}
-	//	else
-	//	{
-	//		return new(data);
-	//	}
-	//}
-
 	public async Task ExecuteResultAsync(ActionContext context)
 	{
 		var objectResult = new ObjectResult(this)
 		{
-			StatusCode = (int)( Success ? StatusCode : ErrorCode ),
+			StatusCode = (int)StatusCode,
 			DeclaredType = typeof(Result<T>)
 		};
 
