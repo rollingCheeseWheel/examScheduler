@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using Util;
 
 namespace Entities;
 
@@ -15,7 +16,7 @@ public class UserProfile : IdentityUser<Guid>, IComparable<UserProfile>
 	[Required]
 	public required string LastName { get; set; }
 	[Required]
-	public required UserProfileRole Role { get; init; }
+	public required UserRole Role { get; init; }
 
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }

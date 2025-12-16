@@ -55,20 +55,20 @@ public class RegisterClient : IDisposable, IRegisterClient
 		_requestThrottler = new(targetRequestsPerSecond);
 	}
 
-	public async Task<UserProfileRole?> GetRoleAsync(CancellationToken ct = default)
+	public async Task<UserRole?> GetRoleAsync(CancellationToken ct = default)
 	{
 		UserProfile ??= await GetUserProfileAsync(ct);
 		return GetRole(UserProfile);
 	}
 
-	public static UserProfileRole? GetRole(RegisterUserProfile? userProfile)
+	public static UserRole? GetRole(RegisterUserProfile? userProfile)
 	{
 		return userProfile?.Role switch
 		{
-			"student" => UserProfileRole.Student,
-			"teacher" => UserProfileRole.Teacher,
-			"admin" => UserProfileRole.Admin,
-			"parent" => UserProfileRole.Parent,
+			"student" => UserRole.Student,
+			"teacher" => UserRole.Teacher,
+			"admin" => UserRole.Admin,
+			"parent" => UserRole.Parent,
 			_ => null
 		};
 	}
@@ -183,8 +183,8 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 						Date = currentLesson.Date,
 						Id = currentLesson.Id,
-						ClassId = currentLesson.ClassId,
-						ClassName = currentLesson.ClassName,
+						LessonId = currentLesson.LessonId,
+						LessonName = currentLesson.LessonName,
 						Subject = currentLesson.Subject,
 						Teachers = currentLesson.Teachers,
 					};

@@ -1,5 +1,5 @@
-﻿using Entities;
-using Models.DigitalesRegister;
+﻿using Models.DigitalesRegister;
+using Util;
 
 namespace registerClient;
 
@@ -8,7 +8,7 @@ public interface IRegisterClient
 {
 	RegisterUserProfile? UserProfile { get; }
 
-	Task<UserProfileRole?> GetRoleAsync(CancellationToken ct);
+	Task<UserRole?> GetRoleAsync(CancellationToken ct);
 
 	Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct);
 

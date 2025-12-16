@@ -72,8 +72,8 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 
 				existingLesson = new()
 				{
-					ClassId = iterLesson.ClassId,
-					ClassName = iterLesson.ClassName,
+					LessonId = iterLesson.LessonId,
+					LessonName = iterLesson.LessonName,
 					FromHour = Math.Clamp(iterLesson.FromHour - 1, 0, 23),
 					ToHour = Math.Clamp(iterLesson.ToHour - 1, 0, 23),
 					Occurances = [ iterLesson.Date ],
@@ -135,8 +135,8 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 						FromHour = fromHour,
 						ToHour = lesson.ToHour,
 
-						ClassId = lesson.ClassId,
-						ClassName = lesson.ClassName,
+						LessonId = lesson.LessonId,
+						LessonName = lesson.LessonName,
 						Occurances = lesson.Occurances,
 						Subject = lesson.Subject,
 						Teachers = lesson.Teachers,
@@ -164,8 +164,8 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 						ToHour = lesson.ToHour,
 
 
-						ClassId = cursor.ClassId,
-						ClassName = cursor.ClassName,
+						LessonId = cursor.LessonId,
+						LessonName = cursor.LessonName,
 						Occurances = cursor.Occurances,
 						Subject = cursor.Subject,
 						Teachers = cursor.Teachers,
@@ -215,9 +215,9 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 	[NotMapped, Range(1, 24)]
 	public int Duration => Math.Clamp(ToHour - FromHour + 1, 1, 24);
 	[Required]
-	public required int ClassId { get; set; }
+	public required int LessonId { get; set; }
 	[Required]
-	public required string ClassName { get; set; }
+	public required string LessonName { get; set; }
 
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
@@ -231,7 +231,7 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 			&& a.Occurances.SequenceEqual(b.Occurances, x => x)
 			&& a.FromHour == b.FromHour
 			&& a.Duration == b.Duration
-			&& a.ClassId == b.ClassId
+			&& a.LessonId == b.LessonId
 			&& a.Subject == b.Subject
 			&& a.Teachers.SequenceEqual(b.Teachers, x => x.RegisterID);
 	}
@@ -244,10 +244,10 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 		return DayOfWeek == other.Date.DayOfWeek
 			&& FromHour == Math.Clamp(other.FromHour - 1, 0, 23)
 			&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
-			&& ClassId == other.ClassId
+			&& LessonId == other.LessonId
 			&& Subject.EqualsModel(other.Subject);
 	}
-	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, ClassId, Subject, Teachers.OrderBy(t => t.RegisterID));
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, LessonId, Subject, Teachers.OrderBy(t => t.RegisterID));
 	public int CompareTo(Lesson? other)
 	{
 		if (other is null) { return 1; }
@@ -264,7 +264,7 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 	{
 		if (other is null) { return false; }
 		return DayOfWeek == other.DayOfWeek
-			&& ClassId == other.ClassId
+			&& LessonId == other.LessonId
 			&& Subject == other.Subject
 			&& Teachers.SequenceEqual(other.Teachers, x => x.RegisterID)
 			&& Occurances.SequenceEqual(other.Occurances, x => x);

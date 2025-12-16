@@ -19,16 +19,16 @@ namespace examScheduler.Services;
 
 public interface ITokenProvider
 {
-	Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, UserProfile user, CancellationToken ct);
-	Task<TokenValidationResult?> TryValidateTokenAsync(UserProfile user, string token, CancellationToken ct);
+	Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
+	Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct);
 
 	//string? GetAccessToken(ICollection<Claim> claims);
 	//Task<RefreshTokenSession?> CreateRefreshTokenAsync(UserProfile user, CancellationToken ct);
 
-	Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, UserProfile user, CancellationToken ct);
+	Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
 
 	Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct);
-	Task DeleteAllRefreshTokensForUserAsync(UserProfile user);
+	Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user);
 }
 
 public class TokenProvider(
@@ -39,9 +39,9 @@ public class TokenProvider(
 	private readonly JwtOptions _options = options;
 	private readonly AppDbContext _context = context;
 
-	public async Task<TokenValidationResult?> TryValidateTokenAsync(UserProfile user, string token, CancellationToken ct = default) => await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
+	public async Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct = default) => await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
 
-	public async Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, UserProfile user, CancellationToken ct = default)
+	public async Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		var refreshToken = await CreateRefreshTokenAsync(user, ct);
 		if (refreshToken is null) { return null; }
@@ -68,7 +68,7 @@ public class TokenProvider(
 		return handler.CreateToken(tokenDescriptor);
 	}
 
-	public async Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, UserProfile user, CancellationToken ct = default)
+	public async Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 		var existingValidSession = await HasValidRefreshTokenSessionAsync(user, refreshToken, ct);
@@ -77,7 +77,7 @@ public class TokenProvider(
 		return await GetTokenPairAsync(claims, user, ct);
 	}
 
-	public async Task<RefreshTokenSession?> CreateRefreshTokenAsync(UserProfile user, CancellationToken ct = default)
+	public async Task<RefreshTokenSession?> CreateRefreshTokenAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
 		if (await GetSessionsForUserIQueryable(user).CountAsync(ct) >= _options.MaxTokensPerUser)
 		{
@@ -96,7 +96,7 @@ public class TokenProvider(
 		}
 	}
 
-	public async Task DeleteAllRefreshTokensForUserAsync(UserProfile user)
+	public async Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user)
 	{
 		var tokens = await GetSessionsForUserAsync(user);
 		if (tokens is null) { return; }
@@ -109,11 +109,11 @@ public class TokenProvider(
 		if (entity is null) { return; }
 		_context.RefreshSessions.Remove(entity);
 	}
-	private async Task<RefreshTokenSession?> HasValidRefreshTokenSessionAsync(UserProfile user, string refreshTokenValue, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).FirstOrDefaultAsync(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow, ct);
+	private async Task<RefreshTokenSession?> HasValidRefreshTokenSessionAsync(Entities.UserProfile user, string refreshTokenValue, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).FirstOrDefaultAsync(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow, ct);
 
-	private async Task<ICollection<RefreshTokenSession>> GetSessionsForUserAsync(UserProfile user, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).ToListAsync(ct);
+	private async Task<ICollection<RefreshTokenSession>> GetSessionsForUserAsync(Entities.UserProfile user, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).ToListAsync(ct);
 
-	private IQueryable<RefreshTokenSession> GetSessionsForUserIQueryable(UserProfile user) => _context.RefreshSessions.Where(s => s.UserProfileId == user.Id);
+	private IQueryable<RefreshTokenSession> GetSessionsForUserIQueryable(Entities.UserProfile user) => _context.RefreshSessions.Where(s => s.UserProfileId == user.Id);
 }
 
 public class JwtOptions : TokenValidationParameters

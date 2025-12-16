@@ -37,10 +37,10 @@ public class Lesson : IEquatable<Lesson>
 	/// <inheritdoc cref="Lesson.FromHour"/>
 	[Required, Range(1, 24)]
 	public required int ToHour { get; set; }
-	[Required]
-	public required int ClassId { get; set; }
-	[Required]
-	public required string ClassName { get; set; }
+	[Required, JsonPropertyName("classId")]
+	public required int LessonId { get; set; }
+	[Required, JsonPropertyName("className")]
+	public required string LessonName { get; set; }
 	[Required]
 	public required ICollection<Teacher> Teachers { get; set; }
 	[Required]
@@ -65,8 +65,8 @@ public class Lesson : IEquatable<Lesson>
 		return a.Date == b.Date
 			&& a.FromHour == b.FromHour
 			&& a.ToHour == b.ToHour
-			&& a.ClassId == b.ClassId
-			&& a.ClassName == b.ClassName
+			&& a.LessonId == b.LessonId
+			&& a.LessonName == b.LessonName
 			&& a.Subject == b.Subject
 			&& a.LinkToPreviousHour == b.LinkToPreviousHour
 			&& a.Teachers.SequenceEqual(b.Teachers, x => x.Id);
@@ -74,7 +74,7 @@ public class Lesson : IEquatable<Lesson>
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
 	public bool Equals(Lesson? other) => this == other;
-	public override int GetHashCode() => HashCode.Combine(Date, FromHour, ToHour, ClassId, ClassName, Subject, LinkToPreviousHour, Teachers);
+	public override int GetHashCode() => HashCode.Combine(Date, FromHour, ToHour, LessonId, LessonName, Subject, LinkToPreviousHour, Teachers);
 }
 
 public class Subject : IEquatable<Subject>

@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Query;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Util;
 
 namespace Entities;
 
@@ -16,7 +16,7 @@ public class Schedule : IComparable<Schedule>
 	// AutoLockIn.FixedDate = FirstExamination - LockInDate
 	// AutoLockIn.TimeBeforeExamination = Offset, slot locks at this offset before the examination 
 	[Required]
-	public required TimeSpan LockInOffset { get; init; } = TimeSpan.Zero; // lock-in on examination
+	public required TimeSpan LockInOffset { get; init; } = TimeSpan.Zero; // offset into the past from the date of the examination
 	[Required]
 	public required string Description { get; init; }
 
@@ -72,7 +72,7 @@ public class ExamSlot : IComparable<ExamSlot>
 	public ICollection<StudentProfile> ActuallyParticipated { get; private set; } = [ ];
 
 	[NotMapped]
-	public int RequiredParticipants { get => GeneratorSlot.RequiredParticipants; }
+	public int RequiredParticipants { get => GeneratorSlot.MinParticipants; }
 	[NotMapped]
 	public int MaxParticipants { get => GeneratorSlot.MaxParticipants; }
 	[NotMapped]
@@ -117,7 +117,7 @@ public class ScheduleGeneratorSlot : IComparable<ScheduleGeneratorSlot>
 	[Required, Range(0, int.MaxValue)]
 	public required int MaxParticipants { get; set; }
 	[Required, Range(0, int.MaxValue)]
-	public required int RequiredParticipants { get; set; }
+	public required int MinParticipants { get; set; }
 
 	public static bool operator ==(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b)
 	{
@@ -125,17 +125,17 @@ public class ScheduleGeneratorSlot : IComparable<ScheduleGeneratorSlot>
 		if (a is null || b is null) return false;
 		return a.Offset == b.Offset
 			&& a.MaxParticipants == b.MaxParticipants
-			&& a.RequiredParticipants == b.RequiredParticipants;
+			&& a.MinParticipants == b.MinParticipants;
 	}
 	public static bool operator !=(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is ScheduleGeneratorSlot other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, RequiredParticipants);
+	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, MinParticipants);
 	public int CompareTo(ScheduleGeneratorSlot? other)
 	{
 		if (other is null) { return 1; }
 		var res = Offset.CompareTo(other.Offset);
 		if (res != 0) { return res; }
-		res = RequiredParticipants.CompareTo(other.RequiredParticipants);
+		res = MinParticipants.CompareTo(other.MinParticipants);
 		if (res != 0) { return res; }
 		res = MaxParticipants.CompareTo(other.MaxParticipants);
 		if (res != 0) { return res; }

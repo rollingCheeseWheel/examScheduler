@@ -20,7 +20,7 @@ public interface IAuthService
 
 public class AuthService(
 	AppDbContext context,
-	UserManager<UserProfile> userManager,
+	UserManager<Entities.UserProfile> userManager,
 	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
 	ITokenProvider jwtProvider,
@@ -28,7 +28,7 @@ public class AuthService(
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
-	private readonly UserManager<UserProfile> _userManager = userManager;
+	private readonly UserManager<Entities.UserProfile> _userManager = userManager;
 	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
@@ -97,7 +97,7 @@ public class AuthService(
 		return new(response, HttpStatusCode.Unauthorized);
 	}
 
-	private async Task<Result<TokenResponse>> LoginAsync(RegisterClient registerClient, UserProfile user, CancellationToken ct = default)
+	private async Task<Result<TokenResponse>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		//Log("Logging in");
 		await ExtendCalendar(registerClient, user, ct);
@@ -113,7 +113,7 @@ public class AuthService(
 		return user is null ? [ ] : await GetUserClaimsAsync(user, ct);
 	}
 
-	private async Task<ICollection<Claim>> GetUserClaimsAsync(UserProfile user, CancellationToken ct = default)
+	private async Task<ICollection<Claim>> GetUserClaimsAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
 		var roles = await _userManager.GetRolesAsync(user);
 
@@ -131,8 +131,8 @@ public class AuthService(
 	{
 		return await registerClient.GetRoleAsync(ct) switch
 		{
-			UserProfileRole.Student => await RegisterStudentAsync(registerClient, school, ct),
-			UserProfileRole.Teacher => await RegisterTeacherAsync(registerClient, school, ct),
+			UserRole.Student => await RegisterStudentAsync(registerClient, school, ct),
+			UserRole.Teacher => await RegisterTeacherAsync(registerClient, school, ct),
 			_ => new(HttpStatusCode.BadRequest)
 		};
 	}
@@ -151,7 +151,7 @@ public class AuthService(
 
 		var userProfile = await CreateUserProfileAsync(registerUserProfile, school, ct);
 		if (userProfile is null ||
-			userProfile.Role is not UserProfileRole.Student)
+			userProfile.Role is not UserRole.Student)
 		{
 			//Log("could not create userProfile");
 			return new(HttpStatusCode.BadRequest);
@@ -164,7 +164,7 @@ public class AuthService(
 			return new(HttpStatusCode.InternalServerError);
 		}
 
-		var studentProfile = new StudentProfile
+		var studentProfile = new Entities.StudentProfile
 		{
 			Classroom = classroom,
 			UserProfile = userProfile,
@@ -200,7 +200,7 @@ public class AuthService(
 
 		var userProfile = await CreateUserProfileAsync(registerUserProfile, school, ct);
 		if (userProfile is null ||
-			userProfile.Role is not UserProfileRole.Teacher)
+			userProfile.Role is not UserRole.Teacher)
 		{
 			return new(HttpStatusCode.BadRequest);
 		}
@@ -222,7 +222,7 @@ public class AuthService(
 			.Where(t => t.SchoolId == school.Id && t.FirstName == userProfile.FirstName && t.LastName == userProfile.LastName)
 			.FirstOrDefaultAsync(ct);
 
-		var teacherProfile = new TeacherProfile
+		var teacherProfile = new Entities.TeacherProfile
 		{
 			UserProfile = userProfile,
 			Teacher = existingTeacherProfile,
@@ -233,25 +233,24 @@ public class AuthService(
 		return await LoginAsync(registerClient, userProfile, ct);
 	}
 
-	private async Task<UserProfile?> CreateUserProfileAsync(RegisterUserProfile registerUserProfile, Entities.School school, CancellationToken ct = default)
+	private async Task<Entities.UserProfile?> CreateUserProfileAsync(RegisterUserProfile registerUserProfile, Entities.School school, CancellationToken ct = default)
 	{
 		var role = RegisterClient.GetRole(registerUserProfile);
 		if (role is null) { return null; }
 		var guid = Guid.NewGuid();
-		var userProfile = new UserProfile
+		return new()
 		{
 			Id = guid,
 			UserName = guid.ToString(),
 			RegiserId = registerUserProfile.Id,
 			FirstName = registerUserProfile.FirstName,
 			LastName = registerUserProfile.LastName,
-			Role = (UserProfileRole)role!,
+			Role = (UserRole)role!,
 			School = school,
 		};
-		return userProfile;
 	}
 
-	private async Task<string> EnsureRoleCreatedAsync(UserProfileRole role, CancellationToken ct = default)
+	private async Task<string> EnsureRoleCreatedAsync(UserRole role, CancellationToken ct = default)
 	{
 		var roleName = role.ToString();
 		var existingRole = await _roleManager.FindByNameAsync(roleName).WaitAsync(ct);
@@ -262,12 +261,12 @@ public class AuthService(
 		return roleName;
 	}
 
-	private async Task ExtendCalendar(RegisterClient registerClient, UserProfile user, CancellationToken ct = default)
+	private async Task ExtendCalendar(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
 	{
-		if (user.Role is not UserProfileRole.Student || user.StudentProfile is null) { return; }
+		if (user.Role is not UserRole.Student || user.StudentProfile is null) { return; }
 
 		var userProfile = await registerClient.GetRoleAsync(ct);
-		if (userProfile is not UserProfileRole.Student) { return; }
+		if (userProfile is not UserRole.Student) { return; }
 
 		_context.Entry(user.StudentProfile).Reference(p => p.Classroom).Load();
 		_context.Entry(user.StudentProfile.Classroom).Reference(c => c.Calendar).Load();
