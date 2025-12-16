@@ -8,10 +8,7 @@ public class UserProfile
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public required School School { get; init; }
 	public Guid SchoolId { get; }
-	[Required]
-	public required long RegiserId { get; init; }
 	[Required]
 	public required string FirstName { get; set; }
 	[Required]
@@ -32,6 +29,10 @@ public class TeacherProfile
 {
 	[Required]
 	public required UserProfile UserProfile { get; set; }
+	[Required]
+	public required Teacher CalendarTeacher { get; set; }
+	[Required]
+	public required Subject Subject { get; set; }
 	[Required]
 	public required IEnumerable<Classroom> Classrooms { get; set; }
 }

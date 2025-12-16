@@ -68,7 +68,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 			"student" => UserRole.Student,
 			"teacher" => UserRole.Teacher,
 			"admin" => UserRole.Admin,
-			"parent" => UserRole.Parent,
+			//"parent" => UserRole.Parent,
 			_ => null
 		};
 	}

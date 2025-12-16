@@ -12,12 +12,13 @@ public class Schedule
 	[Required]
 	public required DateTimeOffset FirstExamination { get; set; }
 	[Required]
-	public required TimeSpan LockInOffset { get; set; }
+	public required DateTimeOffset LockInOffset { get; set; }
 	[Required]
 	public required string Description { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
-
+	[Required]
+	public required IEnumerable<ExamSlot> ExamSlots { get; set; }
 }
 
 public class ExamSlot
@@ -31,7 +32,9 @@ public class ExamSlot
 	[Required]
 	public required IEnumerable<StudentProfile> ActuallyParticipated { get; set; }
 	[Required]
-	public required ScheduleGeneratorSlot GeneratorSlot { get; set; }
+	public required int MaxParticipants { get; set; }
+	[Required]
+	public required int MinParticipants { get; set; }
 }
 
 public class ScheduleGeneratorSlot

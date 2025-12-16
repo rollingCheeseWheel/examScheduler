@@ -4,8 +4,7 @@ public enum UserRole
 {
 	Student,
 	Teacher,
-	Admin,
-	Parent
+	Admin
 }
 
 public enum AutoLockIn
