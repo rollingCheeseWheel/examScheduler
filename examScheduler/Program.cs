@@ -72,6 +72,16 @@ builder.Services.AddAuthentication(options =>
 }).AddJwtBearer(options =>
 {
 	options.TokenValidationParameters = tokenValidationParameters;
+
+	options.Events = new()
+	{
+		OnMessageReceived = (ctx) =>
+		{
+			ctx.Request.Cookies.TryGetValue(IAuthService.AccessTokenCookieName, out var cookie);
+			ctx.Token = cookie;
+			return Task.CompletedTask;
+		}
+	};
 });
 
 builder.Services.AddAuthorization();

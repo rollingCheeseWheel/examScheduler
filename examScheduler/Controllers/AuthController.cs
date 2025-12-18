@@ -20,14 +20,19 @@ public class AuthController(
 	[HttpPost]
 	public async Task<IActionResult> Login([FromBody] OAuthRequest request, CancellationToken ct)
 	{
-		return await _authService.AuthenticateAsync(request, ct);
+		return await _authService.AuthenticateAsync(request, HttpContext, ct);
 	}
 
-	[Route("extend")]
+	[Route("refresh")]
 	[HttpPost]
-	public async Task<IActionResult> Extend([FromBody] TokenExtendRequest request, CancellationToken ct)
+	public async Task<IActionResult> Refresh(CancellationToken ct)
 	{
-		return await _authService.ExtendTokenAsync(request, ct);
+		HttpContext.Request.Cookies.TryGetValue(IAuthService.RefreshTokenCookieName, out var refreshToken);
+		if (refreshToken is null)
+		{
+			return new Result<DateTimeOffset>(System.Net.HttpStatusCode.Unauthorized);
+		}
+		return await _authService.RefreshTokenAsync(refreshToken, HttpContext, ct);
 	}
 
 	[Route("profile")]

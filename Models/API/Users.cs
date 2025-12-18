@@ -17,14 +17,6 @@ public class UserProfile
 	public required UserRole Role { get; init; }
 }
 
-public class StudentProfile
-{
-	[Required]
-	public required UserProfile UserProfile { get; set; }
-	[Required]
-	public required Classroom Classroom { get; set; }
-}
-
 public class TeacherProfile
 {
 	[Required]

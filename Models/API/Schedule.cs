@@ -28,9 +28,9 @@ public class ExamSlot
 	[Required]
 	public required DateTimeOffset Date { get; set; }
 	[Required]
-	public required IEnumerable<StudentProfile> Participants { get; set; }
+	public required IEnumerable<UserProfile> Participants { get; set; }
 	[Required]
-	public required IEnumerable<StudentProfile> ActuallyParticipated { get; set; }
+	public required IEnumerable<UserProfile> ActuallyParticipated { get; set; }
 	[Required]
 	public required int MaxParticipants { get; set; }
 	[Required]
