@@ -132,7 +132,9 @@ if (app.Environment.IsDevelopment())
 	db.SaveChanges();
 }
 
+app.UseStaticFiles();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.UseCors("CORS");
 
