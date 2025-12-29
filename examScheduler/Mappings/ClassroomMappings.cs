@@ -10,8 +10,20 @@ public static class ClassroomMappings
 		{
 			Id = entity.Id,
 			Name = entity.Name,
-			School = entity.School.ToDTO(),
+			SchoolId = entity.School.Id,
+			CalendarId = entity.Calendar?.Id,
 			Calendar = entity.Calendar?.ToDTO()
+		};
+	}
+
+	public static Models.API.TeacherProfileClassroom ToTeacherProfileClassroomDTO(this Classroom entity)
+	{
+		return new()
+		{
+			Id = entity.Id,
+			Name = entity.Name,
+			SchoolId = entity.SchoolId,
+			CalendarId = entity.Calendar?.Id
 		};
 	}
 }

@@ -10,7 +10,8 @@ public static class CalendarMappings
 		{
 			Id = entity.Id,
 			LastsUntil = entity.LastsUntil,
-			Lessons = entity.Lessons.Select(ToDTO)
+			Lessons = entity.Lessons.Select(ToDTO),
+			ClassroomId = entity.ClassroomId,
 		};
 	}
 

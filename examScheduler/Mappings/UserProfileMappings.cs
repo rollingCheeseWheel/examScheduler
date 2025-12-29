@@ -1,5 +1,4 @@
 ﻿using Entities;
-using examScheduler.Data;
 
 namespace examScheduler.Mappings;
 
@@ -12,7 +11,8 @@ public static class UserProfileMappings
 			FirstName = entity.FirstName,
 			LastName = entity.LastName,
 			Id = entity.Id,
-			Role = entity.Role
+			Role = entity.Role,
+			SchoolId = entity.SchoolId,
 		};
 	}
 

@@ -30,14 +30,4 @@ public static class ScheduleMappings
 			Participants = entity.Participants.Select(UserProfileMappings.ToDTO)
 		};
 	}
-
-	public static Models.API.ScheduleGeneratorSlot ToDTO(this ScheduleGeneratorSlot entity)
-	{
-		return new()
-		{
-			MinParticipants = entity.MinParticipants,
-			MaxParticipants = entity.MaxParticipants,
-			Offset = entity.Offset
-		};
-	}
 }

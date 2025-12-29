@@ -6,8 +6,8 @@ public class Calendar
 {
 	[Required]
 	public required Guid Id { get; set; }
-	//[Required] // classroom relies on calendar
-	//public required Classroom Classroom { get; set; }
+	[Required]
+	public required Guid ClassroomId { get; set; }
 	[Required]
 	public required DateTimeOffset LastsUntil { get; set; }
 	[Required]

@@ -42,7 +42,7 @@ public class ScheduleGeneratorSlot
 	[Required]
 	public required int Offset { get; set; }
 	[Required]
-	public required int MaxParticipants { get; set; }
-	[Required]
 	public required int MinParticipants { get; set; }
+	[Required]
+	public required int MaxParticipants { get; set; }
 }

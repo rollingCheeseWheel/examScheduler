@@ -2,13 +2,18 @@
 
 namespace Models.API;
 
-public class Classroom
+public class TeacherProfileClassroom
 {
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
 	public required string Name { get; set; }
 	[Required]
-	public required School School { get; set; }
+	public required Guid SchoolId { get; set; }
+	public required Guid? CalendarId { get; set; }
+}
+
+public class Classroom : TeacherProfileClassroom
+{
 	public required Calendar? Calendar { get; set; }
 }

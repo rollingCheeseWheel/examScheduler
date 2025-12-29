@@ -8,11 +8,9 @@ public class UserProfile
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public Guid SchoolId { get; }
-	[Required]
-	public required string FirstName { get; set; }
-	[Required]
-	public required string LastName { get; set; }
+	public required Guid SchoolId { get; set; }
+	public required string? FirstName { get; set; }
+	public required string? LastName { get; set; }
 	[Required]
 	public required UserRole Role { get; init; }
 }
@@ -26,5 +24,5 @@ public class TeacherProfile
 	[Required]
 	public required IEnumerable<Subject> Subjects { get; set; }
 	[Required]
-	public required IEnumerable<Classroom> Classrooms { get; set; }
+	public required IEnumerable<TeacherProfileClassroom> Classrooms { get; set; }
 }
