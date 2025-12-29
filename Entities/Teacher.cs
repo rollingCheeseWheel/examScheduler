@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Util;
 
 namespace Entities;
 
@@ -21,6 +22,8 @@ public class Teacher : IComparable<Teacher>
 	public TeacherProfile? TeacherProfile { get; set; }
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
+	[Required]
+	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{
@@ -28,7 +31,9 @@ public class Teacher : IComparable<Teacher>
 		if (a is null || b is null) return false;
 		return a.FirstName == b.FirstName
 			&& a.LastName == b.LastName
-			&& a.School == b.School;
+			&& a.School == b.School
+			&& a.Subjects.SequenceEqual(b.Subjects)
+			&& a.Classrooms.SequenceEqual(b.Classrooms);
 	}
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Teacher other && this == other;

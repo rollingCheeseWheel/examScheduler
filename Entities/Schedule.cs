@@ -72,7 +72,7 @@ public class ExamSlot : IComparable<ExamSlot>
 	public ICollection<StudentProfile> ActuallyParticipated { get; private set; } = [ ];
 
 	[NotMapped]
-	public int RequiredParticipants { get => GeneratorSlot.MinParticipants; }
+	public int MinParticipants { get => GeneratorSlot.MinParticipants; }
 	[NotMapped]
 	public int MaxParticipants { get => GeneratorSlot.MaxParticipants; }
 	[NotMapped]
@@ -93,7 +93,8 @@ public class ExamSlot : IComparable<ExamSlot>
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.Schedule == b.Schedule
-			&& a.Date == b.Date;
+			&& a.Date == b.Date
+			&& a.GeneratorSlot == b.GeneratorSlot;
 	}
 	public static bool operator !=(ExamSlot? a, ExamSlot? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is ExamSlot other && this == other;

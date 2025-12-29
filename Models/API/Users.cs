@@ -20,11 +20,11 @@ public class UserProfile
 public class TeacherProfile
 {
 	[Required]
-	public required UserProfile UserProfile { get; set; }
+	public required UserProfile? UserProfile { get; set; }
 	[Required]
-	public required Teacher CalendarTeacher { get; set; }
+	public required Teacher? CalendarTeacher { get; set; }
 	[Required]
-	public required Subject Subject { get; set; }
+	public required IEnumerable<Subject> Subjects { get; set; }
 	[Required]
 	public required IEnumerable<Classroom> Classrooms { get; set; }
 }

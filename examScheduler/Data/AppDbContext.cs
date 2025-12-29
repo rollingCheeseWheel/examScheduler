@@ -61,9 +61,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne(t => t.TeacherProfile)
 			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
 
-		// Teacher-Subject many-to-many
+		// Teacher-Subjects many-to-many
 		modelBuilder.Entity<Teacher>()
 			.HasMany(t => t.Subjects)
+			.WithMany();
+
+		modelBuilder.Entity<Teacher>()
+			.HasMany(t => t.Classrooms)
 			.WithMany();
 
 		// Lesson-Teacher many-to-many
@@ -71,7 +75,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasMany(l => l.Teachers)
 			.WithMany();
 
-		// Lesson-Subject: many-to-one
+		// Lesson-Subjects: many-to-one
 		modelBuilder.Entity<Lesson>()
 			.HasOne(l => l.Subject)
 			.WithMany();

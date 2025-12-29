@@ -9,9 +9,9 @@ public class TeacherProfile : IComparable<TeacherProfile>
 	public Guid Id { get; private set; }
 
 	// Navigation Properties
-	public required UserProfile UserProfile { get; init; }
+	public required UserProfile UserProfile { get; set; }
 
-	public Teacher? Teacher { get; init; }
+	public Teacher? Teacher { get; set; }
 	public Guid? TeacherId { get; private set; }
 
 	public static bool operator ==(TeacherProfile? a, TeacherProfile? b)

@@ -1,4 +1,5 @@
 ﻿using examScheduler.Data;
+using examScheduler.Mappings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
@@ -15,7 +16,7 @@ public interface IAuthService
 	const string AccessTokenCookieName = "access_token";
 	const string RefreshTokenCookieName = "refresh_token";
 
-	Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
+	Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
 	Task<Result<DateTimeOffset>> RefreshTokenAsync(string refreshToken, HttpContext httpContext, CancellationToken ct);
 }
 
@@ -40,7 +41,7 @@ public class AuthService(
 	private void Log(string message, params object[ ] args) => _logger.LogInformation(message, args);
 	private void Log(string message, object obj) => _logger.LogInformation($"{message} - {obj.ToJson()}");
 
-	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
+	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
 		//Log($"received request {DateTime.UtcNow}");
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
@@ -68,7 +69,7 @@ public class AuthService(
 			.Include(u => u.StudentProfile)
 			.Include(u => u.TeacherProfile)
 			.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.UserName == userProfile.Id.ToString(), ct);
-		Result<DateTimeOffset>? response = null;
+		Result<UserProfile>? response = null;
 		if (existingUser is not null) // user found 
 		{
 			//Log("Logging user in");
@@ -102,7 +103,7 @@ public class AuthService(
 		return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes), HttpStatusCode.Unauthorized);
 	}
 
-	private async Task<Result<DateTimeOffset>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
 		//Log("Logging in");
 		await ExtendCalendar(registerClient, user, ct);
@@ -111,7 +112,7 @@ public class AuthService(
 		var tokens = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
 		if (tokens is null) { return new(HttpStatusCode.Unauthorized); }
 		ConfigureCookies(ref httpContext, tokens);
-		return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes), HttpStatusCode.Unauthorized);
+		return new(user.ToDTO(), HttpStatusCode.Unauthorized);
 	}
 
 	private void ConfigureCookies(ref HttpContext httpContext, TokenResponse tokens)
@@ -158,7 +159,7 @@ public class AuthService(
 		return claims;
 	}
 
-	private async Task<Result<DateTimeOffset>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		return await registerClient.GetRoleAsync(ct) switch
 		{
@@ -168,7 +169,7 @@ public class AuthService(
 		};
 	}
 
-	private async Task<Result<DateTimeOffset>> RegisterStudentAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterStudentAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		//Log("Registering student");
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
@@ -221,7 +222,7 @@ public class AuthService(
 		return await LoginAsync(registerClient, userProfile, httpContext, ct);
 	}
 
-	private async Task<Result<DateTimeOffset>> RegisterTeacherAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterTeacherAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
