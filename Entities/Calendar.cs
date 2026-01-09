@@ -101,7 +101,7 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 		var daysInWeek = Enum.GetValues<DayOfWeek>();
 		var longestDayInWeek = Lessons
 			.GroupBy(l => l.DayOfWeek)
-			.Max(g => g.Max(l => l.FromHour + l.Duration));
+			.Max(g => g.Select(l => l.FromHour + l.Duration).Max());
 		var lessonMatrix = new Lesson?[ daysInWeek.Length, longestDayInWeek ];
 
 		for (var day = 0; day < daysInWeek.Length; day++)
@@ -184,7 +184,7 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.Classroom == b.Classroom
-			&& a.Lessons.SequenceEqual(b.Lessons, x => x.FirstOccurance);
+			&& a.Lessons.Equals(b.Lessons, x => x.FirstOccurance);
 	}
 	public static bool operator !=(Calendar? a, Calendar? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Calendar other && Equals(other);
@@ -228,12 +228,12 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
 		return a.FirstOccurance == b.FirstOccurance
-			&& a.Occurances.SequenceEqual(b.Occurances, x => x)
+			&& a.Occurances.Equals(b.Occurances, x => x)
 			&& a.FromHour == b.FromHour
 			&& a.Duration == b.Duration
 			&& a.LessonId == b.LessonId
 			&& a.Subject == b.Subject
-			&& a.Teachers.SequenceEqual(b.Teachers, x => x.RegisterID);
+			&& a.Teachers.Equals(b.Teachers, x => x.RegisterID);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
@@ -266,7 +266,7 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 		return DayOfWeek == other.DayOfWeek
 			&& LessonId == other.LessonId
 			&& Subject == other.Subject
-			&& Teachers.SequenceEqual(other.Teachers, x => x.RegisterID)
-			&& Occurances.SequenceEqual(other.Occurances, x => x);
+			&& Teachers.Equals(other.Teachers, x => x.RegisterID)
+			&& Occurances.Equals(other.Occurances, x => x);
 	}
 }

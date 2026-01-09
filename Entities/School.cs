@@ -16,18 +16,23 @@ public class School : IComparable<School>
 	public required string ClientId { get; init; }
 	[Required]
 	public required string Secret { get; init; }
+	[Required]
+	public required bool IsEnabled { get; init; }
 
 	public static bool operator ==(School? a, School? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
 		if (a is null || b is null) return false;
-		return a.RegisterUri == b.RegisterUri
-			&& a.Name == b.Name
-			&& a.SchoolId == b.SchoolId;
+		return a.Name == b.Name
+			&& a.RegisterUri == b.RegisterUri
+			&& a.SchoolId == b.SchoolId
+			&& a.ClientId == b.ClientId
+			&& a.Secret == b.Secret
+			&& a.IsEnabled == b.IsEnabled;
 	}
 	public static bool operator !=(School? a, School? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is School other && this == other;
-	public override int GetHashCode() => HashCode.Combine(RegisterUri, Name, SchoolId);
+	public override int GetHashCode() => HashCode.Combine(Name, RegisterUri, SchoolId, ClientId, Secret, IsEnabled);
 
 	public int CompareTo(School? other)
 	{

@@ -68,12 +68,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Teacher>()
 			.HasMany(t => t.Classrooms)
-			.WithMany();
+			.WithMany(c => c.Teachers);
 
 		// Lesson-Teacher many-to-many
 		modelBuilder.Entity<Lesson>()
 			.HasMany(l => l.Teachers)
-			.WithMany();
+			.WithMany(t => t.Lessons);
 
 		// Lesson-Subjects: many-to-one
 		modelBuilder.Entity<Lesson>()

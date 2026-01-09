@@ -1,9 +1,7 @@
 ﻿using examScheduler.Data;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Models.API;
-using registerClient;
 
 namespace examScheduler.Controllers;
 

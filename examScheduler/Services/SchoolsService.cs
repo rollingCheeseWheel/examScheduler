@@ -1,4 +1,5 @@
 ﻿using examScheduler.Data;
+using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
 
@@ -15,13 +16,8 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 
 	public async Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct = default)
 	{
-		return await _context.Schools
-			.Select(s => new School
-			{
-				Name = s.Name,
-				RegisterUri = s.RegisterUri,
-				ClientId = s.ClientId,
-			})
-			.ToListAsync(ct);
+		return ( await _context.Schools
+			.ToListAsync(ct) )
+			.Select(SchoolMappings.ToDTO);
 	}
 }

@@ -5,7 +5,7 @@ namespace Util;
 
 public static class Constants
 {
-	public static JsonSerializerOptions SerializerOptions = new()
+	public static readonly JsonSerializerOptions SerializerOptions = new()
 	{
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
 		PropertyNameCaseInsensitive = true,

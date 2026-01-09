@@ -3,8 +3,10 @@ using examScheduler.Data;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Util;
@@ -96,17 +98,26 @@ builder.Services.AddControllers()
 	});
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+/*builder.Services.AddOpenApi("openapi");*/
+
+builder.Services.AddResponseCompression(options =>
+{
+	options.EnableForHttps = true;
+	options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+		[ /*"application/json",*/ "application/javascript", "style/css", "text/html" ]
+	);
+});
 
 var app = builder.Build();
 
+app.UseResponseCompression();
 
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-	app.MapOpenApi();
+	/*app.MapOpenApi("{documentName}");*/
 
 	using var schoolScope = app.Services.CreateScope();
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -119,11 +130,28 @@ if (app.Environment.IsDevelopment())
 			RegisterUri = new("https://wfo-test-bruneck.digitalesregister.it/"),
 			SchoolId = "wfo-test-bruneck",
 			ClientId = "QYffPSN5bcsrZ9yL",
-			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!
+			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!,
+			IsEnabled = true
 		},
+		new() {
+			Name = "some school",
+			RegisterUri = new("https://some-school.digitalesregister.it/"),
+			SchoolId = "some-school",
+			ClientId = "asdfölijasdlfkjhask",
+			Secret = "alsdkhjfgxcvhyölhdfjlhasgu",
+			IsEnabled = false,
+		},
+		new() {
+			Name = "some other school",
+			RegisterUri = new("https://some-other-school.digitalesregister.it/"),
+			SchoolId = "some-other-school",
+			ClientId = "asdfölijasdlfkjhask",
+			Secret = "alsdkhjfgxcvhyölhdfjlhasgu",
+			IsEnabled = true,
+		}
 	];
 
-	if (!db.Schools.SequenceEqual(schools, x => x))
+	if (!db.Schools.Equals(schools, x => x))
 	{
 		db.Schools.RemoveRange(db.Schools.ToList());
 		db.Schools.AddRange(schools);
@@ -132,8 +160,24 @@ if (app.Environment.IsDevelopment())
 	db.SaveChanges();
 }
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions()
+{
+	OnPrepareResponse = ctx =>
+	{
+		var path = ctx.File.PhysicalPath;
+		if (path is not null && path.EndsWith("html"))
+		{
+			ctx.Context.Response.Headers.CacheControl = "no-cache";
+		}
+		else
+		{
+			ctx.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+		}
+	}
+});
+
 app.MapControllers();
+
 app.MapFallbackToFile("index.html");
 
 app.UseCors("CORS");

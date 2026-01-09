@@ -24,6 +24,8 @@ public class Teacher : IComparable<Teacher>
 	public ICollection<Subject> Subjects { get; set; } = [ ];
 	[Required]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
+	[Required]
+	public ICollection<Lesson> Lessons { get; set; } = [ ];
 
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{

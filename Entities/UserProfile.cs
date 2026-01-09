@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Util;
 
 namespace Entities;
@@ -17,6 +18,9 @@ public class UserProfile : IdentityUser<Guid>, IComparable<UserProfile>
 	public required string LastName { get; set; }
 	[Required]
 	public required UserRole Role { get; init; }
+
+	[NotMapped]
+	public string Name => $"{FirstName} {LastName}";
 
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }

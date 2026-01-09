@@ -133,7 +133,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 			.ToList();
 	}
 
-	private IEnumerable<Models.DigitalesRegister.Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
+	private static List<Models.DigitalesRegister.Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		List<Models.DigitalesRegister.Lesson> result = [ ];
 		var rootElement = jsonDoc.RootElement;

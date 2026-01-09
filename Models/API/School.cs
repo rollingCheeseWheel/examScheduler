@@ -11,4 +11,6 @@ public class School
 	public required Uri RegisterUri { get; set; }
 	[Required]
 	public required string ClientId { get; set; }
+	[Required]
+	public required bool IsEnabled { get; set; }
 }
