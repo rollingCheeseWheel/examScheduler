@@ -1,5 +1,6 @@
 using Entities;
 using examScheduler.Data;
+using examScheduler.Hubs;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -36,6 +37,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder
 builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders(); // TODO: shouldnt be needed because of oauth
+
+builder.Services.AddSignalR();
 
 /*////*/
 builder.Services
@@ -177,6 +180,8 @@ app.UseStaticFiles(new StaticFileOptions()
 });
 
 app.MapControllers();
+
+app.MapHub<ScheduleHub>("/api/schedule");
 
 app.MapFallbackToFile("index.html");
 
