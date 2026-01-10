@@ -4,7 +4,7 @@ using Util;
 namespace registerClient;
 
 // when extended to multiple Digitales Register versions could be used to implement multiple adapters
-public interface IRegisterClient
+public interface IRegisterClient : IDisposable
 {
 	RegisterUserProfile? UserProfile { get; }
 
@@ -17,4 +17,6 @@ public interface IRegisterClient
 
 	Task<IEnumerable<Models.DigitalesRegister.Lesson>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct);
 	Task<IEnumerable<Models.DigitalesRegister.Lesson>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default);
+
+	IRegisterClient Copy();
 }

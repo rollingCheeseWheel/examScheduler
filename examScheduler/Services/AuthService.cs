@@ -27,7 +27,8 @@ public class AuthService(
 	IClassroomService classroomService,
 	ITokenProvider jwtProvider,
 	JwtOptions jwtOptions,
-	ILogger<AuthService> logger
+	ILogger<AuthService> logger,
+	ICalendarWorker calendarWorker
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -37,6 +38,7 @@ public class AuthService(
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
+	private readonly ICalendarWorker _calendarWorker = calendarWorker;
 
 	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
@@ -61,9 +63,9 @@ public class AuthService(
 		var existingUser = await _userManager.Users
 			.Include(u => u.StudentProfile)
 			.Include(u => u.TeacherProfile)
-			.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.UserName == userProfile.Id.ToString(), ct);
+			.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
 		Result<UserProfile>? response = null;
-		if (existingUser is not null) // user found 
+		if (existingUser is not null) // dbUser found 
 		{
 			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
 			response = await LoginAsync(registerClient, existingUser, httpContext, ct);
@@ -79,10 +81,17 @@ public class AuthService(
 		{
 			_logger.LogInformation("Successfully logged in");
 			await transcation.CommitAsync(ct);
+
+			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
+			if (justCreatedUser is not null)
+			{
+				await ExtendCalendar(registerClient, justCreatedUser, ct);
+			}
 		}
 		else
 		{
 			_logger.LogWarning("Unsuccessfully logged user in: {Reason}", response.Errors.ToJson());
+			await transcation.RollbackAsync(ct);
 		}
 		return response;
 	}
@@ -102,7 +111,6 @@ public class AuthService(
 
 	private async Task<Result<UserProfile>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
-		await ExtendCalendar(registerClient, user, ct);
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokens = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
 		if (tokens is null)
@@ -293,28 +301,44 @@ public class AuthService(
 
 	private async Task ExtendCalendar(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
 	{
-		_logger.LogInformation("Extending Calendar for user {User}", user.Name);
 		if (user.Role is not UserRole.Student || user.StudentProfile is null || await registerClient.GetRoleAsync(ct) is not UserRole.Student)
 		{
 			_logger.LogInformation("User is not a student");
 			return;
 		}
 
-		_context.Entry(user.StudentProfile).Reference(p => p.Classroom).Load();
-		_context.Entry(user.StudentProfile.Classroom).Reference(c => c.Calendar).Load();
-
-		var classroom = user.StudentProfile.Classroom;
-		if (classroom.Calendar is not null && classroom.Calendar.LastsUntil <= DateTimeOffset.UtcNow)
+		_logger.LogInformation("Enqueuing task in worker");
+		await _calendarWorker.EnqueueAsync(async (serviceProvider, logger, ct) =>
 		{
-			_logger.LogInformation("Fetching calendar from DigitalesRegister");
-			var calendar = await registerClient.GetCalendarAsync(classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
-			classroom.Calendar.Extend(calendar, user.School, out var createdTeachers, out var createdSubjects);
+			using var dbcontext = serviceProvider.ServiceProvider.GetRequiredService<AppDbContext>();
+			using var rgClient = registerClient.Copy();
 
-			_logger.LogInformation("Adding teachers, collection is empty [{isEmpty}]", createdTeachers.Any());
-			_logger.LogInformation("Adding Subjects, collection is empty [{isEmpty}]", createdSubjects.Any());
+			var dbUser = await dbcontext.Users
+				.Include(x => x.StudentProfile)
+				.FirstOrDefaultAsync(u => u.Id == user.Id, ct);
 
-			await _context.Teachers.AddRangeAsync(createdTeachers, ct);
-			await _context.Subjects.AddRangeAsync(createdSubjects, ct);
-		}
+			if (dbUser is null || dbUser.StudentProfile is null || dbUser.Role is not UserRole.Student)
+			{
+				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");
+				return;
+			}
+
+			await dbcontext.Entry(dbUser.StudentProfile).Reference(p => p.Classroom).LoadAsync(ct);
+			await dbcontext.Entry(dbUser.StudentProfile.Classroom).Reference(c => c.Calendar).LoadAsync(ct);
+
+			if (dbUser.StudentProfile.Classroom.Calendar is null)
+			{
+				logger.LogWarning("Calendar of student is null");
+				return;
+			}
+
+			var registerCalendar = await rgClient.GetCalendarAsync(dbUser.StudentProfile.Classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
+			dbUser.StudentProfile.Classroom.Calendar.Extend(registerCalendar, dbUser.School, out var createdTeachers, out var createdSubjects);
+
+			await dbcontext.Teachers.AddRangeAsync(createdTeachers, ct);
+			await dbcontext.Subjects.AddRangeAsync(createdSubjects, ct);
+
+			await dbcontext.SaveChangesAsync(ct);
+		}, ct);
 	}
 }

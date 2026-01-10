@@ -1,4 +1,5 @@
 using Entities;
+using examScheduler;
 using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Services;
@@ -46,6 +47,13 @@ builder.Services
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<IClassroomService, ClassroomService>()
 	.AddScoped<ITokenProvider, TokenProvider>();
+/*////*/
+
+/*////*/
+builder.Services
+	.AddSingleton<CalendarWorker>()
+	.AddSingleton<ICalendarWorker>(sp => sp.GetRequiredService<CalendarWorker>())
+	.AddHostedService(sp => sp.GetRequiredService<CalendarWorker>());
 /*////*/
 
 var tokenValidationParameters = new JwtOptions

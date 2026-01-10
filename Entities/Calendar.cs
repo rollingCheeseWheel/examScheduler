@@ -69,7 +69,6 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 				.FirstOrDefault();
 			if (existingLesson is null)
 			{
-
 				existingLesson = new()
 				{
 					LessonId = iterLesson.LessonId,

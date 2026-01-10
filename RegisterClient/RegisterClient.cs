@@ -10,13 +10,14 @@ namespace registerClient;
 /// <summary>
 /// Cannot really make use of parallelisation since the API limits connections are throttled to 1 second after a certain delay
 /// </summary>
-public class RegisterClient : IDisposable, IRegisterClient
+public class RegisterClient : IRegisterClient
 {
 	public readonly Uri SchoolUri;
 	public readonly string ClientId;
 	private readonly HttpClient _httpClient;
 	private readonly HttpClientHandler _clientHandler;
 	private readonly RequestThrottler _requestThrottler;
+	private readonly double _targetRequestsPerSecond;
 
 	private readonly string _authCode;
 	private readonly string _secret;
@@ -29,7 +30,7 @@ public class RegisterClient : IDisposable, IRegisterClient
 
 	public RegisterUserProfile? UserProfile { get; private set; }
 
-	public RegisterClient(Entities.School school, string authCode, int targetRequestsPerSecond = 1) : this(school.RegisterUri, school.ClientId, school.Secret, authCode, targetRequestsPerSecond) { }
+	public RegisterClient(Entities.School school, string authCode, double targetRequestsPerSecond = 1) : this(school.RegisterUri, school.ClientId, school.Secret, authCode, targetRequestsPerSecond) { }
 
 	public RegisterClient(Uri schoolUri, string clientId, string secret, string authCode, double targetRequestsPerSecond = 1)
 	{
@@ -53,7 +54,43 @@ public class RegisterClient : IDisposable, IRegisterClient
 		};
 		_httpClient = new(_clientHandler);
 		_requestThrottler = new(targetRequestsPerSecond);
+		_targetRequestsPerSecond = targetRequestsPerSecond;
 	}
+
+	public RegisterClient(RegisterClient other)
+	{
+		SchoolUri = other.SchoolUri;
+		ClientId = other.ClientId;
+
+		_authCode = "copied";
+		_secret = "copeid";
+
+		_accessToken = other._accessToken;
+		_refreshToken = other._refreshToken;
+		TokenExpiration = other.TokenExpiration;
+
+		UserId = other.UserId;
+		UserProfile = other.UserProfile;
+
+		_clientHandler = new()
+		{
+			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+			{
+				if (errors != System.Net.Security.SslPolicyErrors.None)
+					return false;
+
+				if (message.RequestUri?.Scheme != Uri.UriSchemeHttps)
+					return false;
+
+				return true;
+			}
+		};
+		_httpClient = new(_clientHandler);
+		_requestThrottler = new(other._targetRequestsPerSecond);
+		_targetRequestsPerSecond = other._targetRequestsPerSecond;
+	}
+
+	public IRegisterClient Copy() => new RegisterClient(this);
 
 	public async Task<UserRole?> GetRoleAsync(CancellationToken ct = default)
 	{
