@@ -7,12 +7,11 @@ public class SwapRequest
 	[Key]
 	public Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
-	public required School School { get; set; }
+	public required Guid ScheduleId { get; set; }
 	[Required]
-	public required Schedule Schedule { get; set; }
-	public Guid ScheduleId { get; set; }
+	public required Guid RequestingStudentId { get; set; }
 	[Required]
-	public required Guid FirstStudent { get; set; }
+	public required Guid RequestedStudentId { get; set; }
 	[Required]
-	public required Guid SecondStudent { get; set; }
+	public required DateTimeOffset ExpirationDate { get; set; } = DateTimeOffset.UtcNow.AddDays(30);
 }
