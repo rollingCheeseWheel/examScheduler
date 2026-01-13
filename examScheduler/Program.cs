@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Util;
@@ -46,7 +45,8 @@ builder.Services
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<IClassroomService, ClassroomService>()
-	.AddScoped<ITokenProvider, TokenProvider>();
+	.AddScoped<ITokenProvider, TokenProvider>()
+	.AddScoped<IScheduleService, ScheduleService>();
 /*////*/
 
 /*////*/

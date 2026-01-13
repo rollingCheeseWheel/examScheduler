@@ -20,7 +20,7 @@ public class UserProfile : IdentityUser<Guid>, IComparable<UserProfile>
 	public required UserRole Role { get; init; }
 
 	[NotMapped]
-	public string Name => $"{FirstName} {LastName}";
+	public string Name => string.Join(" ", FirstName, LastName);
 
 	public StudentProfile? StudentProfile { get; init; }
 	public TeacherProfile? TeacherProfile { get; init; }

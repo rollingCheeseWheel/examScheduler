@@ -9,6 +9,8 @@ public class SwapRequest
 	[Required]
 	public required Guid ScheduleId { get; set; }
 	[Required]
+	public required string RequestingStudentName { get; set; }
+	[Required]
 	public required Guid RequestingStudentId { get; set; }
 	[Required]
 	public required Guid RequestedStudentId { get; set; }

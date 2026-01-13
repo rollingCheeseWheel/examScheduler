@@ -157,8 +157,7 @@ public class AuthService(
 		List<Claim> claims = [
 			new(ClaimTypes.NameIdentifier, user.Id.ToString()),
 			new(ClaimTypes.GroupSid, user.SchoolId.ToString()),
-			new(ClaimTypes.Name, user.FirstName),
-			new(ClaimTypes.Surname, user.LastName),
+			new(ClaimTypes.Name, user.Name),
 			..roles.Select(r => new Claim(ClaimTypes.Role, r))
 		];
 		return claims;
