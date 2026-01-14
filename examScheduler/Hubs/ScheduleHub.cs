@@ -51,7 +51,7 @@ public class ScheduleHub(
 			return;
 		}
 
-		var scheduleIds = await _scheduleService.GetScheduleIdsAsync(userId, ct);
+		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync(userId, ct);
 		foreach (var scheduleId in scheduleIds)
 		{
 			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), ct);

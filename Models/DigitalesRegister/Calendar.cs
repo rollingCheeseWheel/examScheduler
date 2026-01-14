@@ -69,7 +69,7 @@ public class Lesson : IEquatable<Lesson>
 			&& a.LessonName == b.LessonName
 			&& a.Subject == b.Subject
 			&& a.LinkToPreviousHour == b.LinkToPreviousHour
-			&& a.Teachers.Equals(b.Teachers, x => x.Id);
+			&& a.Teachers.ValueEquals(b.Teachers, x => x.Id);
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);

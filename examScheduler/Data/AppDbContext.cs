@@ -30,6 +30,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasIndex(s => s.TokenValue)
 			.IsUnique();
 
+		modelBuilder.Entity<SwapRequest>()
+			.HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
+			.IsUnique();
+
+		modelBuilder.Entity<SwapRequest>()
+			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
+			.IsUnique();
+
 		// UserProfile
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new

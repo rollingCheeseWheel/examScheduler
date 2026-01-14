@@ -162,13 +162,13 @@ if (app.Environment.IsDevelopment())
 		}
 	];
 
-	if (!db.Schools.Equals(schools, x => x))
+	var existingSchools = await db.Schools.ToListAsync(app.Lifetime.ApplicationStopping);
+	if (schools.ValueEquals(existingSchools, s => s))
 	{
-		db.Schools.RemoveRange(db.Schools.ToList());
-		db.Schools.AddRange(schools);
+		await db.Schools.ExecuteDeleteAsync(app.Lifetime.ApplicationStopping);
+		await db.Schools.AddRangeAsync(schools);
+		db.SaveChanges();
 	}
-
-	db.SaveChanges();
 }
 
 app.UseStaticFiles(new StaticFileOptions()
