@@ -4,6 +4,7 @@ using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Models.API;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Security.Claims;
 
@@ -32,6 +33,8 @@ public class ScheduleHub(
 ) : Hub<IScheduleClient>, IScheduleHub
 {
 	private readonly IScheduleService _scheduleService = scheduleService;
+	private Guid _guid = default;
+	private bool _isGuidSet = false;
 
 	private CancellationToken ct => Context.ConnectionAborted;
 
@@ -39,8 +42,8 @@ public class ScheduleHub(
 	{
 		var claimsPrincipal = Context.User;
 		var stringedUserId = claimsPrincipal?.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (claimsPrincipal is null || 
-			claimsPrincipal.Identity?.IsAuthenticated is null || 
+		if (claimsPrincipal is null ||
+			claimsPrincipal.Identity?.IsAuthenticated is null ||
 			!claimsPrincipal.Identity.IsAuthenticated)
 		{
 			return;
@@ -50,6 +53,8 @@ public class ScheduleHub(
 		{
 			return;
 		}
+		_isGuidSet = true;
+		_guid = userId;
 
 		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync(userId, ct);
 		foreach (var scheduleId in scheduleIds)
@@ -69,11 +74,17 @@ public class ScheduleHub(
 
 	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
 	{
-		var swapRequestId = await _scheduleService.CreateSwapRequestAsync(scheduleId, userId, ct);
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+
+		var swapRequestId = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), ct);
 		if (swapRequestId is null)
 		{
-			return new(HttpStatusCode.NotFound);
-		} else
+			return new(HttpStatusCode.BadRequest);
+		}
+		else
 		{
 			return new(true);
 		}
@@ -86,7 +97,7 @@ public class ScheduleHub(
 
 	private async Task TransmitBacklogAsync(Guid userId, CancellationToken ct = default)
 	{
-		var swapRequests = (await _scheduleService.GetSwapRequestForStudentAsync(userId, ct))
+		var swapRequests = ( await _scheduleService.GetSwapRequestForStudentAsync(userId, ct) )
 			.Select(SwapRequestMappings.ToDTO);
 		await Clients.Caller.ReceiveInitialSwapRequests(swapRequests);
 	}
