@@ -80,19 +80,20 @@ public class ScheduleHub(
 		}
 
 		var swapRequestId = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), ct);
-		if (swapRequestId is null)
-		{
-			return new(HttpStatusCode.BadRequest);
-		}
-		else
-		{
-			return new(true);
-		}
+		return new(
+			true, 
+			HttpStatusCode.BadRequest, 
+			swapRequestId is not null
+		);
 	}
 
-	public Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
+	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
 	{
-		throw new NotImplementedException();
+		return new(
+			await _scheduleService.AcceptSwapRequestAsync(swapRequestId, ct), 
+			HttpStatusCode.BadRequest, 
+			(b) => b
+		);
 	}
 
 	private async Task TransmitBacklogAsync(Guid userId, CancellationToken ct = default)

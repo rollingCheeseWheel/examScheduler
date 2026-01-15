@@ -77,6 +77,7 @@ public class ScheduleService(
 		};
 
 		await _context.SwapRequests.AddAsync(newSwapRequest, ct);
+		await _context.SaveChangesAsync(ct);
 
 		return newSwapRequest.Id;
 	}
@@ -97,8 +98,8 @@ public class ScheduleService(
 				return false;
 			}
 
-			var requestingStudent = existingUsers.FirstOrDefault(u => u.Id == swapRequest.RequestingStudentId);
-			var requestedStudent = existingUsers.FirstOrDefault(u => u.Id == swapRequest.RequestedStudentId);
+			var requestingStudent = existingUsers.FirstOrDefault(u => u.Id == swapRequest.RequestingStudentId)?.StudentProfile;
+			var requestedStudent = existingUsers.FirstOrDefault(u => u.Id == swapRequest.RequestedStudentId)?.StudentProfile;
 			if (requestingStudent is null || requestedStudent is null)
 			{
 				return false;
@@ -110,6 +111,9 @@ public class ScheduleService(
 			}
 
 			var schedule = await _context.Classrooms
+				.Include(c => c.Schedules)
+				.ThenInclude(s => s.ExamSlots)
+				.ThenInclude(s => s.Participants)
 				.SelectMany(c => c.Schedules)
 				.FirstOrDefaultAsync(s => s.Id == swapRequest.ScheduleId, ct);
 			if (schedule is null)
@@ -117,13 +121,15 @@ public class ScheduleService(
 				return false;
 			}
 
-			// TODO implement swapping
-
-			throw new NotImplementedException();
+			return schedule.TrySwapStudents(requestingStudent, requestedStudent);
 		}
 		finally
 		{
-			await DeleteSwapRequestAsync(swapRequestId, ct);
+			try
+			{
+				await DeleteSwapRequestAsync(swapRequestId, ct);
+			}
+			catch { }
 			await _context.SaveChangesAsync(ct);
 		}
 	}

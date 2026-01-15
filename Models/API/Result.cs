@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Models.API;
@@ -14,24 +13,32 @@ public record Result<T> : IActionResult
 	public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
 
 	public Result(HttpStatusCode statusCode) => StatusCode = statusCode;
-	public Result(T? data) => Data = data;
-	public Result(T? data, HttpStatusCode errorCode = HttpStatusCode.BadRequest, HttpStatusCode successCode = HttpStatusCode.OK, Func<T?, bool>? isSuccess = null)
-	{
-		isSuccess ??= (d) => d is null;
-		Data = data;
-		StatusCode = isSuccess(data) ? successCode : errorCode;
-	}
-	public Result(T? data, IEnumerable<object>? errors, HttpStatusCode statusCode)
+	public Result(T? data, HttpStatusCode statusCode = HttpStatusCode.OK)
 	{
 		Data = data;
-		Errors = errors;
 		StatusCode = statusCode;
 	}
-	public Result(object error, HttpStatusCode errorCode = HttpStatusCode.BadRequest) : this([ error ], errorCode) { }
-	public Result(IEnumerable<object> errors, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+	public Result(T? data, HttpStatusCode errorCode, Func<T?, bool>? isSuccess)
+	{
+		isSuccess ??= (data) => data is not null;
+		Data = data;
+		if (!isSuccess(data))
+		{
+			StatusCode = errorCode;
+		}
+	}
+	public Result(T? data, HttpStatusCode errorCode, bool isSuccess)
+	{
+		Data = data;
+		if (!isSuccess)
+		{
+			StatusCode = errorCode;
+		}
+	}
+	public Result(HttpStatusCode errorCode, params object[ ] errors)
 	{
 		Errors = errors;
-		StatusCode = statusCode;
+		StatusCode = errorCode;
 	}
 
 	public async Task ExecuteResultAsync(ActionContext context)

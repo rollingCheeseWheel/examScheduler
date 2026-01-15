@@ -49,7 +49,7 @@ public class AuthService(
 			.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (school is null)
 		{
-			return new("Unknown School ID", HttpStatusCode.BadRequest);
+			return new(HttpStatusCode.BadRequest, "Unknown School ID");
 		}
 
 		// create the registerClient and fetch the userprofile
@@ -57,7 +57,7 @@ public class AuthService(
 		var userProfile = await registerClient.GetUserProfileAsync(ct);
 		if (userProfile is null)
 		{
-			return new("Could not fetch user profile", HttpStatusCode.InternalServerError);
+			return new(HttpStatusCode.InternalServerError, "Could not fetch user profile");
 		}
 
 		var existingUser = await _userManager.Users
@@ -90,7 +90,7 @@ public class AuthService(
 		}
 		else
 		{
-			_logger.LogWarning("Unsuccessfully logged user in: {Reason}", response.Errors.ToJson());
+			_logger.LogWarning("Login unsuccessful: {Reason}", response.Errors.ToJson());
 			await transcation.RollbackAsync(ct);
 		}
 		return response;
@@ -104,9 +104,12 @@ public class AuthService(
 		if (user is null) { return new(HttpStatusCode.NotFound); }
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokens = await _jwtProvider.RefreshTokenPairAsync(claims, refreshToken, user, ct);
-		if (tokens is null) { return new(HttpStatusCode.Unauthorized); }
 		ConfigureCookies(ref httpContext, tokens);
-		return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes), HttpStatusCode.Unauthorized);
+		return new(
+			DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes),
+			HttpStatusCode.Unauthorized, 
+			tokens is not null
+		);
 	}
 
 	private async Task<Result<UserProfile>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
@@ -116,20 +119,24 @@ public class AuthService(
 		if (tokens is null)
 		{
 			_logger.LogInformation("Failed to generate tokens for user {Username}", user.Name);
-			return new(HttpStatusCode.Unauthorized);
 		}
 		else
 		{
 			_logger.LogInformation("Successfully generated tokens for user {Username}", user.Name);
 			ConfigureCookies(ref httpContext, tokens);
-			return new(user.ToDTO());
 		}
+		return new(user.ToDTO(), HttpStatusCode.Unauthorized, tokens is not null);
 	}
 
-	private void ConfigureCookies(ref HttpContext httpContext, TokenResponse tokens)
+	private void ConfigureCookies(ref HttpContext httpContext, TokenResponse? tokens)
 	{
 		httpContext.Response.Cookies.Delete(IAuthService.AccessTokenCookieName);
 		httpContext.Response.Cookies.Delete(IAuthService.RefreshTokenCookieName);
+
+		if (tokens is null)
+		{
+			return;
+		}
 
 		httpContext.Response.Cookies.Append(IAuthService.AccessTokenCookieName, tokens.AccessToken, new()
 		{
@@ -209,14 +216,14 @@ public class AuthService(
 		if (!userCreateResult.Succeeded)
 		{
 			_logger.LogWarning("could not create user: {Reason}", userCreateResult.Errors.ToJson());
-			return new(userCreateResult.Errors, HttpStatusCode.InternalServerError);
+			return new(HttpStatusCode.InternalServerError, userCreateResult.Errors);
 		}
 
 		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
 		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
 		if (!roleAddedResult.Succeeded)
 		{
-			return new(roleAddedResult.Errors, HttpStatusCode.InternalServerError);
+			return new(HttpStatusCode.InternalServerError, roleAddedResult.Errors);
 		}
 
 		return await LoginAsync(registerClient, userProfile, httpContext, ct);
@@ -242,7 +249,7 @@ public class AuthService(
 		if (!userCreateResult.Succeeded)
 		{
 			_logger.LogWarning("Unable to create user: {Reason}", userCreateResult.Errors.ToJson());
-			return new(userCreateResult.Errors, HttpStatusCode.InternalServerError);
+			return new(HttpStatusCode.InternalServerError, userCreateResult.Errors);
 		}
 
 		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
@@ -250,7 +257,7 @@ public class AuthService(
 		if (!roleAddedResult.Succeeded)
 		{
 			_logger.LogWarning("Unable to assign roles to user: {Reason}", roleAddedResult.Errors.ToJson());
-			return new(roleAddedResult.Errors, HttpStatusCode.InternalServerError);
+			return new(HttpStatusCode.InternalServerError, roleAddedResult.Errors);
 		}
 
 		// BUG, this might not get updated later on

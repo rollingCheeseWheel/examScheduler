@@ -32,6 +32,27 @@ public class Schedule : IComparable<Schedule>
 	[Required]
 	public ICollection<AuditLog> AuditLogs { get; private set; } = [ ];
 
+	public bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)
+	{
+		var firstStudentExamSlot = ExamSlots.FirstOrDefault(s => !s.IsLocked && s.Participants.Contains(firstStudent));
+		var secondStudentExamSlot = ExamSlots.FirstOrDefault(s => !s.IsLocked && s.Participants.Contains(secondStudent));
+		if (firstStudentExamSlot is null || 
+			secondStudentExamSlot is null || 
+			firstStudentExamSlot.Id == secondStudentExamSlot.Id
+		)
+		{
+			return false;
+		}
+
+		if (!firstStudentExamSlot.TrySwapStudents(firstStudent, secondStudent) ||
+			!secondStudentExamSlot.TrySwapStudents(secondStudent, firstStudent)
+		)
+		{
+			return false;
+		}
+		return true;
+	}
+
 	public static bool operator ==(Schedule? a, Schedule? b)
 	{
 		if (ReferenceEquals(a, b)) return true;
@@ -86,6 +107,23 @@ public class ExamSlot : IComparable<ExamSlot>
 			AutoLockIn.TimeBeforeExamination => DateTimeOffset.UtcNow >= ( Date - Schedule.LockInOffset ),
 			_ => true,
 		};
+	}
+
+	internal bool TrySwapStudents(StudentProfile replaced, StudentProfile replacement)
+	{
+		if (IsLocked)
+		{
+			return false;
+		}
+
+		if (!Participants.Contains(replaced))
+		{
+			return false;
+		}
+
+		Participants.Remove(replaced);
+		Participants.Add(replacement);
+		return true;
 	}
 
 	public static bool operator ==(ExamSlot? a, ExamSlot? b)
