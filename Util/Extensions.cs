@@ -106,7 +106,13 @@ public static class Extensions
 		return value.TryValidate(out var _);
 	}
 
-	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
+	public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
+		where T : IComparable<T>
+		=> first.ValueEquals(second, x => x);
+
+	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) 
+		where TKey : IComparable<TKey> 
+		=> first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 
 	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
 	{

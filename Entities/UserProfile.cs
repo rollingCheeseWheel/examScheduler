@@ -5,7 +5,9 @@ using Util;
 
 namespace Entities;
 
-public class UserProfile : IdentityUser<Guid>, IComparable<UserProfile>
+public class UserProfile 
+	: IdentityUser<Guid>, 
+	IComparable<UserProfile>, IEquatable<UserProfile> // would be EntityBase<UserProfile>
 {
 	[Required]
 	public required School School { get; init; }
@@ -34,14 +36,7 @@ public class UserProfile : IdentityUser<Guid>, IComparable<UserProfile>
 	}
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
+	public bool Equals(UserProfile? other) => this == other;
 	public override int GetHashCode() => HashCode.Combine(School, UserName);
-	public int CompareTo(UserProfile? other)
-	{
-		if (other is null) { return 1; }
-		var res = FirstName.CompareTo(other.FirstName);
-		if (res != 0) { return res; }
-		res = LastName.CompareTo(other.LastName);
-		if (res != 0) { return res; }
-		return School.CompareTo(other.School);
-	}
+	public int CompareTo(UserProfile? other) => Name.CompareTo(other?.Name);
 }

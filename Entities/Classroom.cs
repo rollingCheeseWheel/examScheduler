@@ -2,10 +2,8 @@
 
 namespace Entities;
 
-public class Classroom() : IComparable<Classroom>
+public class Classroom() : EntityBase<Classroom>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required string Name { get; init; }
 	[Required]
@@ -26,15 +24,9 @@ public class Classroom() : IComparable<Classroom>
 	[Required]
 	public ICollection<Schedule> Schedules { get; set; } = [ ];
 
-	public static bool operator ==(Classroom? a, Classroom? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Name == b.Name
-			&& a.School == b.School;
-	}
-	public static bool operator !=(Classroom? a, Classroom? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Classroom other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Name, School);
-	public int CompareTo(Classroom? other) => Name.CompareTo(other?.Name);
+	public override bool EqualsCore(Classroom b) =>
+		Name == b.Name &&
+		SchoolId == b.SchoolId;
+	public override int GetHashCode() => HashCode.Combine(Name, SchoolId);
+	public override int CompareTo(Classroom? b) => Name.CompareTo(b?.Name);
 }

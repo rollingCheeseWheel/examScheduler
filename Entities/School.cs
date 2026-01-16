@@ -1,11 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities;
-public class School : IComparable<School>
+public class School : EntityBase<School>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public required string Name { get; init; }
 	[Required]
@@ -19,28 +16,13 @@ public class School : IComparable<School>
 	[Required]
 	public required bool IsEnabled { get; init; }
 
-	public static bool operator ==(School? a, School? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Name == b.Name
-			&& a.RegisterUri == b.RegisterUri
-			&& a.SchoolId == b.SchoolId
-			&& a.ClientId == b.ClientId
-			&& a.Secret == b.Secret
-			&& a.IsEnabled == b.IsEnabled;
-	}
-	public static bool operator !=(School? a, School? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is School other && this == other;
+	public override bool EqualsCore(School b) =>
+		Name == b.Name &&
+		RegisterUri == b.RegisterUri &&
+		SchoolId == b.SchoolId &&
+		ClientId == b.ClientId &&
+		Secret == b.Secret &&
+		IsEnabled == b.IsEnabled;
 	public override int GetHashCode() => HashCode.Combine(Name, RegisterUri, SchoolId, ClientId, Secret, IsEnabled);
-
-	public int CompareTo(School? other)
-	{
-		if (other is null) { return 1; }
-		var res = Name.CompareTo(other.Name);
-		if (res != 0) { return res; }
-		res = RegisterUri.AbsoluteUri.CompareTo(other.RegisterUri.AbsoluteUri);
-		if (res != 0) { return res; }
-		return Id.CompareTo(other.Id);
-	}
+	public override int CompareTo(School? b) => Name.CompareTo(b?.Name);
 }

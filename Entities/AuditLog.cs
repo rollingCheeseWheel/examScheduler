@@ -3,10 +3,8 @@ using Util;
 
 namespace Entities;
 
-public class AuditLog : IComparable<AuditLog>, IEquatable<AuditLog>
+public class AuditLog : EntityBase<AuditLog>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]
@@ -18,20 +16,15 @@ public class AuditLog : IComparable<AuditLog>, IEquatable<AuditLog>
 	public required string Action { get; init; }
 	public string? Description { get; init; }
 
-	public static bool operator ==(AuditLog? a, AuditLog? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Timestamp == b.Timestamp
-			&& a.Actor == b.Actor
-			&& a.Action == b.Action
-			&& a.ActorType == b.ActorType
-			&& a.ActorName == b.ActorName
-			&& a.Description == b.Description;
-	}
-	public static bool operator !=(AuditLog? a, AuditLog? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is AuditLog other && Equals(other);
-	public bool Equals(AuditLog? other) => this == other;
-	public override int GetHashCode() => HashCode.Combine(Timestamp, Actor, Action, Description);
-	public int CompareTo(AuditLog? other) => Id.CompareTo(other?.Id);
+
+	public override bool EqualsCore(AuditLog b) =>
+		Id == b.Id &&
+		Timestamp == b.Timestamp &&
+		Actor == b.Actor &&
+		ActorType == b.ActorType &&
+		ActorName == b.ActorName &&
+		Action == b.Action &&
+		Description == b.Description;
+    public override int GetHashCode() => HashCode.Combine(Id, Timestamp, Actor, ActorType, ActorName, Action, Description);
+	public override int CompareTo(AuditLog? b) => Timestamp.CompareTo(b?.Timestamp ?? DateTimeOffset.MinValue);
 }

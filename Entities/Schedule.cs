@@ -4,11 +4,8 @@ using Util;
 
 namespace Entities;
 
-public class Schedule : IComparable<Schedule>
+public class Schedule : EntityBase<Schedule>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
-
 	[Required]
 	public required DateTimeOffset FirstExamination { get; init; }
 	[Required]
@@ -53,30 +50,16 @@ public class Schedule : IComparable<Schedule>
 		return true;
 	}
 
-	public static bool operator ==(Schedule? a, Schedule? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.FirstExamination == b.FirstExamination
-			&& a.Subject == b.Subject
-			&& a.Classroom == b.Classroom;
-	}
-	public static bool operator !=(Schedule? a, Schedule? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Schedule other && this == other;
+	public override bool EqualsCore(Schedule b) =>
+		FirstExamination == b.FirstExamination &&
+		Subject == b.Subject &&
+		Classroom == b.Classroom;
 	public override int GetHashCode() => HashCode.Combine(FirstExamination, Subject, Classroom);
-	public int CompareTo(Schedule? other)
-	{
-		if (other is null) { return 1; }
-		var res = FirstExamination.CompareTo(other.FirstExamination);
-		if (res != 0) { return res; }
-		return Id.CompareTo(other.Id);
-	}
+	public override int CompareTo(Schedule? other) => FirstExamination.CompareTo(other?.FirstExamination ?? DateTimeOffset.MinValue);
 }
 
-public class ExamSlot : IComparable<ExamSlot>
+public class ExamSlot : EntityBase<ExamSlot>
 {
-	[Key]
-	public Guid Id { get; set; }
 	[Required]
 	public required ScheduleGeneratorSlot GeneratorSlot { get; init; }
 	/*[Required]
@@ -126,31 +109,16 @@ public class ExamSlot : IComparable<ExamSlot>
 		return true;
 	}
 
-	public static bool operator ==(ExamSlot? a, ExamSlot? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Schedule == b.Schedule
-			&& a.Date == b.Date
-			&& a.GeneratorSlot == b.GeneratorSlot;
-	}
-	public static bool operator !=(ExamSlot? a, ExamSlot? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is ExamSlot other && this == other;
-	public override int GetHashCode() => HashCode.Combine(Schedule);
-	public int CompareTo(ExamSlot? other)
-	{
-		if (other is null) { return 1; }
-		var res = Date.CompareTo(other.Date);
-		if (res != 0) { return res; }
-		return Id.CompareTo(other.Id);
-	}
+    public override bool EqualsCore(ExamSlot b) =>
+		Schedule == b.Schedule &&
+		Date == b.Date &&
+		GeneratorSlot == b.GeneratorSlot;
+	public override int GetHashCode() => HashCode.Combine(Schedule, Date, GeneratorSlot);
+	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
 }
 
-public class ScheduleGeneratorSlot : IComparable<ScheduleGeneratorSlot>
+public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 {
-	[Key]
-	public Guid Id { get; set; }
-
 	[Required, Range(0, int.MaxValue)]
 	public required int Offset { get; set; }
 	[Required, Range(0, int.MaxValue)]
@@ -158,18 +126,12 @@ public class ScheduleGeneratorSlot : IComparable<ScheduleGeneratorSlot>
 	[Required, Range(0, int.MaxValue)]
 	public required int MinParticipants { get; set; }
 
-	public static bool operator ==(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Offset == b.Offset
-			&& a.MaxParticipants == b.MaxParticipants
-			&& a.MinParticipants == b.MinParticipants;
-	}
-	public static bool operator !=(ScheduleGeneratorSlot? a, ScheduleGeneratorSlot? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is ScheduleGeneratorSlot other && this == other;
+    public override bool EqualsCore(ScheduleGeneratorSlot b) =>
+		Offset == b.Offset &&
+		MaxParticipants == b.MaxParticipants &&
+		MinParticipants == b.MinParticipants;
 	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, MinParticipants);
-	public int CompareTo(ScheduleGeneratorSlot? other)
+	public override int CompareTo(ScheduleGeneratorSlot? other)
 	{
 		if (other is null) { return 1; }
 		var res = Offset.CompareTo(other.Offset);

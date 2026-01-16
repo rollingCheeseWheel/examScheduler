@@ -4,10 +4,8 @@ using Util;
 
 namespace Entities;
 
-public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
+public class Calendar : EntityBase<Calendar>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
 
 	[Required]
 	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.UtcNow;
@@ -178,65 +176,40 @@ public class Calendar : IComparable<Calendar>, IEquatable<Calendar>
 		return result;
 	}
 
-	public static bool operator ==(Calendar? a, Calendar? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.Classroom == b.Classroom
-			&& a.Lessons.ValueEquals(b.Lessons, x => x.FirstOccurance);
-	}
-	public static bool operator !=(Calendar? a, Calendar? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Calendar other && Equals(other);
-	public bool Equals(Calendar? other) => this == other;
-	public override int GetHashCode() => HashCode.Combine(Classroom, Lessons.OrderBy(b => b.FirstOccurance));
-	public int CompareTo(Calendar? other) => Id.CompareTo(other?.Id);
+	public override bool EqualsCore(Calendar other) =>
+		Classroom == other.Classroom &&
+		Lessons.ValueEquals(other.Lessons);
+	public override int GetHashCode() => HashCode.Combine(Classroom, Lessons.Order());
+    public override int CompareTo(Calendar? b) => Classroom.CompareTo(b?.Classroom);
 }
 
-public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
+public class Lesson : EntityBase<Lesson>
 {
-	[Key]
-	public Guid Id { get; private set; } = Guid.NewGuid();
-
-	[NotMapped]
-	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;
-
-	[NotMapped]
-	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
-	[Required]
-	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	/// <summary>
 	/// Zero-Indexed
 	/// </summary>
 	[Required, Range(0, 23)]
 	public required int FromHour { get; set; }
+	/// <inheritdoc path="Lesson.FromHour"/>
 	[Required, Range(0, 23)]
 	public required int ToHour { get; set; }
 	[NotMapped, Range(1, 24)]
 	public int Duration => Math.Clamp(ToHour - FromHour + 1, 1, 24);
+	[NotMapped]
+	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;
+	[NotMapped]
+	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
+	[Required]
+	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
 	public required int LessonId { get; set; }
 	[Required]
 	public required string LessonName { get; set; }
 
-	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 	[Required]
 	public required Subject Subject { get; set; }
+	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 
-	public static bool operator ==(Lesson? a, Lesson? b)
-	{
-		if (ReferenceEquals(a, b)) return true;
-		if (a is null || b is null) return false;
-		return a.FirstOccurance == b.FirstOccurance
-			&& a.Occurances.ValueEquals(b.Occurances, x => x)
-			&& a.FromHour == b.FromHour
-			&& a.Duration == b.Duration
-			&& a.LessonId == b.LessonId
-			&& a.Subject == b.Subject
-			&& a.Teachers.ValueEquals(b.Teachers, x => x.RegisterID);
-	}
-	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
-	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
-	public bool Equals(Lesson? other) => this == other;
 	public bool EqualsModel(Models.DigitalesRegister.Lesson? other)
 	{
 		if (other is null) { return false; }
@@ -245,18 +218,6 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 			&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
 			&& LessonId == other.LessonId
 			&& Subject.EqualsModel(other.Subject);
-	}
-	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, LessonId, Subject, Teachers.OrderBy(t => t.RegisterID));
-	public int CompareTo(Lesson? other)
-	{
-		if (other is null) { return 1; }
-		var res = FirstOccurance.CompareTo(other.FirstOccurance);
-		if (res != 0) { return res; }
-		res = FromHour.CompareTo(other.FromHour);
-		if (res != 0) { return res; }
-		res = Duration.CompareTo(other.Duration);
-		if (res != 0) { return res; }
-		return Id.CompareTo(other.Id);
 	}
 
 	public bool ShallowEqual(Lesson? other)
@@ -268,4 +229,13 @@ public class Lesson : IComparable<Lesson>, IEquatable<Lesson>
 			&& Teachers.ValueEquals(other.Teachers, x => x.RegisterID)
 			&& Occurances.ValueEquals(other.Occurances, x => x);
 	}
+
+	public override bool EqualsCore(Lesson b) =>
+		FirstOccurance == b.FirstOccurance &&
+		Occurances.ValueEquals(b.Occurances) &&
+		FromHour == b.FromHour &&
+		Duration == b.Duration &&
+		Subject == b.Subject;
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, Subject);
+	public override int CompareTo(Lesson? b) => FirstOccurance.CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
 }
