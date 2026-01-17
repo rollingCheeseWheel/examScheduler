@@ -7,11 +7,11 @@ namespace examScheduler.Controllers;
 [ApiController]
 public class SchoolsController(ISchoolsService schoolService) : ControllerBase
 {
-	private readonly ISchoolsService _schoolService = schoolService;
+    private readonly ISchoolsService _schoolService = schoolService;
 
-	[HttpGet]
-	public async Task<IActionResult> Get(CancellationToken ct)
-	{
-		return Ok(await _schoolService.GetSchoolsAsync(ct));
-	}
+    [HttpGet]
+    public async Task<IActionResult> Get(CancellationToken ct)
+    {
+        return Ok(await _schoolService.GetSchoolsAsync(ct));
+    }
 }

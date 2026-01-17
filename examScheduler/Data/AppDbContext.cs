@@ -7,182 +7,182 @@ using System.ComponentModel.DataAnnotations;
 namespace examScheduler.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
-	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
-	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
-	public DbSet<StudentProfile> StudentProfiles { get; set; }
-	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
-	public DbSet<School> Schools { get; set; }
-	public DbSet<Classroom> Classrooms { get; set; }
-	public DbSet<Teacher> Teachers { get; set; }
-	public DbSet<Subject> Subjects { get; set; }
-	public DbSet<SwapRequest> SwapRequests { get; set; }
+    public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
+    public DbSet<StudentProfile> StudentProfiles { get; set; }
+    public DbSet<TeacherProfile> TeacherProfiles { get; set; }
+    public DbSet<School> Schools { get; set; }
+    public DbSet<Classroom> Classrooms { get; set; }
+    public DbSet<Teacher> Teachers { get; set; }
+    public DbSet<Subject> Subjects { get; set; }
+    public DbSet<SwapRequest> SwapRequests { get; set; }
 
-	protected override void OnModelCreating(ModelBuilder modelBuilder)
-	{
-		base.OnModelCreating(modelBuilder);
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
 
-		modelBuilder.Entity<School>()
-			.HasIndex(s => s.RegisterUri)
-			.IsUnique();
+        modelBuilder.Entity<School>()
+            .HasIndex(s => s.RegisterUri)
+            .IsUnique();
 
-		modelBuilder.Entity<RefreshTokenSession>()
-			.HasIndex(s => s.TokenValue)
-			.IsUnique();
+        modelBuilder.Entity<RefreshTokenSession>()
+            .HasIndex(s => s.TokenValue)
+            .IsUnique();
 
-		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
-			.IsUnique();
+        modelBuilder.Entity<SwapRequest>()
+            .HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
+            .IsUnique();
 
-		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
-			.IsUnique();
+        modelBuilder.Entity<SwapRequest>()
+            .HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
+            .IsUnique();
 
-		// UserProfile
-		modelBuilder.Entity<UserProfile>()
-			.HasIndex(u => new
-			{
-				u.UserName,
-				u.SchoolId,
-			})
-			.IsUnique();
+        // UserProfile
+        modelBuilder.Entity<UserProfile>()
+            .HasIndex(u => new
+            {
+                u.UserName,
+                u.SchoolId,
+            })
+            .IsUnique();
 
-		modelBuilder.Entity<UserProfile>()
-			.HasOne(up => up.StudentProfile)
-			.WithOne(sp => sp.UserProfile)
-			.HasForeignKey<StudentProfile>(sp => sp.Id);
+        modelBuilder.Entity<UserProfile>()
+            .HasOne(up => up.StudentProfile)
+            .WithOne(sp => sp.UserProfile)
+            .HasForeignKey<StudentProfile>(sp => sp.Id);
 
-		modelBuilder.Entity<UserProfile>()
-			.HasOne(up => up.TeacherProfile)
-			.WithOne(tp => tp.UserProfile)
-			.HasForeignKey<TeacherProfile>(tp => tp.Id);
+        modelBuilder.Entity<UserProfile>()
+            .HasOne(up => up.TeacherProfile)
+            .WithOne(tp => tp.UserProfile)
+            .HasForeignKey<TeacherProfile>(tp => tp.Id);
 
-		modelBuilder.Entity<UserProfile>()
-			.HasOne(u => u.School)
-			.WithMany()
-			.HasForeignKey(u => u.SchoolId)
-			.OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<UserProfile>()
+            .HasOne(u => u.School)
+            .WithMany()
+            .HasForeignKey(u => u.SchoolId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-		// TeacherProfile
-		modelBuilder.Entity<TeacherProfile>()
-			.HasOne(tp => tp.Teacher)
-			.WithOne(t => t.TeacherProfile)
-			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+        // TeacherProfile
+        modelBuilder.Entity<TeacherProfile>()
+            .HasOne(tp => tp.Teacher)
+            .WithOne(t => t.TeacherProfile)
+            .HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
 
-		// Teacher-Subjects many-to-many
-		modelBuilder.Entity<Teacher>()
-			.HasMany(t => t.Subjects)
-			.WithMany();
+        // Teacher-Subjects many-to-many
+        modelBuilder.Entity<Teacher>()
+            .HasMany(t => t.Subjects)
+            .WithMany();
 
-		modelBuilder.Entity<Teacher>()
-			.HasMany(t => t.Classrooms)
-			.WithMany(c => c.Teachers);
+        modelBuilder.Entity<Teacher>()
+            .HasMany(t => t.Classrooms)
+            .WithMany(c => c.Teachers);
 
-		// Lesson-Teacher many-to-many
-		modelBuilder.Entity<Lesson>()
-			.HasMany(l => l.Teachers)
-			.WithMany(t => t.Lessons);
+        // Lesson-Teacher many-to-many
+        modelBuilder.Entity<Lesson>()
+            .HasMany(l => l.Teachers)
+            .WithMany(t => t.Lessons);
 
-		// Lesson-Subjects: many-to-one
-		modelBuilder.Entity<Lesson>()
-			.HasOne(l => l.Subject)
-			.WithMany();
+        // Lesson-Subjects: many-to-one
+        modelBuilder.Entity<Lesson>()
+            .HasOne(l => l.Subject)
+            .WithMany();
 
-		modelBuilder.Entity<Teacher>()
-			.HasOne(t => t.School)
-			.WithMany()
-			.HasForeignKey(t => t.SchoolId);
+        modelBuilder.Entity<Teacher>()
+            .HasOne(t => t.School)
+            .WithMany()
+            .HasForeignKey(t => t.SchoolId);
 
-		modelBuilder.Entity<Calendar>()
-			.HasOne(c => c.Classroom)
-			.WithOne(c => c.Calendar)
-			.HasForeignKey<Calendar>(c => c.ClassroomId);
+        modelBuilder.Entity<Calendar>()
+            .HasOne(c => c.Classroom)
+            .WithOne(c => c.Calendar)
+            .HasForeignKey<Calendar>(c => c.ClassroomId);
 
-		// classroom
-		modelBuilder.Entity<Classroom>()
-			.HasIndex(c => new
-			{
-				c.RegisterId,
-				c.SchoolId,
-			})
-			.IsUnique();
+        // classroom
+        modelBuilder.Entity<Classroom>()
+            .HasIndex(c => new
+            {
+                c.RegisterId,
+                c.SchoolId,
+            })
+            .IsUnique();
 
-		modelBuilder.Entity<Classroom>()
-			.HasOne(c => c.School)
-			.WithMany()
-			.HasForeignKey(c => c.SchoolId)
-			.OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Classroom>()
+            .HasOne(c => c.School)
+            .WithMany()
+            .HasForeignKey(c => c.SchoolId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<Classroom>()
-			.HasMany(c => c.Schedules)
-			.WithOne(s => s.Classroom)
-			.OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Classroom>()
+            .HasMany(c => c.Schedules)
+            .WithOne(s => s.Classroom)
+            .OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<Classroom>()
-			.HasMany(c => c.Students)
-			.WithOne(s => s.Classroom)
-			.OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Classroom>()
+            .HasMany(c => c.Students)
+            .WithOne(s => s.Classroom)
+            .OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<Calendar>()
-			.HasMany(c => c.Lessons)
-			.WithOne()
-			.OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Calendar>()
+            .HasMany(c => c.Lessons)
+            .WithOne()
+            .OnDelete(DeleteBehavior.Cascade);
 
 
-		// schedule
-		modelBuilder.Entity<Schedule>()
-			.HasMany(s => s.ExamSlots)
-			.WithOne(e => e.Schedule)
-			.OnDelete(DeleteBehavior.Cascade);
+        // schedule
+        modelBuilder.Entity<Schedule>()
+            .HasMany(s => s.ExamSlots)
+            .WithOne(e => e.Schedule)
+            .OnDelete(DeleteBehavior.Cascade);
 
-		modelBuilder.Entity<ExamSlot>()
-			.HasMany(e => e.Participants)
-			.WithMany(s => s.ParticipatingExamSlots);
-		modelBuilder.Entity<ExamSlot>()
-			.HasMany(e => e.ActuallyParticipated)
-			.WithMany(s => s.ActuallyParticipatedExamSlots);
-	}
+        modelBuilder.Entity<ExamSlot>()
+            .HasMany(e => e.Participants)
+            .WithMany(s => s.ParticipatingExamSlots);
+        modelBuilder.Entity<ExamSlot>()
+            .HasMany(e => e.ActuallyParticipated)
+            .WithMany(s => s.ActuallyParticipatedExamSlots);
+    }
 
-	public override int SaveChanges()
-	{
-		ValidateEntities();
-		return base.SaveChanges();
-	}
+    public override int SaveChanges()
+    {
+        ValidateEntities();
+        return base.SaveChanges();
+    }
 
-	public override int SaveChanges(bool acceptAllChangesOnSuccess)
-	{
-		ValidateEntities();
-		return base.SaveChanges(acceptAllChangesOnSuccess);
-	}
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ValidateEntities();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
 
-	public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-	{
-		ValidateEntities();
-		return base.SaveChangesAsync(cancellationToken);
-	}
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ValidateEntities();
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
-	public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
-	{
-		ValidateEntities();
-		return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-	}
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        ValidateEntities();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
 
-	private void ValidateEntities()
-	{
-		var entires = ChangeTracker.Entries()
-			.Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+    private void ValidateEntities()
+    {
+        var entires = ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
-		foreach (var entry in entires)
-		{
-			var entity = entry.Entity;
-			var validationContext = new ValidationContext(entity);
-			var validationResults = new List<ValidationResult>();
+        foreach (var entry in entires)
+        {
+            var entity = entry.Entity;
+            var validationContext = new ValidationContext(entity);
+            var validationResults = new List<ValidationResult>();
 
-			if (!Validator.TryValidateObject(entity, validationContext, validationResults, true))
-			{
-				var errorMessages = string.Join("; ", validationResults.Select(r => r.ErrorMessage));
-				throw new ValidationException($"Validation failed for {entity.GetType().Name}: {errorMessages}");
-			}
-		}
-	}
+            if (!Validator.TryValidateObject(entity, validationContext, validationResults, true))
+            {
+                var errorMessages = string.Join("; ", validationResults.Select(r => r.ErrorMessage));
+                throw new ValidationException($"Validation failed for {entity.GetType().Name}: {errorMessages}");
+            }
+        }
+    }
 }

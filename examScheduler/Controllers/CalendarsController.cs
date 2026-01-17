@@ -7,9 +7,9 @@ namespace examScheduler.Controllers;
 [ApiController]
 public class CalendarsController
 {
-	[HttpGet]
-	public async Task<Result<Dictionary<Guid, Calendar>>> GetCalendarsAsync(CancellationToken ct)
-	{
-		throw new NotImplementedException();
-	}
+    [HttpGet]
+    public async Task<Result<Dictionary<Guid, Calendar>>> GetCalendarsAsync(CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
 }

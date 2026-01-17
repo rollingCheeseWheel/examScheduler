@@ -7,17 +7,17 @@ namespace examScheduler.Services;
 
 public interface ISchoolsService
 {
-	Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct);
+    Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct);
 }
 
 public class SchoolsService(AppDbContext context) : ISchoolsService
 {
-	private readonly AppDbContext _context = context;
+    private readonly AppDbContext _context = context;
 
-	public async Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct = default)
-	{
-		return ( await _context.Schools
-			.ToListAsync(ct) )
-			.Select(SchoolMappings.ToDTO);
-	}
+    public async Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct = default)
+    {
+        return ( await _context.Schools
+            .ToListAsync(ct) )
+            .Select(SchoolMappings.ToDTO);
+    }
 }

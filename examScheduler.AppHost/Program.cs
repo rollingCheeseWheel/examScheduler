@@ -4,14 +4,14 @@ var builder = DistributedApplication.CreateBuilder(new DistributedApplicationOpt
 
 //Local
 var postgres = builder.AddPostgres(ResourceNames.DBResourceName) // container name
-	.WithLifetime(ContainerLifetime.Persistent)
-	.WithDataVolume()
-	.WithHostPort(5432)
-	.AddDatabase(ResourceNames.DBName);
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithDataVolume()
+    .WithHostPort(5432)
+    .AddDatabase(ResourceNames.DBName);
 
 builder.AddProject<Projects.examScheduler>(ResourceNames.ExamSchedulerName)
-	.WithReference(postgres)
-	.WaitFor(postgres);
+    .WithReference(postgres)
+    .WaitFor(postgres);
 
 //Azure
 /*var postgres = builder.AddAzurePostgresFlexibleServer(ResourceNames.DBResourceName)

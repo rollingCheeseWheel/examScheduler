@@ -4,6 +4,8 @@ namespace Entities;
 
 public class Subject : EntityBase<Subject>
 {
+    [Key]
+    public override Guid Id { get; } = Guid.NewGuid();
     [Required]
     public required string Name { get; init; }
     [Required]
@@ -21,6 +23,6 @@ public class Subject : EntityBase<Subject>
     public override bool EqualsCore(Subject b) =>
         Name == b.Name &&
         RegisterId == b.RegisterId;
-	public override int GetHashCode() => HashCode.Combine(Name);
+    public override int GetHashCode() => HashCode.Combine(Name);
     public override int CompareTo(Subject? other) => Name.CompareTo(other?.Name);
 }

@@ -1,149 +1,150 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Net.Http.Headers;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Util;
 
 public static class Extensions
 {
-	public const string RegisterDateTimeFormat = "yyyy-MM-dd";
+    public const string RegisterDateTimeFormat = "yyyy-MM-dd";
 
-	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(RegisterDateTimeFormat);
+    public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(RegisterDateTimeFormat);
 
-	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
+    public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
 
-	public static bool RegisterTryParse(this string dateTime, out DateTimeOffset result)
-	{
-		if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
-		{
-			result = temp;
-			return true;
-		}
-		result = default;
-		return false;
-	}
+    public static bool RegisterTryParse(this string dateTime, out DateTimeOffset result)
+    {
+        if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
+        {
+            result = temp;
+            return true;
+        }
+        result = default;
+        return false;
+    }
 
-	public static DateTimeOffset RoundDownToMonday(this DateTimeOffset date)
-	{
-		int diff = ( 7 + ( date.DayOfWeek - DayOfWeek.Monday ) ) % 7;
-		return date.AddDays(-diff).Date;
-	}
+    public static DateTimeOffset RoundDownToMonday(this DateTimeOffset date)
+    {
+        int diff = ( 7 + ( date.DayOfWeek - DayOfWeek.Monday ) ) % 7;
+        return date.AddDays(-diff).Date;
+    }
 
-	public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
+    public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
 
-	public static Uri AppendRelativePath(this Uri uri, string relativePath)
-	{
-		var output = new Uri(uri.ToString() + ( relativePath.StartsWith('/') || uri.ToString().EndsWith('/') ? "" : "/" ) + relativePath);
-		return output;
-	}
+    public static Uri AppendRelativePath(this Uri uri, string relativePath)
+    {
+        var output = new Uri(uri.ToString() + ( relativePath.StartsWith('/') || uri.ToString().EndsWith('/') ? "" : "/" ) + relativePath);
+        return output;
+    }
 
-	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
+    public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 
-	public static byte[ ] GetBytes(this string str) => Encoding.UTF8.GetBytes(str);
+    public static byte[ ] GetBytes(this string str) => Encoding.UTF8.GetBytes(str);
 
-	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default)
-	{
-		return await message.Content.ReadAsStringAsync(ct);
-	}
+    public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default)
+    {
+        return await message.Content.ReadAsStringAsync(ct);
+    }
 
-	public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
+    public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
 
-	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
+    public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
+    public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
+    public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
 
-	public static T? Json<T>(this string str, JsonSerializerOptions options)
-	{
-		try
-		{
-			return JsonSerializer.Deserialize<T>(str, options);
-		}
-		catch
-		{
-			return default;
-		}
-	}
+    public static T? Json<T>(this string str, JsonSerializerOptions options)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(str, options);
+        }
+        catch
+        {
+            return default;
+        }
+    }
 
-	public static T? Json<T>(this string str) => str.Json<T>(Constants.SerializerOptions);
+    public static T? Json<T>(this string str) => str.Json<T>(Constants.SerializerOptions);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>(options);
+    public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>(options);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
+    public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
 
-	public static T JsonClone<T>(this T obj) => obj.ToJson().Json<T>()!;
+    public static T JsonClone<T>(this T obj) => obj.ToJson().Json<T>()!;
 
-	public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.ToJson(options).Json<T>(options)!;
+    public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.ToJson(options).Json<T>(options)!;
 
-	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
+    public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 
-	public static Stopwatch Print(this Stopwatch stopwatch)
-	{
-		Console.WriteLine($"Time elapsed: {stopwatch.ElapsedMilliseconds} ms");
-		return stopwatch;
-	}
+    public static Stopwatch Print(this Stopwatch stopwatch)
+    {
+        Console.WriteLine($"Time elapsed: {stopwatch.ElapsedMilliseconds} ms");
+        return stopwatch;
+    }
 
-	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * double.Ceiling(value / multiple) );
+    public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * double.Ceiling(value / multiple) );
 
-	public static bool TryValidate(this object value, [NotNullWhen(false)] out ICollection<ValidationResult>? results)
-	{
-		var validationResults = new List<ValidationResult>();
-		var isValid = Validator.TryValidateObject(value, new(value), validationResults, true);
-		results = validationResults;
-		return isValid;
-	}
+    public static bool TryValidate(this object value, [NotNullWhen(false)] out ICollection<ValidationResult>? results)
+    {
+        var validationResults = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(value, new(value), validationResults, true);
+        results = validationResults;
+        return isValid;
+    }
 
-	public static bool TryValidate(this object value)
-	{
-		return value.TryValidate(out var _);
-	}
+    public static bool TryValidate(this object value)
+    {
+        return value.TryValidate(out var _);
+    }
 
-	public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
-		where T : IComparable<T>
-		=> first.ValueEquals(second, x => x);
+    public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
+        where T : IComparable<T>
+        => ValueEquals(first, second, x => x);
 
-	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector) 
-		where TKey : IComparable<TKey> 
-		=> first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
+    public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector)
+        where TKey : IComparable<TKey>
+        => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 
-	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
-	{
-		var keysInTarget = new HashSet<TKey>(target.Select(selector));
-		foreach (var item in source)
-		{
-			if (!keysInTarget.Contains(selector(item)))
-			{
-				yield return item;
-			}
-		}
-	}
+    public static IEnumerable<T> Except<T>(this IEnumerable<T> source, IEnumerable<T> target)
+        where T : IEquatable<T>
+        => Except(source, target, x => x);
 
-	public static bool TrySet<T>(this T?[ , ] grid, int firstDimension, int secondDimension, T? element)
-	{
-		if (firstDimension >= 0 && firstDimension < grid.GetLength(0) &&
-			secondDimension >= 0 && secondDimension < grid.GetLength(1))
-		{
-			grid[ firstDimension, secondDimension ] = element;
-			return true;
-		}
-		return false;
-	}
+    public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
+    {
+        var keysInTarget = new HashSet<TKey>(target.Select(selector));
+        foreach (var item in source)
+        {
+            if (!keysInTarget.Contains(selector(item)))
+            {
+                yield return item;
+            }
+        }
+    }
 
-	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension)
-	{
-		if (firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
-			secondDimension >= 0 && secondDimension < grid.GetLength(1))
-		{
-			return grid[ firstDimsion, secondDimension ];
-		}
-		return default;
-	}
+    public static bool TrySet<T>(this T?[ , ] grid, int firstDimension, int secondDimension, T? element)
+    {
+        if (firstDimension >= 0 && firstDimension < grid.GetLength(0) &&
+            secondDimension >= 0 && secondDimension < grid.GetLength(1))
+        {
+            grid[ firstDimension, secondDimension ] = element;
+            return true;
+        }
+        return false;
+    }
+
+    public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension)
+    {
+        if (firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
+            secondDimension >= 0 && secondDimension < grid.GetLength(1))
+        {
+            return grid[ firstDimsion, secondDimension ];
+        }
+        return default;
+    }
 }

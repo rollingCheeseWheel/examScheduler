@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Util;
 
 var config = new ConfigurationBuilder()
-	.AddUserSecrets<Program>().Build();
+    .AddUserSecrets<Program>().Build();
 var sw = new Stopwatch();
 
 Console.WriteLine($"{config[ "API:schoolUrl" ]}v2/login/?client_id={config[ "API:clientId" ]}");
@@ -13,11 +13,11 @@ Console.Write("Authcode: ");
 var authCode = Console.ReadLine();
 
 using var client = new RegisterClient(
-	new(config[ "API:schoolUrl" ]!),
-	config[ "API:clientId" ]!,
-	config[ "API:secret" ]!,
-	authCode!,
-	400
+    new(config[ "API:schoolUrl" ]!),
+    config[ "API:clientId" ]!,
+    config[ "API:secret" ]!,
+    authCode!,
+    400
 );
 
 sw.Start();

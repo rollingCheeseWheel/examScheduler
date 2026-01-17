@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -133,7 +132,7 @@ namespace examScheduler.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RegisterId = table.Column<int[]>(type: "integer[]", nullable: false)
+                    RegisterId = table.Column<int[ ]>(type: "integer[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -335,7 +334,7 @@ namespace examScheduler.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Occurances = table.Column<DateTimeOffset[]>(type: "timestamp with time zone[]", nullable: false),
+                    Occurances = table.Column<DateTimeOffset[ ]>(type: "timestamp with time zone[]", nullable: false),
                     FromHour = table.Column<int>(type: "integer", nullable: false),
                     ToHour = table.Column<int>(type: "integer", nullable: false),
                     ClassId = table.Column<int>(type: "integer", nullable: false),
@@ -584,7 +583,7 @@ namespace examScheduler.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUsers_UserName_SchoolId",
                 table: "AspNetUsers",
-                columns: new[] { "UserName", "SchoolId" },
+                columns: new[ ] { "UserName", "SchoolId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -607,7 +606,7 @@ namespace examScheduler.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Classrooms_RegisterId_SchoolId",
                 table: "Classrooms",
-                columns: new[] { "RegisterId", "SchoolId" },
+                columns: new[ ] { "RegisterId", "SchoolId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
