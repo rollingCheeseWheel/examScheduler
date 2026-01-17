@@ -12,17 +12,19 @@ public interface IScheduleHub
 {
 	Task<Result<bool>> RegisterForSlot(Guid scheduleId, Guid slotId);
 
-	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId);
+	Task<Result<Guid>> CreateSwapRequest(Guid scheduleId, Guid userId);
+	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
 	Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId);
 }
 
 public interface IScheduleClient
 {
-	Task ReceiveSchedules(Schedule[ ] schedules);
+	Task RecieveInitialSchedules(IEnumerable<Schedule> schedules);
 	Task UpdateSchedule(Guid scheduleId, Schedule schedule);
 
+	Task ReceiveInitialSwapRequests(IEnumerable<SwapRequest> swapRequests);
 	Task ReceiveSwapRequest(SwapRequest swapRequest);
-	Task ReceiveSwapRequests(IEnumerable<SwapRequest> swapRequests);
+	Task RemoveSwapRequest(Guid swapRequestId);
 }
 
 [Authorize]
@@ -78,29 +80,46 @@ public class ScheduleHub(
 		return new(isSuccess, HttpStatusCode.BadRequest, isSuccess);
 	}
 
-	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
+	public async Task<Result<Guid>> CreateSwapRequest(Guid scheduleId, Guid userId)
 	{
 		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
 
 		var swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
-
 		if (swapRequest is not null)
 		{
 			await Clients.User(userId.ToString())
 				.ReceiveSwapRequest(swapRequest.ToDTO());
-			return new(true);
+			return new(swapRequest.Id);
 		}
 		return new(HttpStatusCode.BadRequest);
 	}
 
+	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
+	{
+		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+
+		var swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
+		if (swapRequest is not null)
+		{
+			await Clients
+				.Users(swapRequest.RequestingStudentId.ToString(), swapRequest.RequestedStudentId.ToString())
+				.RemoveSwapRequest(swapRequestId);
+		}
+		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
+	}
+
 	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
 	{
-		var isSuccess = await _scheduleService.AcceptSwapRequestAsync(swapRequestId, _ct);
-		if (isSuccess)
+		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+		var swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
+		if (swapRequest is not null)
 		{
+			await Clients
+				.Users(swapRequest.RequestingStudentId.ToString(), swapRequest.RequestedStudentId.ToString())
+				.RemoveSwapRequest(swapRequestId);
 			await TransmitChangedScheduleAsync(swapRequestId, _ct);
 		}
-		return new(isSuccess, HttpStatusCode.BadRequest, isSuccess);
+		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
 	}
 
 	private async Task TransmitChangedScheduleAsync(Guid scheduleId, CancellationToken ct = default)
@@ -114,8 +133,8 @@ public class ScheduleHub(
 
 	private async Task TransmitBacklogAsync(Guid userId, CancellationToken ct = default)
 	{
-		var swapRequests = ( await _scheduleService.GetSwapRequestsForStudentAsync(userId, ct) )
+		var swapRequests = ( await _scheduleService.GetSwapRequestTargetingStudentAsync(userId, ct) )
 			.Select(SwapRequestMappings.ToDTO);
-		await Clients.Caller.ReceiveSwapRequests(swapRequests);
+		await Clients.Caller.ReceiveInitialSwapRequests(swapRequests);
 	}
 }
