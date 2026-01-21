@@ -14,7 +14,9 @@ public static class ScheduleMappings
             LockInOffset = DateTimeOffset.UnixEpoch + entity.LockInOffset,
             FirstExamination = entity.FirstExamination,
             Subject = entity.Subject.ToDTO(),
-            ExamSlots = entity.ExamSlots.Select(ToDTO)
+            ExamSlots = entity.ExamSlots.Select(ToDTO),
+            AuditLogs = entity.AuditLogs.Select(AuditLogMappings.ToDTO),
+            SwapRequests = entity.SwapRequests.Select(SwapRequestMappings.ToDTO)
         };
     }
 

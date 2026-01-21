@@ -19,6 +19,10 @@ public class Schedule
     public required Subject Subject { get; set; }
     [Required]
     public required IEnumerable<ExamSlot> ExamSlots { get; set; }
+    [Required]
+    public required IEnumerable<AuditLog> AuditLogs { get; set; }
+    [Required]
+    public required IEnumerable<SwapRequest> SwapRequests { get; set; }
 }
 
 public class ExamSlot

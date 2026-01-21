@@ -63,20 +63,36 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             .HasForeignKey(u => u.SchoolId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // TeacherProfile
-        modelBuilder.Entity<TeacherProfile>()
+		modelBuilder.Entity<UserProfile>()
+			.Navigation(u => u.TeacherProfile)
+			.AutoInclude();
+		modelBuilder.Entity<UserProfile>()
+			.Navigation(u => u.StudentProfile)
+			.AutoInclude();
+
+
+		// TeacherProfile
+		modelBuilder.Entity<TeacherProfile>()
             .HasOne(tp => tp.Teacher)
             .WithOne(t => t.TeacherProfile)
             .HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+
+        modelBuilder.Entity<TeacherProfile>()
+            .Navigation(tp => tp.Teacher)
+            .AutoInclude();
 
         // Teacher-Subjects many-to-many
         modelBuilder.Entity<Teacher>()
             .HasMany(t => t.Subjects)
             .WithMany();
 
-        modelBuilder.Entity<Teacher>()
+		modelBuilder.Entity<Teacher>()
             .HasMany(t => t.Classrooms)
             .WithMany(c => c.Teachers);
+
+		modelBuilder.Entity<Teacher>()
+			.Navigation(t => t.Subjects)
+			.AutoInclude();
 
         // Lesson-Teacher many-to-many
         modelBuilder.Entity<Lesson>()
@@ -98,8 +114,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             .WithOne(c => c.Calendar)
             .HasForeignKey<Calendar>(c => c.ClassroomId);
 
-        // classroom
-        modelBuilder.Entity<Classroom>()
+		modelBuilder.Entity<Calendar>()
+			.Navigation(t => t.Lessons)
+			.AutoInclude();
+
+		// classroom
+		modelBuilder.Entity<Classroom>()
             .HasIndex(c => new
             {
                 c.RegisterId,
@@ -123,6 +143,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             .WithOne(s => s.Classroom)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Classroom>()
+            .Navigation(c => c.Calendar)
+            .AutoInclude();
+
         modelBuilder.Entity<Calendar>()
             .HasMany(c => c.Lessons)
             .WithOne()
@@ -135,13 +159,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             .WithOne(e => e.Schedule)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<ExamSlot>()
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.ExamSlots)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.AuditLogs)
+			.AutoInclude();
+
+		modelBuilder.Entity<ExamSlot>()
             .HasMany(e => e.Participants)
             .WithMany(s => s.ParticipatingExamSlots);
         modelBuilder.Entity<ExamSlot>()
             .HasMany(e => e.ActuallyParticipated)
             .WithMany(s => s.ActuallyParticipatedExamSlots);
-    }
+
+		modelBuilder.Entity<ExamSlot>()
+			.Navigation(s => s.Participants)
+			.AutoInclude();
+		modelBuilder.Entity<ExamSlot>()
+			.Navigation(s => s.ActuallyParticipated)
+			.AutoInclude();
+	}
 
     public override int SaveChanges()
     {

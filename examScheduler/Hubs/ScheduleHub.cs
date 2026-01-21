@@ -12,19 +12,15 @@ public interface IScheduleHub
 {
 	Task<Result<bool>> RegisterForSlot(Guid scheduleId, Guid slotId);
 
-	Task<Result<Guid>> CreateSwapRequest(Guid scheduleId, Guid userId);
-	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
+	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId);
 	Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId);
+	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
 }
 
 public interface IScheduleClient
 {
-	Task RecieveInitialSchedules(IEnumerable<Schedule> schedules);
+	Task RecieveInitial(IEnumerable<Schedule> schedules);
 	Task UpdateSchedule(Guid scheduleId, Schedule schedule);
-
-	Task ReceiveInitialSwapRequests(IEnumerable<SwapRequest> swapRequests);
-	Task ReceiveSwapRequest(SwapRequest swapRequest);
-	Task RemoveSwapRequest(Guid swapRequestId);
 }
 
 [Authorize]
@@ -63,7 +59,7 @@ public class ScheduleHub(
 			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), _ct);
 		}
 
-		await TransmitBacklogAsync(userId, _ct);
+		await TransmitInitialSchedules(userId, _ct);
 
 		await base.OnConnectedAsync();
 	}
@@ -75,23 +71,25 @@ public class ScheduleHub(
 		var isSuccess = await _scheduleService.TryEnlistStudentAsync(scheduleId, slotId, _guid, _ct);
 		if (isSuccess)
 		{
-			await TransmitChangedScheduleAsync(scheduleId, _ct);
+			await TransmitScheduleAsync(scheduleId, _ct);
 		}
 		return new(isSuccess, HttpStatusCode.BadRequest, isSuccess);
 	}
 
-	public async Task<Result<Guid>> CreateSwapRequest(Guid scheduleId, Guid userId)
+	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
 	{
 		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
 
 		var swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
 		if (swapRequest is not null)
 		{
-			await Clients.User(userId.ToString())
-				.ReceiveSwapRequest(swapRequest.ToDTO());
-			return new(swapRequest.Id);
+			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
 		}
-		return new(HttpStatusCode.BadRequest);
+		return new(
+			swapRequest is null, 
+			HttpStatusCode.BadRequest, 
+			swapRequest is null
+		);
 	}
 
 	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
@@ -101,9 +99,7 @@ public class ScheduleHub(
 		var swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
 		{
-			await Clients
-				.Users(swapRequest.RequestingStudentId.ToString(), swapRequest.RequestedStudentId.ToString())
-				.RemoveSwapRequest(swapRequestId);
+			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
 		}
 		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
 	}
@@ -114,15 +110,12 @@ public class ScheduleHub(
 		var swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
 		{
-			await Clients
-				.Users(swapRequest.RequestingStudentId.ToString(), swapRequest.RequestedStudentId.ToString())
-				.RemoveSwapRequest(swapRequestId);
-			await TransmitChangedScheduleAsync(swapRequestId, _ct);
+			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
 		}
 		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
 	}
 
-	private async Task TransmitChangedScheduleAsync(Guid scheduleId, CancellationToken ct = default)
+	private async Task TransmitScheduleAsync(Guid scheduleId, CancellationToken ct = default)
 	{
 		var schedule = await _scheduleService.GetScheduleAsync(scheduleId, ct);
 		if (schedule is not null)
@@ -131,10 +124,9 @@ public class ScheduleHub(
 		}
 	}
 
-	private async Task TransmitBacklogAsync(Guid userId, CancellationToken ct = default)
+	private async Task TransmitInitialSchedules(Guid userId, CancellationToken ct = default)
 	{
-		var swapRequests = ( await _scheduleService.GetSwapRequestTargetingStudentAsync(userId, ct) )
-			.Select(SwapRequestMappings.ToDTO);
-		await Clients.Caller.ReceiveInitialSwapRequests(swapRequests);
+		var schedules = await _scheduleService.GetSchedulesForStudentAsync(userId, ct);
+		await Clients.Caller.RecieveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }

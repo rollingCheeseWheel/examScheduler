@@ -39,7 +39,7 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
     public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default)
     {
-        return await GetClassrooms()
+        return await _context.Classrooms
             .FirstOrDefaultAsync(c
             => c.SchoolId == school.Id
             && c.RegisterId.Contains(registerId), ct);
@@ -47,28 +47,10 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
     public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default)
     {
-        return await GetClassrooms()
+        return await _context.Classrooms
             .Where(c
             => c.SchoolId == school.Id
             && c.Teachers.Contains(teacher))
             .ToListAsync(ct);
-    }
-
-    private IQueryable<Classroom> GetClassrooms()
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return _context.Classrooms
-            .Include(c => c.Calendar)
-                .ThenInclude(cal => cal.Lessons)
-                    .ThenInclude(l => l.Subject)
-            .Include(c => c.Calendar)
-                .ThenInclude(cal => cal.Lessons)
-                    .ThenInclude(l => l.Teachers)
-                        .ThenInclude(t => t.Subjects)
-            .Include(c => c.Students)
-            .Include(c => c.Teachers)
-            .Include(c => c.School)
-            .Include(c => c.Schedules);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 }

@@ -16,11 +16,8 @@ public class StudentService(AppDbContext context) : IStudentService
 
     public async Task<StudentProfile?> GetStudentProfileAsync(Guid id, CancellationToken ct = default)
     {
-        return ( await _context.Users
-            .Include(u => u.StudentProfile)
-            .Where(u => u.Role == UserRole.Student && u.StudentProfile != null)
-            .FirstOrDefaultAsync(u => u.Id == id, ct) )
-            ?.StudentProfile;
+        return await _context.StudentProfiles
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
 }

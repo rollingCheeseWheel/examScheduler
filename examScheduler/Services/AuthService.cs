@@ -61,8 +61,6 @@ public class AuthService(
         }
 
         var existingUser = await _userManager.Users
-            .Include(u => u.StudentProfile)
-            .Include(u => u.TeacherProfile)
             .FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
         Result<UserProfile>? response = null;
         if (existingUser is not null) // dbUser found 
@@ -320,7 +318,6 @@ public class AuthService(
             using var rgClient = registerClient.Copy();
 
             var dbUser = await dbcontext.Users
-                .Include(x => x.StudentProfile)
                 .FirstOrDefaultAsync(u => u.Id == user.Id, ct);
 
             if (dbUser is null || dbUser.StudentProfile is null || dbUser.Role is not UserRole.Student)

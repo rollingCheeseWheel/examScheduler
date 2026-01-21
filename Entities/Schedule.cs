@@ -30,6 +30,8 @@ public class Schedule : EntityBase<Schedule>
     public ICollection<ExamSlot> ExamSlots { get; private set; } = [ ];
     [Required]
     public ICollection<AuditLog> AuditLogs { get; private set; } = [ ];
+    [Required]
+    public ICollection<SwapRequest> SwapRequests { get; private set; } = [ ];
 
     public bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)
     {

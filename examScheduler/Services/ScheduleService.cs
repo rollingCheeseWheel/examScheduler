@@ -7,6 +7,7 @@ namespace examScheduler.Services;
 public interface IScheduleService
 {
 	Task<Schedule?> GetScheduleAsync(Guid? id, CancellationToken ct = default);
+	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default);
 	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default);
 
 	Task<bool> TryEnlistStudentAsync(Guid scheduleId, Guid slotId, Guid actingStudentId, CancellationToken ct = default);
@@ -35,12 +36,20 @@ public class ScheduleService(
 			.FirstOrDefaultAsync(s => s.Id == id, ct);
 	}
 
+	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default)
+	{
+		return await _context.StudentProfiles
+			.Where(sp => sp.Id == userId)
+			.SelectMany(sp => sp.Classroom.Schedules)
+			.ToListAsync(ct);
+	}
+
 	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default)
 	{
 		return await _context.StudentProfiles
 			.Where(sp => sp.Id == userId)
 			.SelectMany(sp => sp.Classroom.Schedules)
-			.Select(sp => sp.Id)
+			.Select(s => s.Id)
 			.ToListAsync(ct);
 	}
 
@@ -65,19 +74,18 @@ public class ScheduleService(
 	{
 		using var transaction = await _context.Database.BeginTransactionAsync(ct);
 
-		var scheduleExists = await _context.Classrooms
+		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.Id == scheduleId)
-			.AnyAsync(ct);
-		if (!scheduleExists)
+			.FirstOrDefaultAsync(s => s.Id == scheduleId);
+		if (schedule is null)
 		{
 			return null;
 		}
 
 		var hasExistingSwapRequests = await _context.SwapRequests
 			.Where(sr => sr.ScheduleId == scheduleId)
-			.Where(sr => sr.RequestingStudentId == requestingStudentId || sr.RequestedStudentId == requestedStudentId)
 			.Where(sr => sr.ExpirationDate >= DateTimeOffset.UtcNow)
+			.Where(sr => sr.RequestingStudentId == requestingStudentId || sr.RequestedStudentId == requestedStudentId)
 			.AnyAsync(ct);
 		if (hasExistingSwapRequests)
 		{
@@ -108,6 +116,7 @@ public class ScheduleService(
 			ExpirationDate = expirationDate
 		};
 
+		schedule.SwapRequests.Add(newSwapRequest);
 		await _context.SwapRequests.AddAsync(newSwapRequest, ct);
 		await _context.SaveChangesAsync(ct);
 		await transaction.CommitAsync(ct);
@@ -162,9 +171,6 @@ public class ScheduleService(
 		}
 
 		var schedule = await _context.Classrooms
-			.Include(c => c.Schedules)
-			.ThenInclude(s => s.ExamSlots)
-			.ThenInclude(s => s.Participants)
 			.SelectMany(c => c.Schedules)
 			.FirstOrDefaultAsync(s => s.Id.Equals(swapRequest.ScheduleId), ct);
 		if (schedule is null)
