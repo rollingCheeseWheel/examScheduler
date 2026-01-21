@@ -15,8 +15,8 @@ public static class ScheduleMappings
             FirstExamination = entity.FirstExamination,
             Subject = entity.Subject.ToDTO(),
             ExamSlots = entity.ExamSlots.Select(ToDTO),
-            AuditLogs = entity.AuditLogs.Select(AuditLogMappings.ToDTO),
-            SwapRequests = entity.SwapRequests.Select(SwapRequestMappings.ToDTO)
+            AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
+            SwapRequests = entity.SwapRequests.Select(x => x.ToDTO()),
         };
     }
 
@@ -28,8 +28,8 @@ public static class ScheduleMappings
             Date = entity.Date,
             MinParticipants = entity.MinParticipants,
             MaxParticipants = entity.MaxParticipants,
-            ActuallyParticipated = entity.ActuallyParticipated.Select(UserProfileMappings.ToDTO),
-            Participants = entity.Participants.Select(UserProfileMappings.ToDTO)
+            ActuallyParticipated = entity.ActuallyParticipated.Select(x => x.ToDTO()),
+            Participants = entity.Participants.Select(x => x.ToDTO())
         };
     }
 }

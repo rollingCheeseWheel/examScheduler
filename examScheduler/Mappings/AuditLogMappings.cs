@@ -9,7 +9,7 @@ public static class AuditLogMappings
         return new()
         {
             Action = entity.Action,
-            Actor = entity.Actor,
+            ActorId = entity.ActorId,
             ActorType = entity.ActorType,
             ActorName = entity.ActorName,
             Description = entity.Description,

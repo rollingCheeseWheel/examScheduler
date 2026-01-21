@@ -5,11 +5,11 @@ namespace Entities;
 public class Classroom() : EntityBase<Classroom>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
-    public required string Name { get; init; }
+    public required string Name { get; set; }
     [Required]
-    public required School School { get; init; }
+    public required School School { get; set; }
     public Guid SchoolId { get; }
     [Required]
     public required ICollection<int> RegisterId { get; set; } = [ ];

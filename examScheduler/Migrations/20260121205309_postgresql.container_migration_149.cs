@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -6,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_459 : Migration
+    public partial class postgresqlcontainer_migration_149 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -23,6 +24,18 @@ namespace examScheduler.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Calendars",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastsUntil = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Calendars", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -45,10 +58,11 @@ namespace examScheduler.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    RegisterUri = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    RegisterUri = table.Column<string>(type: "text", nullable: false),
                     SchoolId = table.Column<string>(type: "text", nullable: false),
                     ClientId = table.Column<string>(type: "text", nullable: false),
-                    Secret = table.Column<string>(type: "text", nullable: false)
+                    Secret = table.Column<string>(type: "text", nullable: false),
+                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -60,8 +74,8 @@ namespace examScheduler.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    RegisterId = table.Column<int>(type: "integer", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    RegisterId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -96,9 +110,9 @@ namespace examScheduler.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
                     RegiserId = table.Column<long>(type: "bigint", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
                     FirstName = table.Column<string>(type: "text", nullable: false),
                     LastName = table.Column<string>(type: "text", nullable: false),
-                    Role = table.Column<int>(type: "integer", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -132,15 +146,51 @@ namespace examScheduler.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RegisterId = table.Column<int[ ]>(type: "integer[]", nullable: false)
+                    RegisterId = table.Column<int[]>(type: "integer[]", nullable: false),
+                    CalendarId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Classrooms", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Classrooms_Calendars_CalendarId",
+                        column: x => x.CalendarId,
+                        principalTable: "Calendars",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Classrooms_Schools_SchoolId",
                         column: x => x.SchoolId,
                         principalTable: "Schools",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Lessons",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FromHour = table.Column<int>(type: "integer", nullable: false),
+                    ToHour = table.Column<int>(type: "integer", nullable: false),
+                    Occurances = table.Column<DateTimeOffset[]>(type: "timestamp with time zone[]", nullable: false),
+                    LessonId = table.Column<int>(type: "integer", nullable: false),
+                    LessonName = table.Column<string>(type: "text", nullable: false),
+                    SubjectId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CalendarId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Lessons", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Lessons_Calendars_CalendarId",
+                        column: x => x.CalendarId,
+                        principalTable: "Calendars",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Lessons_Subjects_SubjectId",
+                        column: x => x.SubjectId,
+                        principalTable: "Subjects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -231,26 +281,7 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Calendar",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastsUntil = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Calendar", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Calendar_Classrooms_ClassroomId",
-                        column: x => x.ClassroomId,
-                        principalTable: "Classrooms",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Schedule",
+                name: "Schedules",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -259,19 +290,18 @@ namespace examScheduler.Migrations
                     LockInOffset = table.Column<TimeSpan>(type: "interval", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     SubjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Schedule", x => x.Id);
+                    table.PrimaryKey("PK_Schedules", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Schedule_Classrooms_ClassroomId",
+                        name: "FK_Schedules_Classrooms_ClassroomId",
                         column: x => x.ClassroomId,
                         principalTable: "Classrooms",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Schedule_Subjects_SubjectId",
+                        name: "FK_Schedules_Subjects_SubjectId",
                         column: x => x.SubjectId,
                         principalTable: "Subjects",
                         principalColumn: "Id",
@@ -311,7 +341,8 @@ namespace examScheduler.Migrations
                     FirstName = table.Column<string>(type: "text", nullable: false),
                     LastName = table.Column<string>(type: "text", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: true),
+                    LessonId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -322,6 +353,11 @@ namespace examScheduler.Migrations
                         principalTable: "Classrooms",
                         principalColumn: "Id");
                     table.ForeignKey(
+                        name: "FK_Teachers_Lessons_LessonId",
+                        column: x => x.LessonId,
+                        principalTable: "Lessons",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_Teachers_Schools_SchoolId",
                         column: x => x.SchoolId,
                         principalTable: "Schools",
@@ -330,73 +366,66 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Lesson",
+                name: "AuditLogs",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Occurances = table.Column<DateTimeOffset[ ]>(type: "timestamp with time zone[]", nullable: false),
-                    FromHour = table.Column<int>(type: "integer", nullable: false),
-                    ToHour = table.Column<int>(type: "integer", nullable: false),
-                    ClassId = table.Column<int>(type: "integer", nullable: false),
-                    ClassName = table.Column<string>(type: "text", nullable: false),
-                    SubjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CalendarId = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Lesson", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Lesson_Calendar_CalendarId",
-                        column: x => x.CalendarId,
-                        principalTable: "Calendar",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Lesson_Subjects_SubjectId",
-                        column: x => x.SubjectId,
-                        principalTable: "Subjects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AuditLog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Actor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActorId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActorType = table.Column<int>(type: "integer", nullable: false),
+                    ActorName = table.Column<string>(type: "text", nullable: true),
                     Action = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     ScheduleId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AuditLog", x => x.Id);
+                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AuditLog_Schedule_ScheduleId",
+                        name: "FK_AuditLogs_Schedules_ScheduleId",
                         column: x => x.ScheduleId,
-                        principalTable: "Schedule",
+                        principalTable: "Schedules",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "ScheduleGeneratorSlot",
+                name: "ExamSlot",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Offset = table.Column<int>(type: "integer", nullable: false),
-                    MaxParticipants = table.Column<int>(type: "integer", nullable: false),
-                    RequiredParticipants = table.Column<int>(type: "integer", nullable: false),
-                    ScheduleId = table.Column<Guid>(type: "uuid", nullable: true)
+                    Date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ScheduleId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ScheduleGeneratorSlot", x => x.Id);
+                    table.PrimaryKey("PK_ExamSlot", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ScheduleGeneratorSlot_Schedule_ScheduleId",
+                        name: "FK_ExamSlot_Schedules_ScheduleId",
                         column: x => x.ScheduleId,
-                        principalTable: "Schedule",
-                        principalColumn: "Id");
+                        principalTable: "Schedules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SwapRequests",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RequestingStudentName = table.Column<string>(type: "text", nullable: false),
+                    RequestingStudentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RequestedStudentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ExpirationDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SwapRequests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SwapRequests_Schedules_ScheduleId",
+                        column: x => x.ScheduleId,
+                        principalTable: "Schedules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -447,68 +476,18 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LessonTeacher",
-                columns: table => new
-                {
-                    LessonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LessonTeacher", x => new { x.LessonId, x.TeachersId });
-                    table.ForeignKey(
-                        name: "FK_LessonTeacher_Lesson_LessonId",
-                        column: x => x.LessonId,
-                        principalTable: "Lesson",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_LessonTeacher_Teachers_TeachersId",
-                        column: x => x.TeachersId,
-                        principalTable: "Teachers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExamSlot",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    GeneratorSlotId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ScheduleId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExamSlot", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ExamSlot_ScheduleGeneratorSlot_GeneratorSlotId",
-                        column: x => x.GeneratorSlotId,
-                        principalTable: "ScheduleGeneratorSlot",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ExamSlot_Schedule_ScheduleId",
-                        column: x => x.ScheduleId,
-                        principalTable: "Schedule",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ExamSlotStudentProfile",
                 columns: table => new
                 {
-                    ParticipantsId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParticipatingExamSlotsId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ExamSlotId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ParticipantsId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExamSlotStudentProfile", x => new { x.ParticipantsId, x.ParticipatingExamSlotsId });
+                    table.PrimaryKey("PK_ExamSlotStudentProfile", x => new { x.ExamSlotId, x.ParticipantsId });
                     table.ForeignKey(
-                        name: "FK_ExamSlotStudentProfile_ExamSlot_ParticipatingExamSlotsId",
-                        column: x => x.ParticipatingExamSlotsId,
+                        name: "FK_ExamSlotStudentProfile_ExamSlot_ExamSlotId",
+                        column: x => x.ExamSlotId,
                         principalTable: "ExamSlot",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -524,15 +503,15 @@ namespace examScheduler.Migrations
                 name: "ExamSlotStudentProfile1",
                 columns: table => new
                 {
-                    ActuallyParticipatedExamSlotsId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ActuallyParticipatedId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ActuallyParticipatedId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ExamSlot1Id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExamSlotStudentProfile1", x => new { x.ActuallyParticipatedExamSlotsId, x.ActuallyParticipatedId });
+                    table.PrimaryKey("PK_ExamSlotStudentProfile1", x => new { x.ActuallyParticipatedId, x.ExamSlot1Id });
                     table.ForeignKey(
-                        name: "FK_ExamSlotStudentProfile1_ExamSlot_ActuallyParticipatedExamSl~",
-                        column: x => x.ActuallyParticipatedExamSlotsId,
+                        name: "FK_ExamSlotStudentProfile1_ExamSlot_ExamSlot1Id",
+                        column: x => x.ExamSlot1Id,
                         principalTable: "ExamSlot",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -540,6 +519,30 @@ namespace examScheduler.Migrations
                         name: "FK_ExamSlotStudentProfile1_StudentProfiles_ActuallyParticipate~",
                         column: x => x.ActuallyParticipatedId,
                         principalTable: "StudentProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ClassroomTeacherProfile",
+                columns: table => new
+                {
+                    ClassroomsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeacherProfileId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ClassroomTeacherProfile", x => new { x.ClassroomsId, x.TeacherProfileId });
+                    table.ForeignKey(
+                        name: "FK_ClassroomTeacherProfile_Classrooms_ClassroomsId",
+                        column: x => x.ClassroomsId,
+                        principalTable: "Classrooms",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ClassroomTeacherProfile_TeacherProfiles_TeacherProfileId",
+                        column: x => x.TeacherProfileId,
+                        principalTable: "TeacherProfiles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -583,7 +586,7 @@ namespace examScheduler.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUsers_UserName_SchoolId",
                 table: "AspNetUsers",
-                columns: new[ ] { "UserName", "SchoolId" },
+                columns: new[] { "UserName", "SchoolId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -593,31 +596,25 @@ namespace examScheduler.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AuditLog_ScheduleId",
-                table: "AuditLog",
+                name: "IX_AuditLogs_ScheduleId",
+                table: "AuditLogs",
                 column: "ScheduleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Calendar_ClassroomId",
-                table: "Calendar",
-                column: "ClassroomId",
+                name: "IX_Classrooms_CalendarId",
+                table: "Classrooms",
+                column: "CalendarId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Classrooms_SchoolId_Name",
+                table: "Classrooms",
+                columns: new[] { "SchoolId", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Classrooms_RegisterId_SchoolId",
-                table: "Classrooms",
-                columns: new[ ] { "RegisterId", "SchoolId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Classrooms_SchoolId",
-                table: "Classrooms",
-                column: "SchoolId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExamSlot_GeneratorSlotId",
-                table: "ExamSlot",
-                column: "GeneratorSlotId");
+                name: "IX_ClassroomTeacherProfile_TeacherProfileId",
+                table: "ClassroomTeacherProfile",
+                column: "TeacherProfileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExamSlot_ScheduleId",
@@ -625,29 +622,24 @@ namespace examScheduler.Migrations
                 column: "ScheduleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ExamSlotStudentProfile_ParticipatingExamSlotsId",
+                name: "IX_ExamSlotStudentProfile_ParticipantsId",
                 table: "ExamSlotStudentProfile",
-                column: "ParticipatingExamSlotsId");
+                column: "ParticipantsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ExamSlotStudentProfile1_ActuallyParticipatedId",
+                name: "IX_ExamSlotStudentProfile1_ExamSlot1Id",
                 table: "ExamSlotStudentProfile1",
-                column: "ActuallyParticipatedId");
+                column: "ExamSlot1Id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Lesson_CalendarId",
-                table: "Lesson",
+                name: "IX_Lessons_CalendarId",
+                table: "Lessons",
                 column: "CalendarId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Lesson_SubjectId",
-                table: "Lesson",
+                name: "IX_Lessons_SubjectId",
+                table: "Lessons",
                 column: "SubjectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LessonTeacher_TeachersId",
-                table: "LessonTeacher",
-                column: "TeachersId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshSessions_TokenValue",
@@ -656,19 +648,14 @@ namespace examScheduler.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Schedule_ClassroomId",
-                table: "Schedule",
+                name: "IX_Schedules_ClassroomId",
+                table: "Schedules",
                 column: "ClassroomId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Schedule_SubjectId",
-                table: "Schedule",
+                name: "IX_Schedules_SubjectId",
+                table: "Schedules",
                 column: "SubjectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ScheduleGeneratorSlot_ScheduleId",
-                table: "ScheduleGeneratorSlot",
-                column: "ScheduleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Schools_RegisterUri",
@@ -687,6 +674,18 @@ namespace examScheduler.Migrations
                 column: "TeacherId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SwapRequests_ScheduleId_RequestedStudentId",
+                table: "SwapRequests",
+                columns: new[] { "ScheduleId", "RequestedStudentId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SwapRequests_ScheduleId_RequestingStudentId",
+                table: "SwapRequests",
+                columns: new[] { "ScheduleId", "RequestingStudentId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TeacherProfiles_TeacherId",
                 table: "TeacherProfiles",
                 column: "TeacherId",
@@ -696,6 +695,11 @@ namespace examScheduler.Migrations
                 name: "IX_Teachers_ClassroomId",
                 table: "Teachers",
                 column: "ClassroomId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Teachers_LessonId",
+                table: "Teachers",
+                column: "LessonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Teachers_SchoolId",
@@ -722,7 +726,10 @@ namespace examScheduler.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "AuditLog");
+                name: "AuditLogs");
+
+            migrationBuilder.DropTable(
+                name: "ClassroomTeacherProfile");
 
             migrationBuilder.DropTable(
                 name: "ExamSlotStudentProfile");
@@ -731,19 +738,19 @@ namespace examScheduler.Migrations
                 name: "ExamSlotStudentProfile1");
 
             migrationBuilder.DropTable(
-                name: "LessonTeacher");
-
-            migrationBuilder.DropTable(
                 name: "RefreshSessions");
 
             migrationBuilder.DropTable(
                 name: "SubjectTeacher");
 
             migrationBuilder.DropTable(
-                name: "TeacherProfiles");
+                name: "SwapRequests");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "TeacherProfiles");
 
             migrationBuilder.DropTable(
                 name: "ExamSlot");
@@ -752,28 +759,25 @@ namespace examScheduler.Migrations
                 name: "StudentProfiles");
 
             migrationBuilder.DropTable(
-                name: "Lesson");
-
-            migrationBuilder.DropTable(
                 name: "Teachers");
 
             migrationBuilder.DropTable(
-                name: "ScheduleGeneratorSlot");
+                name: "Schedules");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Calendar");
-
-            migrationBuilder.DropTable(
-                name: "Schedule");
+                name: "Lessons");
 
             migrationBuilder.DropTable(
                 name: "Classrooms");
 
             migrationBuilder.DropTable(
                 name: "Subjects");
+
+            migrationBuilder.DropTable(
+                name: "Calendars");
 
             migrationBuilder.DropTable(
                 name: "Schools");

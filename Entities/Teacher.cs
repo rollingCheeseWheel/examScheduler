@@ -7,32 +7,27 @@ namespace Entities;
 public class Teacher : EntityBase<Teacher>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
-    public required int RegisterID { get; init; }
+    public required int RegisterID { get; set; }
     [Required]
-    public required string FirstName { get; init; }
+    public required string FirstName { get; set; }
     [Required]
-    public required string LastName { get; init; }
+    public required string LastName { get; set; }
     [NotMapped]
     public string Name => string.Join(" ", FirstName, LastName);
     [Required]
-    public required School School { get; init; }
-    public Guid SchoolId { get; init; }
+    public required School School { get; set; }
+    public Guid SchoolId { get; set; }
 
     public TeacherProfile? TeacherProfile { get; set; }
     [Required]
     public ICollection<Subject> Subjects { get; set; } = [ ];
-    [Required]
-    public ICollection<Classroom> Classrooms { get; set; } = [ ];
-    [Required]
-    public ICollection<Lesson> Lessons { get; set; } = [ ];
 
     public override bool EqualsCore(Teacher b) =>
         Name == b.Name &&
         SchoolId == b.SchoolId &&
-        Subjects.ValueEquals(b.Subjects) &&
-        Classrooms.ValueEquals(b.Classrooms);
-    public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.Order(), Classrooms.Order());
+        Subjects.ValueEquals(b.Subjects);
+    public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.Order());
     public override int CompareTo(Teacher? b) => Name.CompareTo(b?.Name);
 }

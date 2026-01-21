@@ -15,15 +15,4 @@ public static class ClassroomMappings
             Calendar = entity.Calendar?.ToDTO()
         };
     }
-
-    public static Models.API.TeacherProfileClassroom ToTeacherProfileClassroomDTO(this Classroom entity)
-    {
-        return new()
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            SchoolId = entity.SchoolId,
-            CalendarId = entity.Calendar?.Id
-        };
-    }
 }

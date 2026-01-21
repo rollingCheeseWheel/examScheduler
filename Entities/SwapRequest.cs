@@ -5,7 +5,7 @@ namespace Entities;
 public class SwapRequest : EntityBase<SwapRequest>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
     public required Guid ScheduleId { get; set; }
     [Required]

@@ -5,7 +5,7 @@ namespace Entities;
 public class RefreshTokenSession : EntityBase<RefreshTokenSession>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
     public required DateTimeOffset ExpirationDate { get; set; }
     [Required]

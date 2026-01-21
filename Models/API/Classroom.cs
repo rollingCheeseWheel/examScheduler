@@ -2,7 +2,7 @@
 
 namespace Models.API;
 
-public class TeacherProfileClassroom
+public class Classroom
 {
     [Required]
     public required Guid Id { get; set; }
@@ -10,10 +10,6 @@ public class TeacherProfileClassroom
     public required string Name { get; set; }
     [Required]
     public required Guid SchoolId { get; set; }
-    public required Guid? CalendarId { get; set; }
-}
-
-public class Classroom : TeacherProfileClassroom
-{
     public required Calendar? Calendar { get; set; }
+    public required Guid? CalendarId { get; set; }
 }

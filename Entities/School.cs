@@ -5,19 +5,19 @@ namespace Entities;
 public class School : EntityBase<School>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
-    public required string Name { get; init; }
+    public required string Name { get; set; }
     [Required]
-    public required Uri RegisterUri { get; init; }
+    public required Uri RegisterUri { get; set; }
     [Required]
-    public required string SchoolId { get; init; }
+    public required string SchoolId { get; set; }
     [Required]
-    public required string ClientId { get; init; }
+    public required string ClientId { get; set; }
     [Required]
-    public required string Secret { get; init; }
+    public required string Secret { get; set; }
     [Required]
-    public required bool IsEnabled { get; init; }
+    public required bool IsEnabled { get; set; }
 
     public override bool EqualsCore(School b) =>
         Name == b.Name &&

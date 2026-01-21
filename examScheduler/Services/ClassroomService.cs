@@ -30,10 +30,12 @@ public class ClassroomService(AppDbContext context) : IClassroomService
             RegisterId = [ userProfile.StudentData.MainClass.Id ],
             School = school,
         };
-        var newCalendar = new Calendar { Classroom = newClassroom };
-        newClassroom.Calendar = newCalendar;
+		//var newCalendar = new Calendar { Classroom = newClassroom };
+		var newCalendar = new Calendar();
+		newClassroom.Calendar = newCalendar;
 
         _context.Classrooms.Add(newClassroom);
+        _context.Calendars.Add(newCalendar);
         return newClassroom;
     }
 

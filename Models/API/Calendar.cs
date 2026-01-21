@@ -6,8 +6,8 @@ public class Calendar
 {
     [Required]
     public required Guid Id { get; set; }
-    [Required]
-    public required Guid ClassroomId { get; set; }
+    //[Required]
+    //public required Guid ClassroomId { get; set; }
     [Required]
     public required DateTimeOffset LastsUntil { get; set; }
     [Required]

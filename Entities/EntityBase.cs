@@ -7,7 +7,7 @@ public abstract class EntityBase<T>
     : IEquatable<T>, IComparable<T>
     where T : EntityBase<T>
 {
-    public abstract Guid Id { get; }
+    public abstract Guid Id { get; set; }
 
     public abstract bool EqualsCore(T b);
     public abstract override int GetHashCode();

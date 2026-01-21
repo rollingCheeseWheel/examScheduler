@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251210083700_postgresql.container_migration_758")]
-    partial class postgresqlcontainer_migration_758
+    [Migration("20260121205309_postgresql.container_migration_149")]
+    partial class postgresqlcontainer_migration_149
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,21 @@ namespace examScheduler.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ClassroomTeacherProfile", b =>
+                {
+                    b.Property<Guid>("ClassroomsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TeacherProfileId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ClassroomsId", "TeacherProfileId");
+
+                    b.HasIndex("TeacherProfileId");
+
+                    b.ToTable("ClassroomTeacherProfile");
+                });
+
             modelBuilder.Entity("Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -35,8 +50,14 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("Actor")
+                    b.Property<Guid>("ActorId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("ActorName")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ActorType")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -48,7 +69,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("ScheduleId");
 
-                    b.ToTable("AuditLog");
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("Entities.Calendar", b =>
@@ -57,24 +78,21 @@ namespace examScheduler.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ClassroomId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("LastsUntil")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClassroomId")
-                        .IsUnique();
-
-                    b.ToTable("Calendar");
+                    b.ToTable("Calendars");
                 });
 
             modelBuilder.Entity("Entities.Classroom", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CalendarId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
@@ -90,9 +108,9 @@ namespace examScheduler.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SchoolId");
+                    b.HasIndex("CalendarId");
 
-                    b.HasIndex("RegisterId", "SchoolId")
+                    b.HasIndex("SchoolId", "Name")
                         .IsUnique();
 
                     b.ToTable("Classrooms");
@@ -107,15 +125,10 @@ namespace examScheduler.Migrations
                     b.Property<DateTimeOffset>("Date")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("GeneratorSlotId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ScheduleId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GeneratorSlotId");
 
                     b.HasIndex("ScheduleId");
 
@@ -131,15 +144,15 @@ namespace examScheduler.Migrations
                     b.Property<Guid?>("CalendarId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("ClassId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ClassName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("FromHour")
                         .HasColumnType("integer");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LessonName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.PrimitiveCollection<DateTimeOffset[]>("Occurances")
                         .IsRequired()
@@ -157,7 +170,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.ToTable("Lesson");
+                    b.ToTable("Lessons");
                 });
 
             modelBuilder.Entity("Entities.RefreshTokenSession", b =>
@@ -193,7 +206,7 @@ namespace examScheduler.Migrations
                     b.Property<int>("AutoLockIn")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ClassroomId")
+                    b.Property<Guid?>("ClassroomId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -215,32 +228,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.ToTable("Schedule");
-                });
-
-            modelBuilder.Entity("Entities.ScheduleGeneratorSlot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("MaxParticipants")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Offset")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RequiredParticipants")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ScheduleId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ScheduleId");
-
-                    b.ToTable("ScheduleGeneratorSlot");
+                    b.ToTable("Schedules");
                 });
 
             modelBuilder.Entity("Entities.School", b =>
@@ -253,14 +241,16 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("RegisterUri")
                         .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
+                        .HasColumnType("text");
 
                     b.Property<string>("SchoolId")
                         .IsRequired()
@@ -311,6 +301,39 @@ namespace examScheduler.Migrations
                     b.ToTable("Subjects");
                 });
 
+            modelBuilder.Entity("Entities.SwapRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ExpirationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedStudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequestingStudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequestingStudentName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ScheduleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScheduleId", "RequestedStudentId")
+                        .IsUnique();
+
+                    b.HasIndex("ScheduleId", "RequestingStudentId")
+                        .IsUnique();
+
+                    b.ToTable("SwapRequests");
+                });
+
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
                     b.Property<Guid>("Id")
@@ -328,6 +351,9 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("LessonId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("RegisterID")
                         .HasColumnType("integer");
 
@@ -337,6 +363,8 @@ namespace examScheduler.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClassroomId");
+
+                    b.HasIndex("LessonId");
 
                     b.HasIndex("SchoolId");
 
@@ -448,47 +476,32 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("ExamSlotStudentProfile", b =>
                 {
+                    b.Property<Guid>("ExamSlotId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ParticipantsId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ParticipatingExamSlotsId")
-                        .HasColumnType("uuid");
+                    b.HasKey("ExamSlotId", "ParticipantsId");
 
-                    b.HasKey("ParticipantsId", "ParticipatingExamSlotsId");
-
-                    b.HasIndex("ParticipatingExamSlotsId");
+                    b.HasIndex("ParticipantsId");
 
                     b.ToTable("ExamSlotStudentProfile");
                 });
 
             modelBuilder.Entity("ExamSlotStudentProfile1", b =>
                 {
-                    b.Property<Guid>("ActuallyParticipatedExamSlotsId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ActuallyParticipatedId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("ActuallyParticipatedExamSlotsId", "ActuallyParticipatedId");
+                    b.Property<Guid>("ExamSlot1Id")
+                        .HasColumnType("uuid");
 
-                    b.HasIndex("ActuallyParticipatedId");
+                    b.HasKey("ActuallyParticipatedId", "ExamSlot1Id");
+
+                    b.HasIndex("ExamSlot1Id");
 
                     b.ToTable("ExamSlotStudentProfile1");
-                });
-
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.Property<Guid>("LessonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TeachersId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("LessonId", "TeachersId");
-
-                    b.HasIndex("TeachersId");
-
-                    b.ToTable("LessonTeacher");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -636,6 +649,21 @@ namespace examScheduler.Migrations
                     b.ToTable("SubjectTeacher");
                 });
 
+            modelBuilder.Entity("ClassroomTeacherProfile", b =>
+                {
+                    b.HasOne("Entities.Classroom", null)
+                        .WithMany()
+                        .HasForeignKey("ClassroomsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Entities.TeacherProfile", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Entities.AuditLog", b =>
                 {
                     b.HasOne("Entities.Schedule", null)
@@ -643,43 +671,32 @@ namespace examScheduler.Migrations
                         .HasForeignKey("ScheduleId");
                 });
 
-            modelBuilder.Entity("Entities.Calendar", b =>
+            modelBuilder.Entity("Entities.Classroom", b =>
                 {
-                    b.HasOne("Entities.Classroom", "Classroom")
-                        .WithOne("Calendar")
-                        .HasForeignKey("Entities.Calendar", "ClassroomId")
+                    b.HasOne("Entities.Calendar", "Calendar")
+                        .WithMany()
+                        .HasForeignKey("CalendarId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Classroom");
-                });
-
-            modelBuilder.Entity("Entities.Classroom", b =>
-                {
                     b.HasOne("Entities.School", "School")
                         .WithMany()
                         .HasForeignKey("SchoolId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Calendar");
+
                     b.Navigation("School");
                 });
 
             modelBuilder.Entity("Entities.ExamSlot", b =>
                 {
-                    b.HasOne("Entities.ScheduleGeneratorSlot", "GeneratorSlot")
-                        .WithMany()
-                        .HasForeignKey("GeneratorSlotId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Entities.Schedule", "Schedule")
                         .WithMany("ExamSlots")
                         .HasForeignKey("ScheduleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("GeneratorSlot");
 
                     b.Navigation("Schedule");
                 });
@@ -688,8 +705,7 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.Calendar", null)
                         .WithMany("Lessons")
-                        .HasForeignKey("CalendarId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CalendarId");
 
                     b.HasOne("Entities.Subject", "Subject")
                         .WithMany()
@@ -702,11 +718,9 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
-                    b.HasOne("Entities.Classroom", "Classroom")
+                    b.HasOne("Entities.Classroom", null)
                         .WithMany("Schedules")
-                        .HasForeignKey("ClassroomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ClassroomId");
 
                     b.HasOne("Entities.Subject", "Subject")
                         .WithMany()
@@ -714,16 +728,7 @@ namespace examScheduler.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Classroom");
-
                     b.Navigation("Subject");
-                });
-
-            modelBuilder.Entity("Entities.ScheduleGeneratorSlot", b =>
-                {
-                    b.HasOne("Entities.Schedule", null)
-                        .WithMany("GeneratorSlots")
-                        .HasForeignKey("ScheduleId");
                 });
 
             modelBuilder.Entity("Entities.StudentProfile", b =>
@@ -745,11 +750,24 @@ namespace examScheduler.Migrations
                     b.Navigation("UserProfile");
                 });
 
+            modelBuilder.Entity("Entities.SwapRequest", b =>
+                {
+                    b.HasOne("Entities.Schedule", null)
+                        .WithMany("SwapRequests")
+                        .HasForeignKey("ScheduleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
                     b.HasOne("Entities.Classroom", null)
                         .WithMany("Teachers")
                         .HasForeignKey("ClassroomId");
+
+                    b.HasOne("Entities.Lesson", null)
+                        .WithMany("Teachers")
+                        .HasForeignKey("LessonId");
 
                     b.HasOne("Entities.School", "School")
                         .WithMany()
@@ -790,45 +808,30 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("ExamSlotStudentProfile", b =>
                 {
-                    b.HasOne("Entities.StudentProfile", null)
+                    b.HasOne("Entities.ExamSlot", null)
                         .WithMany()
-                        .HasForeignKey("ParticipantsId")
+                        .HasForeignKey("ExamSlotId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Entities.ExamSlot", null)
+                    b.HasOne("Entities.StudentProfile", null)
                         .WithMany()
-                        .HasForeignKey("ParticipatingExamSlotsId")
+                        .HasForeignKey("ParticipantsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("ExamSlotStudentProfile1", b =>
                 {
-                    b.HasOne("Entities.ExamSlot", null)
-                        .WithMany()
-                        .HasForeignKey("ActuallyParticipatedExamSlotsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Entities.StudentProfile", null)
                         .WithMany()
                         .HasForeignKey("ActuallyParticipatedId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("LessonTeacher", b =>
-                {
-                    b.HasOne("Entities.Lesson", null)
+                    b.HasOne("Entities.ExamSlot", null)
                         .WithMany()
-                        .HasForeignKey("LessonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Entities.Teacher", null)
-                        .WithMany()
-                        .HasForeignKey("TeachersId")
+                        .HasForeignKey("ExamSlot1Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -906,13 +909,15 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Classroom", b =>
                 {
-                    b.Navigation("Calendar")
-                        .IsRequired();
-
                     b.Navigation("Schedules");
 
                     b.Navigation("Students");
 
+                    b.Navigation("Teachers");
+                });
+
+            modelBuilder.Entity("Entities.Lesson", b =>
+                {
                     b.Navigation("Teachers");
                 });
 
@@ -922,7 +927,7 @@ namespace examScheduler.Migrations
 
                     b.Navigation("ExamSlots");
 
-                    b.Navigation("GeneratorSlots");
+                    b.Navigation("SwapRequests");
                 });
 
             modelBuilder.Entity("Entities.Teacher", b =>

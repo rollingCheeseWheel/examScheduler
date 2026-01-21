@@ -24,5 +24,5 @@ public class TeacherProfile
     [Required]
     public required IEnumerable<Subject> Subjects { get; set; }
     [Required]
-    public required IEnumerable<TeacherProfileClassroom> Classrooms { get; set; }
+    public required IEnumerable<Classroom> Classrooms { get; set; }
 }

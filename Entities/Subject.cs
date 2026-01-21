@@ -5,11 +5,11 @@ namespace Entities;
 public class Subject : EntityBase<Subject>
 {
     [Key]
-    public override Guid Id { get; } = Guid.NewGuid();
+    public override Guid Id { get; set; } = Guid.NewGuid();
     [Required]
-    public required string Name { get; init; }
+    public required string Name { get; set; }
     [Required]
-    public required int RegisterId { get; init; }
+    public required int RegisterId { get; set; }
 
     public Subject() : base() { }
     public Subject(Models.DigitalesRegister.Subject subject)
