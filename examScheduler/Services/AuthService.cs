@@ -6,6 +6,7 @@ using Models.API;
 using Models.DigitalesRegister;
 using registerClient;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Util;
 
@@ -314,6 +315,7 @@ public class AuthService(
         _logger.LogInformation("Enqueuing task in worker");
         await _calendarWorker.EnqueueAsync(async (serviceProvider, logger, ct) =>
         {
+            await Task.Delay(1000);
             using var dbcontext = serviceProvider.ServiceProvider.GetRequiredService<AppDbContext>();
             using var rgClient = registerClient.Copy();
 
