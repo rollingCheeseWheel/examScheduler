@@ -9,36 +9,33 @@ public class RegisterDateTimeConverter() : GenericDateTimeConverter(Extensions.R
 
 public class GenericDateTimeConverter : JsonConverter<DateTime>
 {
-    public readonly string[ ] DateTimeFormats = [ "yyyy-MM-ddTHH:mm:ss.fffZ" ];
+	public readonly string[ ] DateTimeFormats = [ "yyyy-MM-ddTHH:mm:ss.fffZ" ];
 
-    public GenericDateTimeConverter() { }
-    public GenericDateTimeConverter(params string[ ] dateTimeFormat)
-    {
-        DateTimeFormats = dateTimeFormat;
-    }
+	public GenericDateTimeConverter() { }
+	public GenericDateTimeConverter(params string[ ] dateTimeFormat) => DateTimeFormats = dateTimeFormat;
 
-    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (reader.TokenType is not JsonTokenType.String)
-        {
-            throw new JsonException($"Can only parse strings as dates, token is of type {reader.TokenType}");
-        }
+	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	{
+		if (reader.TokenType is not JsonTokenType.String)
+		{
+			throw new JsonException($"Can only parse strings as dates, token is of type {reader.TokenType}");
+		}
 
-        var value = reader.GetString() ?? throw new JsonException("Token is null");
+		var value = reader.GetString() ?? throw new JsonException("Token is null");
 
-        foreach (var format in DateTimeFormats)
-        {
-            try
-            {
-                return DateTime.ParseExact(value, format, null);
-            }
-            catch (FormatException) { continue; }
-        }
-        throw new JsonException($"No valid format specified for {value}! Specified formats: {string.Join(", ", DateTimeFormats)}");
-    }
+		foreach (var format in DateTimeFormats)
+		{
+			try
+			{
+				return DateTime.ParseExact(value, format, null);
+			}
+			catch (FormatException) { continue; }
+		}
+		throw new JsonException($"No valid format specified for {value}! Specified formats: {string.Join(", ", DateTimeFormats)}");
+	}
 
-    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.ToString(DateTimeFormats.First()));
-    }
+	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+	{
+		writer.WriteStringValue(value.ToString(DateTimeFormats.First()));
+	}
 }

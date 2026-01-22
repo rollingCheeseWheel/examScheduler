@@ -221,10 +221,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 	private void ValidateEntities()
 	{
-		var entires = ChangeTracker.Entries()
-			.Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+		IEnumerable<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry> entires = ChangeTracker.Entries()
+			.Where(e => e.State is EntityState.Added or EntityState.Modified);
 
-		foreach (var entry in entires)
+		foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry? entry in entires)
 		{
 			var entity = entry.Entity;
 			var validationContext = new ValidationContext(entity);

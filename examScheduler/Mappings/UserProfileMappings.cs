@@ -16,7 +16,10 @@ public static class UserProfileMappings
 		};
 	}
 
-	public static Models.API.UserProfile ToDTO(this StudentProfile entity) => entity.UserProfile.ToDTO();
+	public static Models.API.UserProfile ToDTO(this StudentProfile entity)
+	{
+		return entity.UserProfile.ToDTO();
+	}
 
 	public static Models.API.TeacherProfile ToDTO(this TeacherProfile entity)
 	{

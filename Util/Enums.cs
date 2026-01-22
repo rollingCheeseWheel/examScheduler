@@ -2,21 +2,21 @@
 
 public enum UserRole
 {
-    Student,
-    Teacher,
-    Admin
+	Student,
+	Teacher,
+	Admin
 }
 
 public enum AutoLockIn
 {
-    FixedDate,
-    TimeBeforeExamination,
+	FixedDate,
+	TimeBeforeExamination,
 }
 
 public enum AuditLogActor
 {
-    Student,
-    Teacher,
-    Admin,
-    System
+	Student,
+	Teacher,
+	Admin,
+	System
 }

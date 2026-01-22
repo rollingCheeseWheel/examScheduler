@@ -6,27 +6,29 @@ namespace Util.Converters;
 
 public class StringEnumConverter<T> : JsonConverter<T> where T : StringEnum
 {
-    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        var value = reader.GetString();
-        if (value is null) return null;
+	public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	{
+		var value = reader.GetString();
+		if (value is null) return null;
 
-        var fields = typeof(T)
-            .GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(f => f.FieldType == typeof(T));
+		IEnumerable<FieldInfo> fields = typeof(T)
+			.GetFields(BindingFlags.Public | BindingFlags.Static)
+			.Where(f => f.FieldType == typeof(T));
 
-        foreach (var f in fields)
-        {
-            var obj = f.GetValue(null);
-            if (obj is null) continue;
-            var inst = (T)obj;
-            if (inst.Value == value)
-                return inst;
-        }
+		foreach (FieldInfo? f in fields)
+		{
+			var obj = f.GetValue(null);
+			if (obj is null) continue;
+			var inst = (T)obj;
+			if (inst.Value == value)
+				return inst;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
-        => writer.WriteStringValue(value?.Value);
+	public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+	{
+		writer.WriteStringValue(value?.Value);
+	}
 }
