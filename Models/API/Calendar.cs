@@ -30,7 +30,7 @@ public class Lesson
 	[Required]
 	public required IEnumerable<Teacher> Teachers { get; set; }
 	[Required]
-	public required Subject Subject { get; set; }
+	public required string SubjectName { get; set; }
 }
 
 public class Teacher

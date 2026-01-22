@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using Util;
 
 namespace Entities;
@@ -9,7 +10,7 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
 	public required UserProfile UserProfile { get; set; }
-	[Required]
+	[Required, NotNull]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 
 	public Teacher? Teacher { get; set; }

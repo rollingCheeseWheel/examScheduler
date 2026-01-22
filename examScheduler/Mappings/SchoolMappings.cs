@@ -8,6 +8,7 @@ public static class SchoolMappings
 	{
 		return new()
 		{
+			Id = entity.Id,
 			Name = entity.Name,
 			ClientId = entity.ClientId,
 			RegisterUri = entity.RegisterUri,

@@ -13,7 +13,7 @@ public static class ScheduleMappings
 			AutoLockIn = entity.AutoLockIn,
 			LockInOffset = DateTimeOffset.UnixEpoch + entity.LockInOffset,
 			FirstExamination = entity.FirstExamination,
-			Subject = entity.Subject.ToDTO(),
+			SubjectName = entity.Subject.Name,
 			ExamSlots = entity.ExamSlots.Select(ToDTO),
 			AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
 			SwapRequests = entity.SwapRequests.Select(x => x.ToDTO()),

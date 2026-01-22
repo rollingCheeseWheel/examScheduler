@@ -93,17 +93,10 @@ public class ScheduleService(
 			return null;
 		}
 
-		UserProfile? requestingStudent = await _context.StudentProfiles
-			.Select(sp => sp.UserProfile)
+		UserProfile? requestingStudent = await _context.Users
 			.FirstOrDefaultAsync(u => u.Id == requestingStudentId, ct);
-		if (requestingStudent is null)
-		{
-			return null;
-		}
-
-		var requestedStudentExists = await _context.StudentProfiles
-			.AnyAsync(sp => sp.Id == requestedStudentId, ct);
-		if (!requestedStudentExists)
+		var requestedStudent = await _context.Users.FirstOrDefaultAsync(u => u.Id == requestedStudentId, ct);
+		if (requestingStudent is null || requestedStudent is null)
 		{
 			return null;
 		}
@@ -111,9 +104,10 @@ public class ScheduleService(
 		var newSwapRequest = new SwapRequest
 		{
 			ScheduleId = scheduleId,
+			RequestingStudentName = requestingStudent.Name,
+			RequestedStudentName = requestedStudent.Name,
 			RequestingStudentId = requestingStudentId,
 			RequestedStudentId = requestedStudentId,
-			RequestingStudentName = requestingStudent.Name,
 			ExpirationDate = expirationDate
 		};
 

@@ -16,7 +16,7 @@ public class Schedule
 	[Required]
 	public required string Description { get; set; }
 	[Required]
-	public required Subject Subject { get; set; }
+	public required string SubjectName { get; set; }
 	[Required]
 	public required IEnumerable<ExamSlot> ExamSlots { get; set; }
 	[Required]
