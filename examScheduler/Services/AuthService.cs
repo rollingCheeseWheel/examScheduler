@@ -45,8 +45,7 @@ public class AuthService(
 		using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transcation = await _context.Database.BeginTransactionAsync(ct);
 
 		// verify that the school exists
-		Entities.School? school = await _context.Schools
-			.FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
+		Entities.School? school = await _context.Schools.FindAsync([request.SchoolId], ct);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
@@ -66,7 +65,7 @@ public class AuthService(
 		if (existingUser is not null) // dbUser found 
 		{
 			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
-			response = await LoginAsync(registerClient, existingUser, httpContext, ct);
+			response = await LoginAsync(existingUser, httpContext, ct);
 		}
 		else
 		{
@@ -98,7 +97,7 @@ public class AuthService(
 	{
 		Entities.RefreshTokenSession? token = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken, ct);
 		if (token is null) { return new(HttpStatusCode.NotFound); }
-		Entities.UserProfile? user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == token.UserProfileId, ct);
+		Entities.UserProfile? user = await _context.Users.FindAsync([ token.UserProfileId ], ct);
 		if (user is null) { return new(HttpStatusCode.NotFound); }
 		ICollection<Claim> claims = await GetUserClaimsAsync(user, ct);
 		TokenResponse? tokens = await _jwtProvider.RefreshTokenPairAsync(claims, refreshToken, user, ct);
@@ -110,7 +109,7 @@ public class AuthService(
 		);
 	}
 
-	private async Task<Result<UserProfile>> LoginAsync(RegisterClient registerClient, Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
 		ICollection<Claim> claims = await GetUserClaimsAsync(user, ct);
 		TokenResponse? tokens = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
@@ -221,7 +220,7 @@ public class AuthService(
 		IdentityResult roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
 		return !roleAddedResult.Succeeded
 			? new(HttpStatusCode.InternalServerError, roleAddedResult.Errors)
-			: await LoginAsync(registerClient, userProfile, httpContext, ct);
+			: await LoginAsync(userProfile, httpContext, ct);
 	}
 
 	private async Task<Result<UserProfile>> RegisterTeacherAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
@@ -269,7 +268,7 @@ public class AuthService(
 
 		await _context.TeacherProfiles.AddAsync(teacherProfile, ct);
 
-		return await LoginAsync(registerClient, userProfile, httpContext, ct);
+		return await LoginAsync(userProfile, httpContext, ct);
 	}
 
 	private static Entities.UserProfile? CreateUserProfile(RegisterUserProfile registerUserProfile, Entities.School school)
@@ -311,12 +310,11 @@ public class AuthService(
 		_logger.LogInformation("Enqueuing task in worker");
 		await _calendarWorker.EnqueueAsync(async (serviceProvider, logger, ct) =>
 		{
-			await Task.Delay(1000);
+			await Task.Delay(1000, ct);
 			using AppDbContext dbcontext = serviceProvider.ServiceProvider.GetRequiredService<AppDbContext>();
 			using IRegisterClient rgClient = registerClient.Copy();
 
-			Entities.UserProfile? dbUser = await dbcontext.Users
-				.FirstOrDefaultAsync(u => u.Id == user.Id, ct);
+			Entities.UserProfile? dbUser = await dbcontext.Users.FindAsync([ user.Id ], ct);
 
 			if (dbUser is null || dbUser.StudentProfile is null || dbUser.Role is not UserRole.Student)
 			{

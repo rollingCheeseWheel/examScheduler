@@ -1,6 +1,5 @@
 ﻿using Entities;
 using examScheduler.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace examScheduler.Services;
 
@@ -15,8 +14,7 @@ public class StudentService(AppDbContext context) : IStudentService
 
 	public async Task<StudentProfile?> GetStudentProfileAsync(Guid id, CancellationToken ct = default)
 	{
-		return await _context.StudentProfiles
-			.FirstOrDefaultAsync(u => u.Id == id, ct);
+		return await _context.StudentProfiles.FindAsync([ id ], ct);
 	}
 
 }

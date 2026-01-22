@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
@@ -198,5 +200,11 @@ public static class Extensions
 			secondDimension >= 0 && secondDimension < grid.GetLength(1)
 			? grid[ firstDimsion, secondDimension ]
 			: default;
+	}
+
+	public static bool TryGetId(this ClaimsPrincipal claims, out Guid id)
+	{
+		var claim = claims.FindFirst(ClaimTypes.NameIdentifier);
+		return Guid.TryParse(claim?.Value, out id);
 	}
 }

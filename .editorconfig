@@ -98,7 +98,7 @@ csharp_style_expression_bodied_constructors = true
 csharp_style_expression_bodied_indexers = when_on_single_line
 csharp_style_expression_bodied_lambdas = true
 csharp_style_expression_bodied_local_functions = false
-csharp_style_expression_bodied_methods = false
+csharp_style_expression_bodied_methods = true
 csharp_style_expression_bodied_operators = when_on_single_line
 csharp_style_expression_bodied_properties = when_on_single_line
 
