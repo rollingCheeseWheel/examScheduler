@@ -11,18 +11,9 @@ public class StudentProfile : EntityBase<StudentProfile>
 	[Required]
 	public required Classroom Classroom { get; set; }
 
-	public override bool EqualsCore(StudentProfile b)
-	{
-		return UserProfile.Equals(b.UserProfile);
-	}
+	public override bool EqualsCore(StudentProfile b) => UserProfile.Equals(b.UserProfile);
 
-	public override int GetHashCode()
-	{
-		return UserProfile.GetHashCode();
-	}
+	public override int GetHashCode() => UserProfile.GetHashCode();
 
-	public override int CompareTo(StudentProfile? other)
-	{
-		return UserProfile.CompareTo(other?.UserProfile);
-	}
+	public override int CompareTo(StudentProfile? other) => UserProfile.CompareTo(other?.UserProfile);
 }

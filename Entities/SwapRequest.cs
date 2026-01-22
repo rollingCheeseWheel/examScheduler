@@ -19,21 +19,12 @@ public class SwapRequest : EntityBase<SwapRequest>
 	[Required]
 	public required DateTimeOffset ExpirationDate { get; set; } = DateTimeOffset.UtcNow.AddDays(30);
 
-	public override bool EqualsCore(SwapRequest b)
-	{
-		return ScheduleId == b.ScheduleId &&
+	public override bool EqualsCore(SwapRequest b) => ScheduleId == b.ScheduleId &&
 		RequestingStudentId == b.RequestingStudentId &&
 		RequestedStudentId == b.RequestedStudentId &&
 		ExpirationDate == b.ExpirationDate;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(ScheduleId, RequestingStudentId, RequestedStudentId, ExpirationDate);
-	}
+	public override int GetHashCode() => HashCode.Combine(ScheduleId, RequestingStudentId, RequestedStudentId, ExpirationDate);
 
-	public override int CompareTo(SwapRequest? b)
-	{
-		return ExpirationDate.CompareTo(b?.ExpirationDate ?? DateTimeOffset.MinValue);
-	}
+	public override int CompareTo(SwapRequest? b) => ExpirationDate.CompareTo(b?.ExpirationDate ?? DateTimeOffset.MinValue);
 }

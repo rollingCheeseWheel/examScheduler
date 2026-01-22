@@ -40,28 +40,22 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 		return newClassroom;
 	}
 
-	public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default)
-	{
-		return await _context.Classrooms
-			.FirstOrDefaultAsync(c => 
+	public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default) => await _context.Classrooms
+			.FirstOrDefaultAsync(c =>
 				c.SchoolId == school.Id &&
 				c.RegisterId.Contains(registerId), ct
 			);
-	}
 
-	public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default)
-	{
-		return await _context.Classrooms
+	public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
 			.Where(c
 			=> c.SchoolId == school.Id
 			&& c.Teachers.Contains(teacher))
 			.ToListAsync(ct);
-	}
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync(Guid userId, CancellationToken ct = default)
 	{
-		var studentTask = _context.StudentProfiles.FindAsync([ userId ], ct).AsTask();
-		var teacherTask = _context.TeacherProfiles.FindAsync([ userId ], ct).AsTask();
+		Task<StudentProfile?> studentTask = _context.StudentProfiles.FindAsync([ userId ], ct).AsTask();
+		Task<TeacherProfile?> teacherTask = _context.TeacherProfiles.FindAsync([ userId ], ct).AsTask();
 		await Task.WhenAll(studentTask, teacherTask).WaitAsync(ct);
 
 		if (studentTask.Result is not null)

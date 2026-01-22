@@ -45,7 +45,7 @@ public class AuthService(
 		using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transcation = await _context.Database.BeginTransactionAsync(ct);
 
 		// verify that the school exists
-		Entities.School? school = await _context.Schools.FindAsync([request.SchoolId], ct);
+		Entities.School? school = await _context.Schools.FindAsync([ request.SchoolId ], ct);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
@@ -167,15 +167,12 @@ public class AuthService(
 		return claims;
 	}
 
-	private async Task<Result<UserProfile>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
-		return await registerClient.GetRoleAsync(ct) switch
-		{
-			UserRole.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
-			UserRole.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
-			_ => new(HttpStatusCode.BadRequest)
-		};
-	}
+		UserRole.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
+		UserRole.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
+		_ => new(HttpStatusCode.BadRequest)
+	};
 
 	private async Task<Result<UserProfile>> RegisterStudentAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{

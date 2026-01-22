@@ -16,19 +16,10 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public Teacher? Teacher { get; set; }
 	public Guid? TeacherId { get; private set; }
 
-	public override bool EqualsCore(TeacherProfile b)
-	{
-		return UserProfile.Equals(b.UserProfile) &&
+	public override bool EqualsCore(TeacherProfile b) => UserProfile.Equals(b.UserProfile) &&
 		Classrooms.ValueEquals(b.Classrooms);
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(UserProfile, Classrooms.Order());
-	}
+	public override int GetHashCode() => HashCode.Combine(UserProfile, Classrooms.Order());
 
-	public override int CompareTo(TeacherProfile? other)
-	{
-		return UserProfile.CompareTo(other?.UserProfile);
-	}
+	public override int CompareTo(TeacherProfile? other) => UserProfile.CompareTo(other?.UserProfile);
 }

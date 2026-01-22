@@ -4,16 +4,13 @@ namespace examScheduler.Mappings;
 
 public static class AuditLogMappings
 {
-	public static Models.API.AuditLog ToDTO(this AuditLog entity)
+	public static Models.API.AuditLog ToDTO(this AuditLog entity) => new()
 	{
-		return new()
-		{
-			Action = entity.Action,
-			ActorId = entity.ActorId,
-			ActorType = entity.ActorType,
-			ActorName = entity.ActorName,
-			Description = entity.Description,
-			Timestamp = entity.Timestamp,
-		};
-	}
+		Action = entity.Action,
+		ActorId = entity.ActorId,
+		ActorType = entity.ActorType,
+		ActorName = entity.ActorName,
+		Description = entity.Description,
+		Timestamp = entity.Timestamp,
+	};
 }

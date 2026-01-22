@@ -66,7 +66,10 @@ public class ScheduleHub(
 
 	public async Task<Result<bool>> RegisterForSlot(Guid scheduleId, Guid slotId)
 	{
-		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
 
 		var isSuccess = await _scheduleService.TryEnlistStudentAsync(scheduleId, slotId, _guid, _ct);
 		if (isSuccess)
@@ -78,7 +81,10 @@ public class ScheduleHub(
 
 	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
 	{
-		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
 
 		Entities.SwapRequest? swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
 		if (swapRequest is not null)
@@ -94,7 +100,10 @@ public class ScheduleHub(
 
 	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
 	{
-		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
 
 		Entities.SwapRequest? swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
@@ -106,7 +115,11 @@ public class ScheduleHub(
 
 	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
 	{
-		if (!_isGuidSet) return new(HttpStatusCode.Unauthorized);
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+
 		Entities.SwapRequest? swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
 		{

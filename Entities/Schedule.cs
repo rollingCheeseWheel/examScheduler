@@ -48,20 +48,11 @@ public class Schedule : EntityBase<Schedule>
 		return slot?.TryEnlistStudent(student) ?? false;
 	}
 
-	public override bool EqualsCore(Schedule b)
-	{
-		return FirstExamination == b.FirstExamination &&
+	public override bool EqualsCore(Schedule b) => FirstExamination == b.FirstExamination &&
 		Subject == b.Subject /*&&
         Classroom == b.Classroom*/;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(FirstExamination, Subject/*, Classroom*/);
-	}
+	public override int GetHashCode() => HashCode.Combine(FirstExamination, Subject/*, Classroom*/);
 
-	public override int CompareTo(Schedule? other)
-	{
-		return FirstExamination.CompareTo(other?.FirstExamination ?? DateTimeOffset.MinValue);
-	}
+	public override int CompareTo(Schedule? other) => FirstExamination.CompareTo(other?.FirstExamination ?? DateTimeOffset.MinValue);
 }

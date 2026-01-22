@@ -67,20 +67,11 @@ public class ExamSlot : EntityBase<ExamSlot>
 		return true;
 	}
 
-	public override bool EqualsCore(ExamSlot b)
-	{
-		return Schedule == b.Schedule &&
+	public override bool EqualsCore(ExamSlot b) => Schedule == b.Schedule &&
 		Date == b.Date &&
 		GeneratorSlot == b.GeneratorSlot;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Schedule, Date, GeneratorSlot);
-	}
+	public override int GetHashCode() => HashCode.Combine(Schedule, Date, GeneratorSlot);
 
-	public override int CompareTo(ExamSlot? other)
-	{
-		return Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
-	}
+	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
 }

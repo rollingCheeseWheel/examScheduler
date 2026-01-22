@@ -24,20 +24,11 @@ public class Teacher : EntityBase<Teacher>
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
 
-	public override bool EqualsCore(Teacher b)
-	{
-		return Name == b.Name &&
+	public override bool EqualsCore(Teacher b) => Name == b.Name &&
 		SchoolId == b.SchoolId &&
 		Subjects.ValueEquals(b.Subjects);
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Name, SchoolId, Subjects.Order());
-	}
+	public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.Order());
 
-	public override int CompareTo(Teacher? b)
-	{
-		return Name.CompareTo(b?.Name);
-	}
+	public override int CompareTo(Teacher? b) => Name.CompareTo(b?.Name);
 }

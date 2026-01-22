@@ -34,8 +34,5 @@ public class GenericDateTimeConverter : JsonConverter<DateTime>
 		throw new JsonException($"No valid format specified for {value}! Specified formats: {string.Join(", ", DateTimeFormats)}");
 	}
 
-	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-	{
-		writer.WriteStringValue(value.ToString(DateTimeFormats.First()));
-	}
+	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString(DateTimeFormats.First()));
 }

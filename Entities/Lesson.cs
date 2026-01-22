@@ -33,40 +33,25 @@ public class Lesson : EntityBase<Lesson>
 	public required Subject Subject { get; set; }
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 
-	public bool EqualsModel(Models.DigitalesRegister.Lesson? other)
-	{
-		return other is not null && DayOfWeek == other.Date.DayOfWeek
+	public bool EqualsModel(Models.DigitalesRegister.Lesson? other) => other is not null && DayOfWeek == other.Date.DayOfWeek
 			&& FromHour == Math.Clamp(other.FromHour - 1, 0, 23)
 			&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
 			&& LessonId == other.LessonId
 			&& Subject.EqualsModel(other.Subject);
-	}
 
-	public bool ShallowEqual(Lesson? other)
-	{
-		return other is not null && DayOfWeek == other.DayOfWeek
+	public bool ShallowEqual(Lesson? other) => other is not null && DayOfWeek == other.DayOfWeek
 			&& LessonId == other.LessonId
 			&& Subject == other.Subject
 			&& Teachers.ValueEquals(other.Teachers, x => x.RegisterID)
 			&& Occurances.ValueEquals(other.Occurances, x => x);
-	}
 
-	public override bool EqualsCore(Lesson b)
-	{
-		return FirstOccurance == b.FirstOccurance &&
+	public override bool EqualsCore(Lesson b) => FirstOccurance == b.FirstOccurance &&
 		Occurances.ValueEquals(b.Occurances) &&
 		FromHour == b.FromHour &&
 		Duration == b.Duration &&
 		Subject == b.Subject;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, Subject);
-	}
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, Subject);
 
-	public override int CompareTo(Lesson? b)
-	{
-		return FirstOccurance.CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
-	}
+	public override int CompareTo(Lesson? b) => FirstOccurance.CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
 }

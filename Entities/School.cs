@@ -19,23 +19,14 @@ public class School : EntityBase<School>
 	[Required]
 	public required bool IsEnabled { get; set; }
 
-	public override bool EqualsCore(School b)
-	{
-		return Name == b.Name &&
+	public override bool EqualsCore(School b) => Name == b.Name &&
 		RegisterUri == b.RegisterUri &&
 		SchoolId == b.SchoolId &&
 		ClientId == b.ClientId &&
 		Secret == b.Secret &&
 		IsEnabled == b.IsEnabled;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Name, RegisterUri, SchoolId, ClientId, Secret, IsEnabled);
-	}
+	public override int GetHashCode() => HashCode.Combine(Name, RegisterUri, SchoolId, ClientId, Secret, IsEnabled);
 
-	public override int CompareTo(School? b)
-	{
-		return Name.CompareTo(b?.Name);
-	}
+	public override int CompareTo(School? b) => Name.CompareTo(b?.Name);
 }

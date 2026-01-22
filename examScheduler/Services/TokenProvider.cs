@@ -32,10 +32,7 @@ public class TokenProvider(
 	private readonly JwtOptions _options = options;
 	private readonly AppDbContext _context = context;
 
-	public async Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct = default)
-	{
-		return await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
-	}
+	public async Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct = default) => await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
 
 	public async Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
 	{
@@ -106,20 +103,11 @@ public class TokenProvider(
 		if (entity is null) { return; }
 		_context.RefreshSessions.Remove(entity);
 	}
-	private async Task<RefreshTokenSession?> HasValidRefreshTokenSessionAsync(Entities.UserProfile user, string refreshTokenValue, CancellationToken ct = default)
-	{
-		return await GetSessionsForUserIQueryable(user).FirstOrDefaultAsync(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow, ct);
-	}
+	private async Task<RefreshTokenSession?> HasValidRefreshTokenSessionAsync(Entities.UserProfile user, string refreshTokenValue, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).FirstOrDefaultAsync(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow, ct);
 
-	private async Task<ICollection<RefreshTokenSession>> GetSessionsForUserAsync(Entities.UserProfile user, CancellationToken ct = default)
-	{
-		return await GetSessionsForUserIQueryable(user).ToListAsync(ct);
-	}
+	private async Task<ICollection<RefreshTokenSession>> GetSessionsForUserAsync(Entities.UserProfile user, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).ToListAsync(ct);
 
-	private IQueryable<RefreshTokenSession> GetSessionsForUserIQueryable(Entities.UserProfile user)
-	{
-		return _context.RefreshSessions.Where(s => s.UserProfileId == user.Id);
-	}
+	private IQueryable<RefreshTokenSession> GetSessionsForUserIQueryable(Entities.UserProfile user) => _context.RefreshSessions.Where(s => s.UserProfileId == user.Id);
 }
 
 public class JwtOptions : TokenValidationParameters

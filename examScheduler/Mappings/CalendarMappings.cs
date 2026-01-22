@@ -4,38 +4,26 @@ namespace examScheduler.Mappings;
 
 public static class CalendarMappings
 {
-	public static Models.API.Calendar ToDTO(this Calendar entity)
+	public static Models.API.Calendar ToDTO(this Calendar entity) => new()
 	{
-		return new()
-		{
-			Id = entity.Id,
-			LastsUntil = entity.LastsUntil,
-			Lessons = entity.Lessons.Select(ToDTO),
-			//ClassroomId = entity.ClassroomId,
-		};
-	}
+		Id = entity.Id,
+		LastsUntil = entity.LastsUntil,
+		Lessons = entity.Lessons.Select(ToDTO),
+		//ClassroomId = entity.ClassroomId,
+	};
 
-	public static Models.API.Lesson ToDTO(this Lesson entity)
+	public static Models.API.Lesson ToDTO(this Lesson entity) => new()
 	{
-		return new()
-		{
-			Id = entity.Id,
-			FromHour = entity.FromHour,
-			ToHour = entity.ToHour,
-			LessonName = entity.LessonName,
-			Occurances = entity.Occurances,
-			SubjectName = entity.Subject.Name,
-			Teachers = entity.Teachers.Select(ToDTO)
-		};
-	}
+		Id = entity.Id,
+		FromHour = entity.FromHour,
+		ToHour = entity.ToHour,
+		LessonName = entity.LessonName,
+		Occurances = entity.Occurances,
+		SubjectName = entity.Subject.Name,
+		Teachers = entity.Teachers.Select(ToDTO)
+	};
 
-	public static Models.API.Subject ToDTO(this Subject entity)
-	{
-		return new() { Name = entity.Name };
-	}
+	public static Models.API.Subject ToDTO(this Subject entity) => new() { Name = entity.Name };
 
-	public static Models.API.Teacher ToDTO(this Teacher entity)
-	{
-		return new() { FirstName = entity.FirstName, LastName = entity.LastName };
-	}
+	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { FirstName = entity.FirstName, LastName = entity.LastName };
 }

@@ -26,19 +26,10 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public ICollection<Schedule> Schedules { get; set; } = [ ];
 
-	public override bool EqualsCore(Classroom b)
-	{
-		return Name == b.Name &&
+	public override bool EqualsCore(Classroom b) => Name == b.Name &&
 		SchoolId == b.SchoolId;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Name, SchoolId);
-	}
+	public override int GetHashCode() => HashCode.Combine(Name, SchoolId);
 
-	public override int CompareTo(Classroom? b)
-	{
-		return Name.CompareTo(b?.Name);
-	}
+	public override int CompareTo(Classroom? b) => Name.CompareTo(b?.Name);
 }

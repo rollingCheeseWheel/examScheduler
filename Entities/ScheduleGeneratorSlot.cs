@@ -13,17 +13,11 @@ public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 	[Required, Range(0, int.MaxValue)]
 	public required int MinParticipants { get; set; }
 
-	public override bool EqualsCore(ScheduleGeneratorSlot b)
-	{
-		return Offset == b.Offset &&
+	public override bool EqualsCore(ScheduleGeneratorSlot b) => Offset == b.Offset &&
 		MaxParticipants == b.MaxParticipants &&
 		MinParticipants == b.MinParticipants;
-	}
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Offset, MaxParticipants, MinParticipants);
-	}
+	public override int GetHashCode() => HashCode.Combine(Offset, MaxParticipants, MinParticipants);
 
 	public override int CompareTo(ScheduleGeneratorSlot? other)
 	{

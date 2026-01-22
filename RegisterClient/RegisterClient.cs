@@ -77,10 +77,7 @@ public class RegisterClient : IRegisterClient
 		_targetRequestsPerSecond = other._targetRequestsPerSecond;
 	}
 
-	public IRegisterClient Copy()
-	{
-		return new RegisterClient(this);
-	}
+	public IRegisterClient Copy() => new RegisterClient(this);
 
 	public async Task<UserRole?> GetRoleAsync(CancellationToken ct = default)
 	{
@@ -88,17 +85,14 @@ public class RegisterClient : IRegisterClient
 		return GetRole(UserProfile);
 	}
 
-	public static UserRole? GetRole(RegisterUserProfile? userProfile)
+	public static UserRole? GetRole(RegisterUserProfile? userProfile) => userProfile?.Role switch
 	{
-		return userProfile?.Role switch
-		{
-			"student" => UserRole.Student,
-			"teacher" => UserRole.Teacher,
-			"admin" => UserRole.Admin,
-			//"parent" => UserRole.Parent,
-			_ => null
-		};
-	}
+		"student" => UserRole.Student,
+		"teacher" => UserRole.Teacher,
+		"admin" => UserRole.Admin,
+		//"parent" => UserRole.Parent,
+		_ => null
+	};
 
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
@@ -106,15 +100,9 @@ public class RegisterClient : IRegisterClient
 		return UserProfile;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default)
-	{
-		return await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
-	}
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default)
-	{
-		return await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
-	}
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
 
 	/// <summary>
 	/// The calendar is only available for a couple of weeks after the start date
@@ -125,7 +113,11 @@ public class RegisterClient : IRegisterClient
 		var args = new Dictionary<string, string> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
 
 		HttpResponseMessage? response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
-		if (response is null) return null;
+		if (response is null)
+		{
+			return null;
+		}
+
 		try
 		{
 			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));

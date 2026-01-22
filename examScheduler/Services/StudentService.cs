@@ -12,9 +12,6 @@ public class StudentService(AppDbContext context) : IStudentService
 {
 	private readonly AppDbContext _context = context;
 
-	public async Task<StudentProfile?> GetStudentProfileAsync(Guid id, CancellationToken ct = default)
-	{
-		return await _context.StudentProfiles.FindAsync([ id ], ct);
-	}
+	public async Task<StudentProfile?> GetStudentProfileAsync(Guid id, CancellationToken ct = default) => await _context.StudentProfiles.FindAsync([ id ], ct);
 
 }

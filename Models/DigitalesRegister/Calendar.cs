@@ -70,20 +70,11 @@ public class Lesson : IEquatable<Lesson>
 			&& a.Teachers.ValueEquals(b.Teachers, x => x.Id) );
 	}
 	public static bool operator !=(Lesson? a, Lesson? b) => !( a == b );
-	public override bool Equals(object? obj)
-	{
-		return obj is Lesson other && Equals(other);
-	}
+	public override bool Equals(object? obj) => obj is Lesson other && Equals(other);
 
-	public bool Equals(Lesson? other)
-	{
-		return this == other;
-	}
+	public bool Equals(Lesson? other) => this == other;
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Date, FromHour, ToHour, LessonId, LessonName, Subject, LinkToPreviousHour, Teachers);
-	}
+	public override int GetHashCode() => HashCode.Combine(Date, FromHour, ToHour, LessonId, LessonName, Subject, LinkToPreviousHour, Teachers);
 }
 
 public class Subject : IEquatable<Subject>
@@ -96,20 +87,11 @@ public class Subject : IEquatable<Subject>
 	public static bool operator ==(Subject? a, Subject? b) => ReferenceEquals(a, b) || ( a is not null && b is not null && a.Id == b.Id && a.Name == b.Name );
 
 	public static bool operator !=(Subject? a, Subject? b) => !( a == b );
-	public override bool Equals(object? obj)
-	{
-		return obj is Subject other && Equals(other);
-	}
+	public override bool Equals(object? obj) => obj is Subject other && Equals(other);
 
-	public bool Equals(Subject? other)
-	{
-		return this == other;
-	}
+	public bool Equals(Subject? other) => this == other;
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Id, Name);
-	}
+	public override int GetHashCode() => HashCode.Combine(Id, Name);
 }
 
 public class Teacher
@@ -129,13 +111,7 @@ public class Teacher
 	}
 
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
-	public override bool Equals(object? obj)
-	{
-		return obj is Teacher other && this == other;
-	}
+	public override bool Equals(object? obj) => obj is Teacher other && this == other;
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(Id, FirstName, LastName);
-	}
+	public override int GetHashCode() => HashCode.Combine(Id, FirstName, LastName);
 }

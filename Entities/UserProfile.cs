@@ -33,23 +33,11 @@ public class UserProfile
 			&& a.UserName == b.UserName );
 	}
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
-	public override bool Equals(object? obj)
-	{
-		return obj is UserProfile other && this == other;
-	}
+	public override bool Equals(object? obj) => obj is UserProfile other && this == other;
 
-	public bool Equals(UserProfile? other)
-	{
-		return this == other;
-	}
+	public bool Equals(UserProfile? other) => this == other;
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(School, UserName);
-	}
+	public override int GetHashCode() => HashCode.Combine(School, UserName);
 
-	public int CompareTo(UserProfile? other)
-	{
-		return Name.CompareTo(other?.Name);
-	}
+	public int CompareTo(UserProfile? other) => Name.CompareTo(other?.Name);
 }

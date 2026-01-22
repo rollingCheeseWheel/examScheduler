@@ -177,15 +177,10 @@ public class Calendar : EntityBase<Calendar>
 		return result;
 	}
 
-	public override bool EqualsCore(Calendar other)
-	{
+	public override bool EqualsCore(Calendar other) =>
 		//Classroom == other.Classroom &&
-		return Lessons.ValueEquals(other.Lessons);
-	}
+		Lessons.ValueEquals(other.Lessons);
 
-	public override int GetHashCode()
-	{
-		return HashCode.Combine(/*Classroom,*/ Lessons.Order());
-	}
+	public override int GetHashCode() => HashCode.Combine(/*Classroom,*/ Lessons.Order());
 	//public override int CompareTo(Calendar? b) => Classroom.CompareTo(b?.Classroom);
 }

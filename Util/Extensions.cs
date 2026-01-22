@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -14,15 +13,9 @@ public static class Extensions
 {
 	public const string RegisterDateTimeFormat = "yyyy-MM-dd";
 
-	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset)
-	{
-		return DateTimeOffset.ToString(RegisterDateTimeFormat);
-	}
+	public static string ToRegisterFormat(this DateTimeOffset DateTimeOffset) => DateTimeOffset.ToString(RegisterDateTimeFormat);
 
-	public static DateTimeOffset RegisterParse(this string dateTime)
-	{
-		return DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
-	}
+	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
 
 	public static bool RegisterTryParse(this string dateTime, out DateTimeOffset result)
 	{
@@ -41,10 +34,7 @@ public static class Extensions
 		return date.AddDays(-diff).Date;
 	}
 
-	public static Uri GetSchemeAndAuthority(this Uri uri)
-	{
-		return new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
-	}
+	public static Uri GetSchemeAndAuthority(this Uri uri) => new(uri.Scheme + Uri.SchemeDelimiter + uri.Authority);
 
 	public static Uri AppendRelativePath(this Uri uri, string relativePath)
 	{
@@ -52,40 +42,19 @@ public static class Extensions
 		return output;
 	}
 
-	public static string ToBase64(this byte[ ] bytes)
-	{
-		return Convert.ToBase64String(bytes);
-	}
+	public static string ToBase64(this byte[ ] bytes) => Convert.ToBase64String(bytes);
 
-	public static byte[ ] GetBytes(this string str)
-	{
-		return Encoding.UTF8.GetBytes(str);
-	}
+	public static byte[ ] GetBytes(this string str) => Encoding.UTF8.GetBytes(str);
 
-	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default)
-	{
-		return await message.Content.ReadAsStringAsync(ct);
-	}
+	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default) => await message.Content.ReadAsStringAsync(ct);
 
-	public static string ToJson(this object? obj, JsonSerializerOptions options)
-	{
-		return JsonSerializer.Serialize(obj, options);
-	}
+	public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
 
-	public static string ToJson(this object? obj)
-	{
-		return obj.ToJson(Constants.SerializerOptions);
-	}
+	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default)
-	{
-		return ( await task.WaitAsync(ct) ).ToJson(options);
-	}
+	public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default)
-	{
-		return await task.ToJsonAsync(Constants.SerializerOptions, ct);
-	}
+	public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
 
 	public static T? Json<T>(this string str, JsonSerializerOptions options)
 	{
@@ -99,35 +68,17 @@ public static class Extensions
 		}
 	}
 
-	public static T? Json<T>(this string str)
-	{
-		return str.Json<T>(Constants.SerializerOptions);
-	}
+	public static T? Json<T>(this string str) => str.Json<T>(Constants.SerializerOptions);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default)
-	{
-		return ( await task.WaitAsync(ct) ).Json<T>(options);
-	}
+	public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>(options);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default)
-	{
-		return ( await task.WaitAsync(ct) ).Json<T>();
-	}
+	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
 
-	public static T JsonClone<T>(this T obj)
-	{
-		return obj.ToJson().Json<T>()!;
-	}
+	public static T JsonClone<T>(this T obj) => obj.ToJson().Json<T>()!;
 
-	public static T JsonClone<T>(this T obj, JsonSerializerOptions options)
-	{
-		return obj.ToJson(options).Json<T>(options)!;
-	}
+	public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.ToJson(options).Json<T>(options)!;
 
-	public static IActionResult ServerError(this ControllerBase _)
-	{
-		return new StatusCodeResult(500);
-	}
+	public static IActionResult ServerError(this ControllerBase _) => new StatusCodeResult(500);
 
 	public static Stopwatch Print(this Stopwatch stopwatch)
 	{
@@ -135,10 +86,7 @@ public static class Extensions
 		return stopwatch;
 	}
 
-	public static int RoundUpToMultiple(this int value, int multiple)
-	{
-		return (int)( multiple * double.Ceiling(value / multiple) );
-	}
+	public static int RoundUpToMultiple(this int value, int multiple) => (int)( multiple * double.Ceiling(value / multiple) );
 
 	public static bool TryValidate(this object value, [NotNullWhen(false)] out ICollection<ValidationResult>? results)
 	{
@@ -148,28 +96,16 @@ public static class Extensions
 		return isValid;
 	}
 
-	public static bool TryValidate(this object value)
-	{
-		return value.TryValidate(out ICollection<ValidationResult>? _);
-	}
+	public static bool TryValidate(this object value) => value.TryValidate(out ICollection<ValidationResult>? _);
 
 	public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
-		where T : IComparable<T>
-	{
-		return ValueEquals(first, second, x => x);
-	}
+		where T : IComparable<T> => ValueEquals(first, second, x => x);
 
 	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector)
-		where TKey : IComparable<TKey>
-	{
-		return first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
-	}
+		where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 
 	public static IEnumerable<T> Except<T>(this IEnumerable<T> source, IEnumerable<T> target)
-		where T : IEquatable<T>
-	{
-		return Except(source, target, x => x);
-	}
+		where T : IEquatable<T> => Except(source, target, x => x);
 
 	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
 	{
@@ -194,17 +130,14 @@ public static class Extensions
 		return false;
 	}
 
-	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension)
-	{
-		return firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
+	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension) => firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
 			secondDimension >= 0 && secondDimension < grid.GetLength(1)
 			? grid[ firstDimsion, secondDimension ]
 			: default;
-	}
 
 	public static bool TryGetId(this ClaimsPrincipal claims, out Guid id)
 	{
-		var claim = claims.FindFirst(ClaimTypes.NameIdentifier);
+		Claim? claim = claims.FindFirst(ClaimTypes.NameIdentifier);
 		return Guid.TryParse(claim?.Value, out id);
 	}
 }
