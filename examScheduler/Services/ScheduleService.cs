@@ -1,9 +1,6 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
 using Util;
 
 namespace examScheduler.Services;
@@ -16,7 +13,7 @@ public interface IScheduleService
 	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default);
 	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default);
 
-	Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, CancellationToken ct = default);
+	Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
 	Task<Guid?> TryReportActualStudentsForScheduleSlot(Guid scheduleSlotId, IEnumerable<Models.API.UserProfile> actualParticipants, CancellationToken ct = default);
 
 	Task<Guid?> TryEnlistStudentAsync(Guid slotId, Guid actingStudentId, CancellationToken ct = default);
@@ -46,19 +43,12 @@ public class ScheduleService(
 		var slot = await _context.Schedules
 			.SelectMany(s => s.ExamSlots)
 			.FirstOrDefaultAsync(e => e.Id == slotId, ct);
-		if (slot is null)
-		{
-			return null;
-		}
-		return await GetScheduleAsync(slot.ScheduleId, ct);
+		return slot is null ? null : await GetScheduleAsync(slot.ScheduleId, ct);
 	}
 
-	public async Task<ExamSlot?> GetExamSlotAsync(Guid id, CancellationToken ct = default)
-	{
-		return await _context.Schedules
+	public async Task<ExamSlot?> GetExamSlotAsync(Guid id, CancellationToken ct = default) => await _context.Schedules
 			.SelectMany(s => s.ExamSlots)
 			.FirstOrDefaultAsync(e => e.Id == id, ct);
-	}
 
 	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
 			.Where(sp => sp.Id == userId)
@@ -71,12 +61,56 @@ public class ScheduleService(
 			.Select(s => s.Id)
 			.ToListAsync(ct);
 
-	public async Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, CancellationToken ct = default)
+	public async Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default)
 	{
-		using var transaction = await _context.Database.BeginTransactionAsync(ct);
+		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
+		if (subject is null)
+		{
+			return null;
+		}
 
+		var teacherProfile = await _context.TeacherProfiles.FindAsync([ teacherId ], ct);
+		if (teacherProfile is null) { return null; }
 
-		throw new NotImplementedException();
+		var classroom = await _context.Classrooms.FindAsync([ request.ClassroomId ], ct);
+		if (classroom is null || !teacherProfile.Classrooms.Contains(classroom))
+		{
+			return null;
+		}
+
+		var minCapacity = request.GeneratorSlots.Sum(g => g.MinParticipants);
+		var maxCapacity = request.GeneratorSlots.Sum(g => g.MaxParticipants);
+		if (classroom.Students.Count < minCapacity ||
+			classroom.Students.Count > maxCapacity)
+		{
+			return null;
+		}
+
+		var generatorSlots = request.GeneratorSlots
+			.Select(g => new ScheduleGeneratorSlot
+			{
+				MaxParticipants = g.MaxParticipants,
+				MinParticipants = g.MinParticipants,
+				Offset = g.Offset,
+			})
+			.ToList();
+
+		var newSchedule = new Schedule
+		{
+			SlotFillingBehaviour = request.SlotFillingBehaviour,
+			AutoLockIn = request.AutoLockIn,
+			AutoLockInOffset = request.LockInOffset,
+			StartDate = request.StartDate,
+			EndDate = request.EndDate,
+			GeneratorSlots = generatorSlots,
+			Subject = subject,
+		};
+
+		classroom.Schedules.Add(newSchedule);
+		_context.Schedules.Add(newSchedule);
+		await _context.SaveChangesAsync(ct);
+
+		return newSchedule.Id;
 	}
 
 	public async Task<Guid?> TryReportActualStudentsForScheduleSlot(Guid scheduleSlotId, IEnumerable<Models.API.UserProfile> participants, CancellationToken ct = default)
@@ -104,14 +138,14 @@ public class ScheduleService(
 
 	public async Task<Guid?> TryEnlistStudentAsync(Guid slotId, Guid studentId, CancellationToken ct = default)
 	{
-		using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync(ct);
-		StudentProfile? student = await _studentService.GetStudentProfileAsync(studentId, ct);
+		using var transaction = await _context.Database.BeginTransactionAsync(ct);
+		var student = await _studentService.GetStudentProfileAsync(studentId, ct);
 		if (student is null)
 		{
 			return null;
 		}
 
-		Schedule? schedule = await GetScheduleForExamSlotAsync(slotId, ct);
+		var schedule = await GetScheduleForExamSlotAsync(slotId, ct);
 		if (schedule is null)
 		{
 			return null;
@@ -128,9 +162,9 @@ public class ScheduleService(
 
 	public async Task<SwapRequest?> CreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedStudentId, DateTimeOffset expirationDate, CancellationToken ct = default)
 	{
-		using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync(ct);
+		using var transaction = await _context.Database.BeginTransactionAsync(ct);
 
-		Schedule? schedule = await _context.Schedules.FindAsync([ scheduleId ], ct);
+		var schedule = await _context.Schedules.FindAsync([ scheduleId ], ct);
 		if (schedule is null)
 		{
 			return null;
@@ -146,8 +180,8 @@ public class ScheduleService(
 			return null;
 		}
 
-		UserProfile? requestingStudent = await _context.Users.FindAsync([ requestingStudentId ], ct);
-		UserProfile? requestedStudent = await _context.Users.FindAsync([ requestedStudentId ], ct);
+		var requestingStudent = await _context.Users.FindAsync([ requestingStudentId ], ct);
+		var requestedStudent = await _context.Users.FindAsync([ requestedStudentId ], ct);
 		if (requestingStudent is null || requestedStudent is null)
 		{
 			return null;
@@ -173,7 +207,7 @@ public class ScheduleService(
 
 	public async Task<SwapRequest?> TryDeleteSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
-		SwapRequest? swapRequest = await _context.SwapRequests
+		var swapRequest = await _context.SwapRequests
 			.Where(sr => sr.Id == swapRequestId)
 			.Where(sr => sr.RequestingStudentId == actingStudentId
 				|| sr.RequestedStudentId == actingStudentId)
@@ -195,20 +229,20 @@ public class ScheduleService(
 
 	public async Task<SwapRequest?> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
-		using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync(ct);
-		SwapRequest? swapRequest = await _context.SwapRequests.FindAsync([ swapRequestId ], ct);
+		using var transaction = await _context.Database.BeginTransactionAsync(ct);
+		var swapRequest = await _context.SwapRequests.FindAsync([ swapRequestId ], ct);
 		if (swapRequest is null)
 		{
 			return null;
 		}
 
-		Task<StudentProfile?> requestingStudentTask = _context.StudentProfiles.FindAsync([ swapRequest.RequestingStudentId ], ct).AsTask();
-		Task<StudentProfile?> requestedStudentTask = _context.StudentProfiles.FindAsync([ swapRequest.RequestedStudentId ], ct).AsTask();
+		var requestingStudentTask = _context.StudentProfiles.FindAsync([ swapRequest.RequestingStudentId ], ct).AsTask();
+		var requestedStudentTask = _context.StudentProfiles.FindAsync([ swapRequest.RequestedStudentId ], ct).AsTask();
 		await Task.WhenAll(requestingStudentTask, requestedStudentTask).WaitAsync(ct);
 
 
-		StudentProfile? requestingStudent = requestingStudentTask.Result;
-		StudentProfile? requestedStudent = requestedStudentTask.Result;
+		var requestingStudent = requestingStudentTask.Result;
+		var requestedStudent = requestedStudentTask.Result;
 		if (requestingStudent is null || requestedStudent is null)
 		{
 			return null;
@@ -219,7 +253,7 @@ public class ScheduleService(
 			return null;
 		}
 
-		Schedule? schedule = await _context.Schedules.FindAsync([ swapRequest.ScheduleId ], ct);
+		var schedule = await _context.Schedules.FindAsync([ swapRequest.ScheduleId ], ct);
 		if (schedule is null)
 		{
 			return null;
@@ -248,7 +282,7 @@ public class ScheduleService(
 
 	private static bool StudentsInSameSchedule(IEnumerable<StudentProfile> students, Guid scheduleId)
 	{
-		IEnumerable<IEnumerable<Guid>> userScheduleIds = students.Select(u => u.Classroom.Schedules.Select(s => s.Id) ?? [ ]);
+		var userScheduleIds = students.Select(u => u.Classroom.Schedules.Select(s => s.Id) ?? [ ]);
 		return userScheduleIds.All(ids => ids.Contains(scheduleId));
 	}
 

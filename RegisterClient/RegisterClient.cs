@@ -112,7 +112,7 @@ public class RegisterClient : IRegisterClient
 	{
 		var args = new Dictionary<string, string> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
 
-		HttpResponseMessage? response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
+		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null)
 		{
 			return null;
@@ -133,7 +133,7 @@ public class RegisterClient : IRegisterClient
 	{
 		if (!await AuthenticateAsync(ct)) { return [ ]; }
 
-		DateTimeOffset iterdate = startDate;
+		var iterdate = startDate;
 		var dates = new List<DateTimeOffset>();
 		while (iterdate < endDate)
 		{
@@ -144,12 +144,12 @@ public class RegisterClient : IRegisterClient
 		Console.WriteLine(dates.ToJson());
 
 		var tasks = new List<Task<IEnumerable<Models.DigitalesRegister.Lesson>?>>();
-		foreach (DateTimeOffset date in dates)
+		foreach (var date in dates)
 		{
 			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
 		}
 
-		IEnumerable<Lesson>?[ ] results = await Task.WhenAll(tasks);
+		var results = await Task.WhenAll(tasks);
 
 		return results
 			.Where(t => t is not null)
@@ -161,22 +161,22 @@ public class RegisterClient : IRegisterClient
 	private static List<Models.DigitalesRegister.Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		List<Models.DigitalesRegister.Lesson> result = [ ];
-		JsonElement rootElement = jsonDoc.RootElement;
+		var rootElement = jsonDoc.RootElement;
 
-		foreach (JsonProperty dateProp in rootElement.EnumerateObject()) // date
+		foreach (var dateProp in rootElement.EnumerateObject()) // date
 		{
-			if (!dateProp.Name.RegisterTryParse(out DateTimeOffset DateTimeOffset))
+			if (!dateProp.Name.RegisterTryParse(out var DateTimeOffset))
 			{
 				continue;
 			}
 
 			List<Models.DigitalesRegister.Lesson> rawLessons = [ ];
 
-			foreach (JsonProperty hour in dateProp.Value.EnumerateObject())
+			foreach (var hour in dateProp.Value.EnumerateObject())
 			{
 				try
 				{
-					Lesson? parsedLesson = hour.Value.Deserialize<Models.DigitalesRegister.Lesson>(Constants.SerializerOptions)!;
+					var parsedLesson = hour.Value.Deserialize<Models.DigitalesRegister.Lesson>(Constants.SerializerOptions)!;
 
 					if (parsedLesson is not null)
 					{
@@ -191,7 +191,7 @@ public class RegisterClient : IRegisterClient
 
 			List<Models.DigitalesRegister.Lesson> compactedLessons = [ ];
 			Models.DigitalesRegister.Lesson? currentLesson = null;
-			foreach (Lesson? lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ToList())
+			foreach (var lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ToList())
 			{
 				if (currentLesson is null || !lesson.LinkToPreviousHour)
 				{
@@ -231,7 +231,7 @@ public class RegisterClient : IRegisterClient
 		{
 			if (TokenExpiration is null) // not authenticated yet
 			{
-				TokenCreateResponse? authResponse = await PostJsonAsync<TokenCreateResponse>(
+				var authResponse = await PostJsonAsync<TokenCreateResponse>(
 					RegisterPathAPI.TokenCreate,
 					new TokenCreateRequest
 					{
@@ -274,7 +274,7 @@ public class RegisterClient : IRegisterClient
 	{
 		if (_refreshToken is null || UserId is null) { return false; }
 		var request = new TokenRefreshRequest { RefreshToken = _refreshToken, UserId = (int)UserId! };
-		TokenRefreshResponse? response = await PostJsonAsync<TokenRefreshResponse>(RegisterPathAPI.TokenRefresh, request, true, ct: ct);
+		var response = await PostJsonAsync<TokenRefreshResponse>(RegisterPathAPI.TokenRefresh, request, true, ct: ct);
 		if (response is null) { return false; }
 		_accessToken = response.Token;
 		TokenExpiration = response.Expiration;
@@ -288,7 +288,7 @@ public class RegisterClient : IRegisterClient
 	{
 		try
 		{
-			HttpResponseMessage? response = await PostJsonAsync(path, data, authRequest, ct);
+			var response = await PostJsonAsync(path, data, authRequest, ct);
 
 			if (response is null)
 			{
@@ -297,7 +297,7 @@ public class RegisterClient : IRegisterClient
 			else
 			{
 				var content = await response.ReadContentAsStringAsync(ct);
-				T? deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
+				var deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
 				return deserialized is not null && deserialized.TryValidate() ? deserialized : default;
 			}
 		}
@@ -332,7 +332,7 @@ public class RegisterClient : IRegisterClient
 				"application/json"
 			);
 
-			HttpResponseMessage? response = await SendAsync(request, ct);
+			var response = await SendAsync(request, ct);
 			return response;
 		}
 		catch
@@ -346,7 +346,7 @@ public class RegisterClient : IRegisterClient
 	/// </summary>
 	private async Task<T?> GetAsync<T>(RegisterPath path, CancellationToken ct = default)
 	{
-		HttpResponseMessage? response = await GetAsync(path, ct: ct);
+		var response = await GetAsync(path, ct: ct);
 
 		if (response is null || !response.TryValidate())
 		{
@@ -372,7 +372,7 @@ public class RegisterClient : IRegisterClient
 			return null;
 		}
 
-		Uri uri = path.Get(SchoolUri);
+		var uri = path.Get(SchoolUri);
 		if (uriArgs is not null)
 		{
 			uri = new(QueryHelpers.AddQueryString(uri.AbsoluteUri, uriArgs));

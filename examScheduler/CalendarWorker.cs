@@ -23,10 +23,10 @@ public class CalendarWorker(
 
 		while (await _queue.Reader.WaitToReadAsync(stoppingToken))
 		{
-			while (_queue.Reader.TryRead(out CalendarTask? task))
+			while (_queue.Reader.TryRead(out var task))
 			{
 				_logger.LogInformation("Working on {Id}", task.Id);
-				using IServiceScope scope = _serviceScopeFactory.CreateScope();
+				using var scope = _serviceScopeFactory.CreateScope();
 				await task.Task(scope, _logger, stoppingToken);
 				_logger.LogInformation("Finished {Id}", task.Id);
 			}

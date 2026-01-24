@@ -36,7 +36,7 @@ public class TokenProvider(
 
 	public async Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
 	{
-		RefreshTokenSession? refreshToken = await CreateRefreshTokenAsync(user, ct);
+		var refreshToken = await CreateRefreshTokenAsync(user, ct);
 		if (refreshToken is null) { return null; }
 		var accessToken = GetAccessToken(claims);
 		return accessToken is null
@@ -65,7 +65,7 @@ public class TokenProvider(
 	public async Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-		RefreshTokenSession? existingValidSession = await HasValidRefreshTokenSessionAsync(user, refreshToken, ct);
+		var existingValidSession = await HasValidRefreshTokenSessionAsync(user, refreshToken, ct);
 		if (existingValidSession is null) { return null; }
 		await DeleteRefreshTokenAsync(refreshToken, ct);
 		return await GetTokenPairAsync(claims, user, ct);
@@ -92,14 +92,14 @@ public class TokenProvider(
 
 	public async Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user)
 	{
-		ICollection<RefreshTokenSession>? tokens = await GetSessionsForUserAsync(user);
+		var tokens = await GetSessionsForUserAsync(user);
 		if (tokens is null) { return; }
 		_context.RemoveRange(tokens);
 	}
 
 	public async Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
 	{
-		RefreshTokenSession? entity = await _context.RefreshSessions.FirstOrDefaultAsync(t => t.TokenValue == refreshToken, ct);
+		var entity = await _context.RefreshSessions.FirstOrDefaultAsync(t => t.TokenValue == refreshToken, ct);
 		if (entity is null) { return; }
 		_context.RefreshSessions.Remove(entity);
 	}

@@ -19,7 +19,7 @@ public static class Extensions
 
 	public static bool RegisterTryParse(this string dateTime, out DateTimeOffset result)
 	{
-		if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out DateTimeOffset temp))
+		if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
 		{
 			result = temp;
 			return true;
@@ -96,7 +96,7 @@ public static class Extensions
 		return isValid;
 	}
 
-	public static bool TryValidate(this object value) => value.TryValidate(out ICollection<ValidationResult>? _);
+	public static bool TryValidate(this object value) => value.TryValidate(out var _);
 
 	public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
 		where T : IComparable<T> => ValueEquals(first, second, x => x);
@@ -104,13 +104,10 @@ public static class Extensions
 	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector)
 		where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 
-	public static IEnumerable<T> Except<T>(this IEnumerable<T> source, IEnumerable<T> target)
-		where T : IEquatable<T> => Except(source, target, x => x);
-
 	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
 	{
 		var keysInTarget = new HashSet<TKey>(target.Select(selector));
-		foreach (TSource? item in source)
+		foreach (var item in source)
 		{
 			if (!keysInTarget.Contains(selector(item)))
 			{
@@ -127,6 +124,8 @@ public static class Extensions
 		}
 		return source;
 	}
+
+	public static IEnumerable<TResult> DistinctMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector) where TResult : IEquatable<TResult> => source.SelectMany(selector).Distinct();
 
 	public static bool TrySet<T>(this T?[ , ] grid, int firstDimension, int secondDimension, T? element)
 	{
@@ -146,7 +145,7 @@ public static class Extensions
 
 	public static bool TryGetId(this ClaimsPrincipal claims, out Guid id)
 	{
-		Claim? claim = claims.FindFirst(ClaimTypes.NameIdentifier);
+		var claim = claims.FindFirst(ClaimTypes.NameIdentifier);
 		return Guid.TryParse(claim?.Value, out id);
 	}
 }

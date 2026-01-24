@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Util;
+using Util.Validation;
 
 namespace Entities;
 
@@ -12,7 +13,7 @@ public class AuditLog : EntityBase<AuditLog>
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]
 	public required Guid ActorId { get; set; }
-	[Required]
+	[Required, ValidEnum]
 	public required AuditLogActor ActorType { get; set; }
 	public string? ActorName { get; set; }
 	[Required]

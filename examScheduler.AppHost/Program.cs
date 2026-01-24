@@ -1,9 +1,9 @@
 using examScheduler.AppHost;
 
-IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions { EnableResourceLogging = true });
+var builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions { EnableResourceLogging = true });
 
 //Local
-IResourceBuilder<PostgresDatabaseResource> postgres = builder.AddPostgres(ResourceNames.DBResourceName) // container name
+var postgres = builder.AddPostgres(ResourceNames.DBResourceName) // container name
 	.WithLifetime(ContainerLifetime.Persistent)
 	.WithDataVolume()
 	.WithHostPort(5432)

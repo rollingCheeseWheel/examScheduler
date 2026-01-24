@@ -9,8 +9,7 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public required string Name { get; set; }
 	[Required]
-	public required School School { get; set; }
-	public Guid SchoolId { get; private set; }
+	public Guid SchoolId { get; set; }
 	[Required]
 	public required ICollection<int> RegisterId { get; set; } = [ ];
 	[Required]

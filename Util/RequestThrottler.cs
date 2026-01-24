@@ -13,7 +13,7 @@ public class RequestThrottler(double actionsPerSecond) : IDisposable
 		await _semaphore.WaitAsync(ct);
 		try
 		{
-			TimeSpan timeToWait = _interval - _stopWatch.Elapsed;
+			var timeToWait = _interval - _stopWatch.Elapsed;
 			timeToWait = timeToWait >= TimeSpan.Zero ? timeToWait : TimeSpan.Zero;
 			await Task.Delay(timeToWait, ct);
 			_stopWatch.Restart();

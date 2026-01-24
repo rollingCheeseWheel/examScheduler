@@ -36,8 +36,8 @@ public class ExamSlot : EntityBase<ExamSlot>
 	{
 		get => Schedule.AutoLockIn switch
 		{
-			AutoLockIn.FixedDate => Date >= ( Schedule.FirstExamination - Schedule.LockInOffset ),
-			AutoLockIn.TimeBeforeExamination => DateTimeOffset.UtcNow >= ( Date - Schedule.LockInOffset ),
+			AutoLockIn.FixedDate => Date >= ( Schedule.StartDate - Schedule.AutoLockInOffset ),
+			AutoLockIn.TimeBeforeExamination => DateTimeOffset.UtcNow >= ( Date - Schedule.AutoLockInOffset ),
 			_ => true,
 		};
 	}

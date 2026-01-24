@@ -14,14 +14,9 @@ public class ClassroomController(IClassroomService classroomService) : Controlle
 	private readonly IClassroomService _classroomService = classroomService;
 
 	[HttpGet("/all")]
-	public async Task<Result<IEnumerable<Classroom>>> GetClassrooms(CancellationToken ct)
-	{
-		if (User.TryGetId(out Guid id))
-		{
-			return new(( await _classroomService.GetClassroomsForUserAsync(id, ct) )
+	public async Task<Result<IEnumerable<Classroom>>> GetClassrooms(CancellationToken ct) => User.TryGetId(out var id)
+			? new(( await _classroomService.GetClassroomsForUserAsync(id, ct) )
 				.Select(x => x.ToDTO())
-			);
-		}
-		return new([ ]);
-	}
+			)
+			: new([ ]);
 }

@@ -102,6 +102,8 @@ public class Teacher
 	public required string FirstName { get; set; }
 	[Required]
 	public required string LastName { get; set; }
+	[JsonIgnore]
+	public string Name => string.Join(" ", FirstName, LastName);
 
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{

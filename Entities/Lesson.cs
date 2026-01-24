@@ -25,27 +25,26 @@ public class Lesson : EntityBase<Lesson>
 	[Required]
 	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
-	public required int LessonId { get; set; }
-	[Required]
-	public required string LessonName { get; set; }
+	public required string Name { get; set; }
 
 	[Required]
 	public required Subject Subject { get; set; }
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
 
-	public bool EqualsModel(Models.DigitalesRegister.Lesson? other) => other is not null && DayOfWeek == other.Date.DayOfWeek
-			&& FromHour == Math.Clamp(other.FromHour - 1, 0, 23)
-			&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
-			&& LessonId == other.LessonId
-			&& Subject.EqualsModel(other.Subject);
+	public bool EqualsModel(Models.DigitalesRegister.Lesson? other) => other is not null
+		&& DayOfWeek == other.Date.DayOfWeek
+		&& FromHour == Math.Clamp(other.FromHour - 1, 0, 23)
+		&& ToHour == Math.Clamp(other.ToHour - 1, 0, 23)
+		&& Subject.Name == other.Subject.Name;
 
-	public bool ShallowEqual(Lesson? other) => other is not null && DayOfWeek == other.DayOfWeek
-			&& LessonId == other.LessonId
-			&& Subject == other.Subject
-			&& Teachers.ValueEquals(other.Teachers, x => x.RegisterID)
-			&& Occurances.ValueEquals(other.Occurances, x => x);
+	public bool ShallowEqual(Lesson? other) => other is not null
+		&& DayOfWeek == other.DayOfWeek
+		&& Subject == other.Subject
+		&& Teachers.ValueEquals(other.Teachers)
+		&& Occurances.ValueEquals(other.Occurances);
 
-	public override bool EqualsCore(Lesson b) => FirstOccurance == b.FirstOccurance &&
+	public override bool EqualsCore(Lesson b) =>
+		FirstOccurance == b.FirstOccurance &&
 		Occurances.ValueEquals(b.Occurances) &&
 		FromHour == b.FromHour &&
 		Duration == b.Duration &&

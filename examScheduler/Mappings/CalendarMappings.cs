@@ -9,7 +9,6 @@ public static class CalendarMappings
 		Id = entity.Id,
 		LastsUntil = entity.LastsUntil,
 		Lessons = entity.Lessons.Select(ToDTO),
-		//ClassroomId = entity.ClassroomId,
 	};
 
 	public static Models.API.Lesson ToDTO(this Lesson entity) => new()
@@ -17,13 +16,11 @@ public static class CalendarMappings
 		Id = entity.Id,
 		FromHour = entity.FromHour,
 		ToHour = entity.ToHour,
-		LessonName = entity.LessonName,
+		LessonName = entity.Name,
 		Occurances = entity.Occurances,
 		SubjectName = entity.Subject.Name,
 		Teachers = entity.Teachers.Select(ToDTO)
 	};
-
-	public static Models.API.Subject ToDTO(this Subject entity) => new() { Name = entity.Name };
 
 	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { FirstName = entity.FirstName, LastName = entity.LastName };
 }

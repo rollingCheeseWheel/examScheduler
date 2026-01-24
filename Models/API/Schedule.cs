@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Xml;
+using System.Text.Json.Serialization;
 using Util;
+using Util.Converters;
+using Util.Validation;
 
 namespace Models.API;
 
@@ -9,13 +11,14 @@ public class Schedule
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
+	public required DateTimeOffset StartDate { get; set; }
+	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
+	public required DateTimeOffset EndDate { get; set; }
+	[Required, ValidEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
-	[Required]
-	public required DateTimeOffset FirstExamination { get; set; }
-	[Required]
-	public required DateTimeOffset LockInOffset { get; set; }
-	[Required]
-	public required string Description { get; set; }
+	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	public required TimeSpan LockInOffset { get; set; }
+	public string? Description { get; set; }
 	[Required]
 	public required string SubjectName { get; set; }
 	[Required]
@@ -45,13 +48,18 @@ public class ExamSlot
 public class ScheduleCreateRequest
 {
 	[Required]
+	public required Guid ClassroomId { get; set; }
+	[Required, ValidEnum]
+	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
+	[Required, ValidEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required]
-	public required DateTimeOffset FirstExamination { get; set; }
+	public required DateTimeOffset StartDate { get; set; }
 	[Required]
-	public required DateTimeOffset LockInOffset { get; set; }
-	[Required]
-	public required string Description { get; set; }
+	public required DateTimeOffset EndDate { get; set; }
+	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	public required TimeSpan LockInOffset { get; set; }
+	public string? Description { get; set; }
 	[Required]
 	public required string SubjectName { get; set; }
 	[Required]
@@ -60,8 +68,8 @@ public class ScheduleCreateRequest
 
 public class ScheduleGeneratorSlot
 {
-	[Required]
-	public required int Offset { get; set; }
+	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	public required TimeSpan Offset { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }
 	[Required]

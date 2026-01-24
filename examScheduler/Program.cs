@@ -12,7 +12,7 @@ using System.Text;
 using System.Text.Json;
 using Util;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
@@ -42,12 +42,13 @@ builder.Services.AddSignalR();
 
 /*////*/
 builder.Services
-	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<IAuthService, AuthService>()
+	.AddScoped<ICalendarService, CalendarService>()
 	.AddScoped<IClassroomService, ClassroomService>()
-	.AddScoped<ITokenProvider, TokenProvider>()
 	.AddScoped<IScheduleService, ScheduleService>()
-	.AddScoped<IStudentService, StudentService>();
+	.AddScoped<ISchoolsService, SchoolsService>()
+	.AddScoped<IStudentService, StudentService>()
+	.AddScoped<ITokenProvider, TokenProvider>();
 /*////*/
 
 /*////*/
@@ -120,7 +121,7 @@ builder.Services.AddResponseCompression(options =>
 	);
 });
 
-WebApplication app = builder.Build();
+var app = builder.Build();
 
 app.UseResponseCompression();
 
@@ -131,8 +132,8 @@ if (app.Environment.IsDevelopment())
 {
 	/*app.MapOpenApi("{documentName}");*/
 
-	using IServiceScope schoolScope = app.Services.CreateScope();
-	AppDbContext db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
+	using var schoolScope = app.Services.CreateScope();
+	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
 	db.Database.Migrate();
 
 	List<Entities.School> schools = [
@@ -163,7 +164,7 @@ if (app.Environment.IsDevelopment())
 		}
 	];
 
-	List<School> existingSchools = await db.Schools.ToListAsync(app.Lifetime.ApplicationStopping);
+	var existingSchools = await db.Schools.ToListAsync(app.Lifetime.ApplicationStopping);
 	if (schools.ValueEquals(existingSchools, s => s))
 	{
 		await db.Schools.ExecuteDeleteAsync(app.Lifetime.ApplicationStopping);

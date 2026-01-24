@@ -3,7 +3,7 @@ using registerClient;
 using System.Diagnostics;
 using Util;
 
-IConfigurationRoot config = new ConfigurationBuilder()
+var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();
 var sw = new Stopwatch();
 

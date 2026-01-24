@@ -13,6 +13,13 @@ public enum AutoLockIn
 	TimeBeforeExamination,
 }
 
+public enum SlotFillingBehaviour
+{
+	RandomizeUnassigned,
+	RandomizeUnassignedThenCompact,
+	CompactAll
+}
+
 public enum AuditLogActor
 {
 	Student,

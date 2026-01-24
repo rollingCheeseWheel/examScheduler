@@ -9,8 +9,9 @@ public static class ScheduleMappings
 		Id = entity.Id,
 		Description = entity.Description,
 		AutoLockIn = entity.AutoLockIn,
-		LockInOffset = DateTimeOffset.UnixEpoch + entity.LockInOffset,
-		FirstExamination = entity.FirstExamination,
+		LockInOffset = entity.AutoLockInOffset,
+		StartDate = entity.StartDate,
+		EndDate = entity.EndDate,
 		SubjectName = entity.Subject.Name,
 		ExamSlots = entity.ExamSlots.Select(ToDTO),
 		AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
@@ -25,5 +26,12 @@ public static class ScheduleMappings
 		MaxParticipants = entity.MaxParticipants,
 		ActuallyParticipated = entity.ActuallyParticipated.Select(x => x.ToDTO()),
 		Participants = entity.Participants.Select(x => x.ToDTO())
+	};
+
+	public static Models.API.ScheduleGeneratorSlot ToDTO(this ScheduleGeneratorSlot entity) => new()
+	{
+		MaxParticipants = entity.MaxParticipants,
+		MinParticipants = entity.MinParticipants,
+		Offset = entity.Offset,
 	};
 }

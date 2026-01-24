@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
+using Util.Validation;
 
 namespace Entities;
 
@@ -10,11 +11,10 @@ public class UserProfile
 	IComparable<UserProfile>, IEquatable<UserProfile> // would be EntityBase<UserProfile>
 {
 	[Required]
-	public required School School { get; set; }
-	public Guid SchoolId { get; private set; }
+	public Guid SchoolId { get; set; }
 	[Required]
 	public required long RegiserId { get; set; }
-	[Required]
+	[Required, ValidEnum]
 	public required UserRoles Role { get; set; }
 	[Required]
 	public required string FirstName { get; set; }
@@ -29,7 +29,7 @@ public class UserProfile
 
 	public static bool operator ==(UserProfile? a, UserProfile? b)
 	{
-		return ReferenceEquals(a, b) || ( a is not null && b is not null && a.School == b.School
+		return ReferenceEquals(a, b) || ( a is not null && b is not null && a.SchoolId == b.SchoolId
 			&& a.UserName == b.UserName );
 	}
 	public static bool operator !=(UserProfile? a, UserProfile? b) => !( a == b );
@@ -37,7 +37,7 @@ public class UserProfile
 
 	public bool Equals(UserProfile? other) => this == other;
 
-	public override int GetHashCode() => HashCode.Combine(School, UserName);
+	public override int GetHashCode() => HashCode.Combine(SchoolId, UserName);
 
 	public int CompareTo(UserProfile? other) => Name.CompareTo(other?.Name);
 }

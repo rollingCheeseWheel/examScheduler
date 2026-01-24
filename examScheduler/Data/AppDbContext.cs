@@ -38,7 +38,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.IsUnique();
 
 		modelBuilder.Entity<Classroom>()
-			.HasOne(c => c.School)
+			.HasOne<School>()
 			.WithMany()
 			.HasForeignKey(c => c.SchoolId);
 
@@ -77,18 +77,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasMany(t => t.Subjects)
 			.WithMany();
 
-		//modelBuilder.Entity<Teacher>()
-		//	.HasMany(t => t.Classrooms)
-		//	.WithMany(c => c.Teachers);
+		modelBuilder.Entity<Teacher>()
+			.HasOne<School>()
+			.WithMany()
+			.HasForeignKey(t => t.SchoolId);
 
 		modelBuilder.Entity<Teacher>()
 			.Navigation(t => t.Subjects)
 			.AutoInclude();
-
-		modelBuilder.Entity<Teacher>()
-			.HasOne(t => t.School)
-			.WithMany()
-			.HasForeignKey(t => t.SchoolId);
 		#endregion
 
 		#region Subject
@@ -128,6 +124,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<ExamSlot>()
 			.Navigation(s => s.ActuallyParticipated)
 			.AutoInclude();
+		modelBuilder.Entity<ExamSlot>()
+			.Navigation(s => s.GeneratorSlot)
+			.AutoInclude();
 		#endregion
 
 		#region AuditLog
@@ -164,7 +163,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey<TeacherProfile>(tp => tp.Id);
 
 		modelBuilder.Entity<UserProfile>()
-			.HasOne(u => u.School)
+			.HasOne<School>()
 			.WithMany()
 			.HasForeignKey(u => u.SchoolId);
 		#endregion
@@ -178,7 +177,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#region TeacherProfile
 		modelBuilder.Entity<TeacherProfile>()
 			.HasOne(tp => tp.Teacher)
-			.WithOne(t => t.TeacherProfile)
+			.WithOne()
 			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
 
 		modelBuilder.Entity<TeacherProfile>()
@@ -223,10 +222,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 	private void ValidateEntities()
 	{
-		IEnumerable<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry> entires = ChangeTracker.Entries()
+		var entires = ChangeTracker.Entries()
 			.Where(e => e.State is EntityState.Added or EntityState.Modified);
 
-		foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry? entry in entires)
+		foreach (var entry in entires)
 		{
 			var entity = entry.Entity;
 			var validationContext = new ValidationContext(entity);

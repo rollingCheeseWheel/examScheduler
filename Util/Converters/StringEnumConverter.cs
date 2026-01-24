@@ -14,11 +14,11 @@ public class StringEnumConverter<T> : JsonConverter<T> where T : StringEnum
 			return null;
 		}
 
-		IEnumerable<FieldInfo> fields = typeof(T)
+		var fields = typeof(T)
 			.GetFields(BindingFlags.Public | BindingFlags.Static)
 			.Where(f => f.FieldType == typeof(T));
 
-		foreach (FieldInfo? f in fields)
+		foreach (var f in fields)
 		{
 			var obj = f.GetValue(null);
 			if (obj is null)

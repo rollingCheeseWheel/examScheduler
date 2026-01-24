@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Util;
+using Util.Validation;
 
 namespace Models.API;
 
@@ -9,6 +10,6 @@ public class UserProfile
 	public required Guid Id { get; set; }
 	[Required]
 	public required string Name { get; set; }
-	[Required]
+	[Required, ValidEnum]
 	public required UserRoles Role { get; init; }
 }

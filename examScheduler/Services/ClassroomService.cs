@@ -22,14 +22,14 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 		if (userProfile.StudentData is null ||
 			userProfile.StudentData.MainClass is null) { return null; }
 
-		Classroom? existingClassroom = await GetClassroomByRegisterIdAsync(school, userProfile.StudentData.MainClass.Id, ct);
+		var existingClassroom = await GetClassroomByRegisterIdAsync(school, userProfile.StudentData.MainClass.Id, ct);
 		if (existingClassroom is not null) { return existingClassroom; }
 
 		var newClassroom = new Classroom
 		{
 			Name = userProfile.StudentData.MainClass.Name,
 			RegisterId = [ userProfile.StudentData.MainClass.Id ],
-			School = school,
+			SchoolId = school.Id,
 		};
 		//var newCalendar = new Calendar { Classroom = newClassroom };
 		var newCalendar = new Calendar();
@@ -47,28 +47,21 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			);
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
-			.Where(c
-			=> c.SchoolId == school.Id
-			&& c.Teachers.Contains(teacher))
+			.Where(c =>
+				c.SchoolId == school.Id &&
+				c.Teachers.Contains(teacher))
 			.ToListAsync(ct);
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync(Guid userId, CancellationToken ct = default)
 	{
-		Task<StudentProfile?> studentTask = _context.StudentProfiles.FindAsync([ userId ], ct).AsTask();
-		Task<TeacherProfile?> teacherTask = _context.TeacherProfiles.FindAsync([ userId ], ct).AsTask();
+		var studentTask = _context.StudentProfiles.FindAsync([ userId ], ct).AsTask();
+		var teacherTask = _context.TeacherProfiles.FindAsync([ userId ], ct).AsTask();
 		await Task.WhenAll(studentTask, teacherTask).WaitAsync(ct);
 
-		if (studentTask.Result is not null)
-		{
-			return [ studentTask.Result.Classroom ];
-		}
-		else if (teacherTask.Result is not null)
-		{
-			return teacherTask.Result.Classrooms;
-		}
-		else
-		{
-			return [ ];
-		}
+		return studentTask.Result is not null
+			? [ studentTask.Result.Classroom ]
+			: teacherTask.Result is not null 
+			? teacherTask.Result.Classrooms 
+			: (IEnumerable<Classroom>)[ ];
 	}
 }

@@ -41,7 +41,7 @@ public class ScheduleHub(
 
 	public override async Task OnConnectedAsync()
 	{
-		ClaimsPrincipal? claimsPrincipal = Context.User;
+		var claimsPrincipal = Context.User;
 		var stringedUserId = claimsPrincipal?.FindFirstValue(ClaimTypes.NameIdentifier);
 		if (claimsPrincipal is null ||
 			claimsPrincipal.Identity?.IsAuthenticated is null ||
@@ -50,15 +50,15 @@ public class ScheduleHub(
 			return;
 		}
 
-		if (!Guid.TryParse(stringedUserId, out Guid userId))
+		if (!Guid.TryParse(stringedUserId, out var userId))
 		{
 			return;
 		}
 		_isGuidSet = true;
 		_guid = userId;
 
-		IEnumerable<Guid> scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync(userId, _ct);
-		foreach (Guid scheduleId in scheduleIds)
+		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync(userId, _ct);
+		foreach (var scheduleId in scheduleIds)
 		{
 			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), _ct);
 		}
@@ -95,7 +95,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		Entities.SwapRequest? swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
+		var swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
 		if (swapRequest is not null)
 		{
 			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
@@ -115,7 +115,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		Entities.SwapRequest? swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
+		var swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
 		{
 			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
@@ -131,7 +131,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		Entities.SwapRequest? swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
+		var swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
 		if (swapRequest is not null)
 		{
 			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
@@ -147,7 +147,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryCreateSchedule(request);
+		var scheduleId = await _scheduleService.TryCreateSchedule(request, _guid, _ct);
 		if (scheduleId is not null)
 		{
 			await TransmitScheduleAsync(scheduleId.Value, _ct);
@@ -179,7 +179,7 @@ public class ScheduleHub(
 
 	private async Task TransmitScheduleAsync(Guid scheduleId, CancellationToken ct = default)
 	{
-		Entities.Schedule? schedule = await _scheduleService.GetScheduleAsync(scheduleId, ct);
+		var schedule = await _scheduleService.GetScheduleAsync(scheduleId, ct);
 		if (schedule is not null)
 		{
 			await Clients.Group(scheduleId.ToString()).UpdateSchedule(scheduleId, schedule.ToDTO());
@@ -188,7 +188,7 @@ public class ScheduleHub(
 
 	private async Task TransmitInitialSchedules(Guid userId, CancellationToken ct = default)
 	{
-		IEnumerable<Entities.Schedule> schedules = await _scheduleService.GetSchedulesForStudentAsync(userId, ct);
+		var schedules = await _scheduleService.GetSchedulesForStudentAsync(userId, ct);
 		await Clients.Caller.RecieveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }
