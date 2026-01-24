@@ -8,7 +8,7 @@ public interface IRegisterClient : IDisposable
 {
 	RegisterUserProfile? UserProfile { get; }
 
-	Task<UserRole?> GetRoleAsync(CancellationToken ct);
+	Task<UserRoles?> GetRoleAsync(CancellationToken ct);
 
 	Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct);
 

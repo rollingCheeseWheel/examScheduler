@@ -26,18 +26,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	{
 		base.OnModelCreating(modelBuilder);
 
-		#region AuditLog
-
-		#endregion
-
-		#region Calendar
-		modelBuilder.Entity<Calendar>()
-			.HasMany(c => c.Lessons)
-			.WithOne();
-
-		modelBuilder.Entity<Calendar>()
-			.Navigation(t => t.Lessons)
-			.AutoInclude();
+		#region School
+		modelBuilder.Entity<School>()
+			.HasIndex(s => s.RegisterUri)
+			.IsUnique();
 		#endregion
 
 		#region Classroom
@@ -52,70 +44,32 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Students)
-			.WithOne(s => s.Classroom);
+			.WithOne(s => s.Classroom)
+			.HasForeignKey(s => s.ClassroomId);
 
 		modelBuilder.Entity<Classroom>()
 			.Navigation(c => c.Calendar)
 			.AutoInclude();
 		#endregion
 
-		#region Lessons
-		//modelBuilder.Entity<Lesson>()
-		//	.HasMany(l => l.Teachers)
-		//	.WithMany();
+		#region Calendar
+		modelBuilder.Entity<Calendar>()
+			.HasMany(c => c.Lessons)
+			.WithOne();
+
+		modelBuilder.Entity<Calendar>()
+			.Navigation(t => t.Lessons)
+			.AutoInclude();
+		#endregion
+
+		#region Lesson
+		modelBuilder.Entity<Lesson>()
+			.HasMany(l => l.Teachers)
+			.WithMany();
 
 		modelBuilder.Entity<Lesson>()
 			.HasOne(l => l.Subject)
 			.WithMany();
-		#endregion
-
-		#region RefreshSession
-		modelBuilder.Entity<RefreshTokenSession>()
-			.HasIndex(s => s.TokenValue)
-			.IsUnique();
-		#endregion
-
-		#region Schedule
-		modelBuilder.Entity<Schedule>()
-			.HasMany(s => s.ExamSlots)
-			.WithOne(e => e.Schedule);
-
-		modelBuilder.Entity<Schedule>()
-			.HasMany(s => s.AuditLogs)
-			.WithOne();
-
-		modelBuilder.Entity<Schedule>()
-			.Navigation(s => s.ExamSlots)
-			.AutoInclude();
-		modelBuilder.Entity<Schedule>()
-			.Navigation(s => s.AuditLogs)
-			.AutoInclude();
-		#endregion
-
-		#region School
-		modelBuilder.Entity<School>()
-			.HasIndex(s => s.RegisterUri)
-			.IsUnique();
-		#endregion
-
-		#region StudentProfile
-		modelBuilder.Entity<StudentProfile>()
-			.Navigation(sp => sp.UserProfile)
-			.AutoInclude();
-		#endregion
-
-		#region Subject
-
-		#endregion
-
-		#region SwapRequest
-		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
-			.IsUnique();
-
-		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
-			.IsUnique();
 		#endregion
 
 		#region Teacher
@@ -137,18 +91,25 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey(t => t.SchoolId);
 		#endregion
 
-		#region TeacherProfile
-		modelBuilder.Entity<TeacherProfile>()
-			.HasOne(tp => tp.Teacher)
-			.WithOne(t => t.TeacherProfile)
-			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+		#region Subject
 
-		modelBuilder.Entity<TeacherProfile>()
-			.HasMany(tp => tp.Classrooms)
-			.WithMany();
+		#endregion
 
-		modelBuilder.Entity<TeacherProfile>()
-			.Navigation(tp => tp.Teacher)
+		#region Schedule
+		modelBuilder.Entity<Schedule>()
+			.HasMany(s => s.ExamSlots)
+			.WithOne(e => e.Schedule)
+			.HasForeignKey(e => e.ScheduleId);
+
+		modelBuilder.Entity<Schedule>()
+			.HasMany(s => s.AuditLogs)
+			.WithOne();
+
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.ExamSlots)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.AuditLogs)
 			.AutoInclude();
 		#endregion
 
@@ -167,6 +128,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<ExamSlot>()
 			.Navigation(s => s.ActuallyParticipated)
 			.AutoInclude();
+		#endregion
+
+		#region AuditLog
+
+		#endregion
+
+		#region SwapRequest
+		modelBuilder.Entity<SwapRequest>()
+			.HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
+			.IsUnique();
+
+		modelBuilder.Entity<SwapRequest>()
+			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
+			.IsUnique();
 		#endregion
 
 		#region UserProfile
@@ -192,6 +167,33 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne(u => u.School)
 			.WithMany()
 			.HasForeignKey(u => u.SchoolId);
+		#endregion
+
+		#region StudentProfile
+		modelBuilder.Entity<StudentProfile>()
+			.Navigation(sp => sp.UserProfile)
+			.AutoInclude();
+		#endregion
+
+		#region TeacherProfile
+		modelBuilder.Entity<TeacherProfile>()
+			.HasOne(tp => tp.Teacher)
+			.WithOne(t => t.TeacherProfile)
+			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+
+		modelBuilder.Entity<TeacherProfile>()
+			.HasMany(tp => tp.Classrooms)
+			.WithMany();
+
+		modelBuilder.Entity<TeacherProfile>()
+			.Navigation(tp => tp.Teacher)
+			.AutoInclude();
+		#endregion
+
+		#region RefreshSession
+		modelBuilder.Entity<RefreshTokenSession>()
+			.HasIndex(s => s.TokenValue)
+			.IsUnique();
 		#endregion
 	}
 

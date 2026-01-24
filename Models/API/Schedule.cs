@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Xml;
 using Util;
 
 namespace Models.API;
@@ -39,6 +40,22 @@ public class ExamSlot
 	public required int MaxParticipants { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }
+}
+
+public class ScheduleCreateRequest
+{
+	[Required]
+	public required AutoLockIn AutoLockIn { get; set; }
+	[Required]
+	public required DateTimeOffset FirstExamination { get; set; }
+	[Required]
+	public required DateTimeOffset LockInOffset { get; set; }
+	[Required]
+	public required string Description { get; set; }
+	[Required]
+	public required string SubjectName { get; set; }
+	[Required]
+	public required IEnumerable<ScheduleGeneratorSlot> GeneratorSlots { get; set; }
 }
 
 public class ScheduleGeneratorSlot

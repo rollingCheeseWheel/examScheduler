@@ -15,7 +15,7 @@ public class UserProfile
 	[Required]
 	public required long RegiserId { get; set; }
 	[Required]
-	public required UserRole Role { get; set; }
+	public required UserRoles Role { get; set; }
 	[Required]
 	public required string FirstName { get; set; }
 	[Required]

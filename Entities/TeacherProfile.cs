@@ -10,7 +10,7 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
 	public required UserProfile UserProfile { get; set; }
-	[Required, NotNull]
+	[Required]
 	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 
 	public Teacher? Teacher { get; set; }

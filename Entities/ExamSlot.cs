@@ -19,6 +19,8 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Required]
 	public required Schedule Schedule { get; set; }
 	[Required]
+	public Guid ScheduleId { get; private set; }
+	[Required]
 	public ICollection<StudentProfile> Participants { get; set; } = [ ];
 	[Required]
 	public ICollection<StudentProfile> ActuallyParticipated { get; set; } = [ ];

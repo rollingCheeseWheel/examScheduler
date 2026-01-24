@@ -169,8 +169,8 @@ public class AuthService(
 
 	private async Task<Result<UserProfile>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
-		UserRole.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
-		UserRole.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
+		UserRoles.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
+		UserRoles.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
 		_ => new(HttpStatusCode.BadRequest)
 	};
 
@@ -187,7 +187,7 @@ public class AuthService(
 
 		Entities.UserProfile? userProfile = CreateUserProfile(registerUserProfile, school);
 		if (userProfile is null ||
-			userProfile.Role is not UserRole.Student)
+			userProfile.Role is not UserRoles.Student)
 		{
 			return new(HttpStatusCode.BadRequest);
 		}
@@ -231,7 +231,7 @@ public class AuthService(
 
 		Entities.UserProfile? userProfile = CreateUserProfile(registerUserProfile, school);
 		if (userProfile is null ||
-			userProfile.Role is not UserRole.Teacher)
+			userProfile.Role is not UserRoles.Teacher)
 		{
 			return new(HttpStatusCode.BadRequest);
 		}
@@ -270,8 +270,11 @@ public class AuthService(
 
 	private static Entities.UserProfile? CreateUserProfile(RegisterUserProfile registerUserProfile, Entities.School school)
 	{
-		UserRole? role = RegisterClient.GetRole(registerUserProfile);
-		if (role is null) { return null; }
+		UserRoles? role = RegisterClient.GetRole(registerUserProfile);
+		if (role is null || Enum.IsDefined(typeof(UserRoles), role))
+		{
+			return null;
+		}
 		var guid = Guid.NewGuid();
 		return new()
 		{
@@ -280,12 +283,12 @@ public class AuthService(
 			RegiserId = registerUserProfile.Id,
 			FirstName = registerUserProfile.FirstName,
 			LastName = registerUserProfile.LastName,
-			Role = (UserRole)role!,
+			Role = (UserRoles)role!,
 			School = school,
 		};
 	}
 
-	private async Task<string> EnsureRoleCreatedAsync(UserRole role, CancellationToken ct = default)
+	private async Task<string> EnsureRoleCreatedAsync(UserRoles role, CancellationToken ct = default)
 	{
 		var roleName = role.ToString();
 		IdentityRole<Guid>? existingRole = await _roleManager.FindByNameAsync(roleName).WaitAsync(ct);
@@ -298,7 +301,7 @@ public class AuthService(
 
 	private async Task ExtendCalendar(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
 	{
-		if (user.Role is not UserRole.Student || user.StudentProfile is null || await registerClient.GetRoleAsync(ct) is not UserRole.Student)
+		if (user.Role is not UserRoles.Student || user.StudentProfile is null || await registerClient.GetRoleAsync(ct) is not UserRoles.Student)
 		{
 			_logger.LogInformation("User is not a student");
 			return;
@@ -313,7 +316,7 @@ public class AuthService(
 
 			Entities.UserProfile? dbUser = await dbcontext.Users.FindAsync([ user.Id ], ct);
 
-			if (dbUser is null || dbUser.StudentProfile is null || dbUser.Role is not UserRole.Student)
+			if (dbUser is null || dbUser.StudentProfile is null || dbUser.Role is not UserRoles.Student)
 			{
 				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");
 				return;

@@ -1,6 +1,6 @@
 ﻿namespace Util;
 
-public enum UserRole
+public enum UserRoles
 {
 	Student,
 	Teacher,

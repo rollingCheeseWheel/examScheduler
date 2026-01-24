@@ -119,6 +119,15 @@ public static class Extensions
 		}
 	}
 
+	public static ICollection<T> AddRange<T>(this ICollection<T> source, IEnumerable<T> items)
+	{
+		foreach (var item in items)
+		{
+			source.Add(item);
+		}
+		return source;
+	}
+
 	public static bool TrySet<T>(this T?[ , ] grid, int firstDimension, int secondDimension, T? element)
 	{
 		if (firstDimension >= 0 && firstDimension < grid.GetLength(0) &&

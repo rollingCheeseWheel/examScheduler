@@ -79,18 +79,18 @@ public class RegisterClient : IRegisterClient
 
 	public IRegisterClient Copy() => new RegisterClient(this);
 
-	public async Task<UserRole?> GetRoleAsync(CancellationToken ct = default)
+	public async Task<UserRoles?> GetRoleAsync(CancellationToken ct = default)
 	{
 		UserProfile ??= await GetUserProfileAsync(ct);
 		return GetRole(UserProfile);
 	}
 
-	public static UserRole? GetRole(RegisterUserProfile? userProfile) => userProfile?.Role switch
+	public static UserRoles? GetRole(RegisterUserProfile? userProfile) => userProfile?.Role switch
 	{
-		"student" => UserRole.Student,
-		"teacher" => UserRole.Teacher,
-		"admin" => UserRole.Admin,
-		//"parent" => UserRole.Parent,
+		"student" => UserRoles.Student,
+		"teacher" => UserRoles.Teacher,
+		"admin" => UserRoles.Admin,
+		//"parent" => UserRoles.Parent,
 		_ => null
 	};
 

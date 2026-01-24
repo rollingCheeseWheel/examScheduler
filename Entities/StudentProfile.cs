@@ -10,6 +10,8 @@ public class StudentProfile : EntityBase<StudentProfile>
 	public required UserProfile UserProfile { get; set; }
 	[Required]
 	public required Classroom Classroom { get; set; }
+	[Required]
+	public Guid ClassroomId { get; set; }
 
 	public override bool EqualsCore(StudentProfile b) => UserProfile.Equals(b.UserProfile);
 

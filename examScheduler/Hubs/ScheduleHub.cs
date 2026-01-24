@@ -5,16 +5,20 @@ using Microsoft.AspNetCore.SignalR;
 using Models.API;
 using System.Net;
 using System.Security.Claims;
+using Util;
 
 namespace examScheduler.Hubs;
 
 public interface IScheduleHub
 {
-	Task<Result<bool>> RegisterForSlot(Guid scheduleId, Guid slotId);
+	Task<Result<bool>> RegisterForSlot(Guid slotId);
 
 	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId);
 	Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId);
 	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
+
+	Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request);
+	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<UserProfile> actualParticipants);
 }
 
 public interface IScheduleClient
@@ -64,21 +68,26 @@ public class ScheduleHub(
 		await base.OnConnectedAsync();
 	}
 
-	public async Task<Result<bool>> RegisterForSlot(Guid scheduleId, Guid slotId)
+	[Authorize(Roles = nameof(UserRoles.Student))]
+	public async Task<Result<bool>> RegisterForSlot(Guid slotId)
 	{
 		if (!_isGuidSet)
 		{
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var isSuccess = await _scheduleService.TryEnlistStudentAsync(scheduleId, slotId, _guid, _ct);
-		if (isSuccess)
+		var enlistedScheduleId = await _scheduleService.TryEnlistStudentAsync(slotId, _guid, _ct);
+		if (enlistedScheduleId is not null)
 		{
-			await TransmitScheduleAsync(scheduleId, _ct);
+			await TransmitScheduleAsync(enlistedScheduleId.Value, _ct);
 		}
-		return new(isSuccess, HttpStatusCode.BadRequest, isSuccess);
+		return new(enlistedScheduleId is not null,
+			HttpStatusCode.BadRequest,
+			enlistedScheduleId is not null
+		);
 	}
 
+	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
 	{
 		if (!_isGuidSet)
@@ -98,6 +107,7 @@ public class ScheduleHub(
 		);
 	}
 
+	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
 	{
 		if (!_isGuidSet)
@@ -113,6 +123,7 @@ public class ScheduleHub(
 		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
 	}
 
+	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
 	{
 		if (!_isGuidSet)
@@ -126,6 +137,44 @@ public class ScheduleHub(
 			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
 		}
 		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
+	}
+
+	[Authorize(Roles = nameof(UserRoles.Teacher))]
+	public async Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request)
+	{
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+
+		var scheduleId = await _scheduleService.TryCreateSchedule(request);
+		if (scheduleId is not null)
+		{
+			await TransmitScheduleAsync(scheduleId.Value, _ct);
+		}
+		return new(scheduleId is not null,
+			HttpStatusCode.BadRequest,
+			scheduleId is not null
+		);
+	}
+
+	[Authorize(Roles = nameof(UserRoles.Teacher))]
+	public async Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<UserProfile> actualParticipants)
+	{
+		if (!_isGuidSet)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+
+		var scheduleId = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, actualParticipants);
+		if (scheduleId is not null)
+		{
+			await TransmitScheduleAsync(scheduleId.Value, _ct);
+		}
+		return new(scheduleId is not null,
+			HttpStatusCode.BadRequest,
+			scheduleId is not null
+		);
 	}
 
 	private async Task TransmitScheduleAsync(Guid scheduleId, CancellationToken ct = default)

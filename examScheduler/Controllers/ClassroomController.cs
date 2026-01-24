@@ -9,11 +9,11 @@ namespace examScheduler.Controllers;
 
 [Route("api/[controller]")]
 [Authorize]
-public class ClassroomsController(IClassroomService classroomService) : ControllerBase
+public class ClassroomController(IClassroomService classroomService) : ControllerBase
 {
 	private readonly IClassroomService _classroomService = classroomService;
 
-	[HttpGet]
+	[HttpGet("/all")]
 	public async Task<Result<IEnumerable<Classroom>>> GetClassrooms(CancellationToken ct)
 	{
 		if (User.TryGetId(out Guid id))
