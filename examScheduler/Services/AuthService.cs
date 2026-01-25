@@ -44,14 +44,12 @@ public class AuthService(
 	{
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
 
-		// verify that the school exists
 		var school = await _context.Schools.FindAsync([ request.SchoolId ], ct);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
 		}
 
-		// create the registerClient and fetch the userprofile
 		using var registerClient = new RegisterClient(school, request.AuthCode);
 		var userProfile = await registerClient.GetUserProfileAsync(ct);
 		if (userProfile is null)
@@ -62,7 +60,7 @@ public class AuthService(
 		var existingUser = await _userManager.Users
 			.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
 		Result<UserProfile>? response = null;
-		if (existingUser is not null) // student found 
+		if (existingUser is not null)
 		{
 			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
 			response = await LoginAsync(existingUser, httpContext, ct);
@@ -111,6 +109,11 @@ public class AuthService(
 
 	private async Task<Result<UserProfile>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
+		if (user.TeacherProfile is not null)
+		{
+			await ConnectTeacherWithCalendarTeacherAsync(user.Id, user.SchoolId, ct);
+		}
+
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokens = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
 		if (tokens is null)
@@ -251,8 +254,7 @@ public class AuthService(
 			return new(HttpStatusCode.InternalServerError, roleAddedResult.Errors);
 		}
 
-		// BUG, this might not get updated later on
-
+		// on each login the connection will be tried to be established
 		var existingTeacherProfile = await _context.Teachers
 			.Where(t => t.SchoolId == school.Id)
 			.Where(t => t.FirstName == userProfile.FirstName && t.LastName == userProfile.LastName)
@@ -298,6 +300,21 @@ public class AuthService(
 			await _roleManager.CreateAsync(new(roleName)).WaitAsync(ct);
 		}
 		return roleName;
+	}
+
+	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, Guid schoolId, CancellationToken ct = default)
+	{
+		var teacherProfile = await _context.TeacherProfiles.FindAsync([ teacherId ], ct);
+		if (teacherProfile is null) { return; }
+
+		var teacher = await _context.Teachers
+			.Where(t => t.SchoolId == teacherProfile.UserProfile.SchoolId)
+			.Where(t => t.Name == teacherProfile.UserProfile.Name)
+			.FirstOrDefaultAsync(ct);
+
+		if (teacher is null) { return; }
+
+		teacherProfile.Teacher = teacher;
 	}
 
 	private async Task ExtendCalendar(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
