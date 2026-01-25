@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json;
 using Util;
+using Util.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

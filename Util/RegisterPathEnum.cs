@@ -1,4 +1,4 @@
-﻿namespace Util;
+﻿namespace Util.Extensions;
 
 public abstract class RegisterPath(string value) : StringEnum(value)
 {

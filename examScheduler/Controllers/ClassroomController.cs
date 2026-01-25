@@ -3,7 +3,7 @@ using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.API;
-using Util;
+using Util.Extensions;
 
 namespace examScheduler.Controllers;
 

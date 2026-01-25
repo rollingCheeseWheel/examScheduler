@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using registerClient;
 using System.Diagnostics;
-using Util;
+using Util.Extensions;
 
 var config = new ConfigurationBuilder()
 	.AddUserSecrets<Program>().Build();

@@ -8,6 +8,7 @@ using registerClient;
 using System.Net;
 using System.Security.Claims;
 using Util;
+using Util.Extensions;
 
 namespace examScheduler.Services;
 
@@ -44,7 +45,7 @@ public class AuthService(
 	{
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
 
-		var school = await _context.Schools.FindAsync([ request.SchoolId ], ct);
+		var school = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
@@ -333,14 +334,14 @@ public class AuthService(
 			var calendarService = serviceProvider.ServiceProvider.GetRequiredService<ICalendarService>();
 			using var copiedRegisterClient = registerClient.Copy();
 
-			var student = await dbcontext.StudentProfiles.FindAsync([ user.Id ], ct);
+			var student = await dbcontext.StudentProfiles.AsNoTracking().FindByIdAsync(user.Id, ct);
 			if (student is null)
 			{
 				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");
 				return;
 			}
 
-			var classroom = await dbcontext.Classrooms.FindAsync([ student.ClassroomId ], ct);
+			var classroom = await dbcontext.Classrooms.AsNoTracking().FindByIdAsync(student.ClassroomId, ct);
 			if (classroom is null || classroom.Calendar is null)
 			{
 				logger.LogWarning("Calendar or classroom is null");

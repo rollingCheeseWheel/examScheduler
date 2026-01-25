@@ -1,6 +1,7 @@
 ﻿using Microsoft.DotNet.PlatformAbstractions;
 using System.ComponentModel.DataAnnotations;
 using Util;
+using Util.Extensions;
 using Util.Validation;
 
 namespace Entities;

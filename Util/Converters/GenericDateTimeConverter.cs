@@ -1,11 +1,12 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Util.Extensions;
 
 namespace Util.Converters;
 
 public class RegisterAPIDateTimeConverter() : GenericDateTimeConverter("yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd H:mm:ss");
 
-public class RegisterDateTimeConverter() : GenericDateTimeConverter(Extensions.RegisterDateTimeFormat);
+public class RegisterDateTimeConverter() : GenericDateTimeConverter(DateTimeExtensions.RegisterDateTimeFormat);
 
 public class GenericDateTimeConverter : JsonConverter<DateTime>
 {

@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using Util.Extensions;
 
 namespace Entities;
 
 [NotMapped]
 public abstract class EntityBase<T>
-	: IEquatable<T>, IComparable<T>
+	: IEquatable<T>, IComparable<T>, IGuidEntity
 	where T : EntityBase<T>
 {
 	public abstract Guid Id { get; set; }

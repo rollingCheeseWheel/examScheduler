@@ -3,6 +3,7 @@ using Models.DigitalesRegister;
 using System.Text;
 using System.Text.Json;
 using Util;
+using Util.Extensions;
 
 namespace registerClient;
 

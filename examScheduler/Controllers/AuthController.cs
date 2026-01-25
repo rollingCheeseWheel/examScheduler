@@ -1,5 +1,4 @@
-﻿using examScheduler.Data;
-using examScheduler.Services;
+﻿using examScheduler.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models.API;
 
@@ -7,13 +6,9 @@ namespace examScheduler.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController(
-	IAuthService authService,
-	AppDbContext context
-) : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
 	private readonly IAuthService _authService = authService;
-	private readonly AppDbContext _context = context;
 
 	[HttpPost]
 	public async Task<Result<UserProfile>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, HttpContext, ct);

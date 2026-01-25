@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Util;
+using Util.Extensions;
 
 namespace Entities;
 

@@ -9,7 +9,7 @@ public interface IClassroomService
 {
 	Task<Classroom?> GetOrCreateClassroomAsync(School school, RegisterUserProfile userProfile, CancellationToken ct = default);
 	Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default);
-	Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default);
+	Task<IEnumerable<Classroom>> GetClassroomsForTeacherAsync(School school, Entities.Teacher teacher, CancellationToken ct = default);
 	Task<IEnumerable<Classroom>> GetClassroomsForUserAsync(Guid userId, CancellationToken ct = default);
 }
 
@@ -41,12 +41,14 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 	}
 
 	public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default) => await _context.Classrooms
+			.AsNoTracking()
 			.FirstOrDefaultAsync(c =>
 				c.SchoolId == school.Id &&
 				c.RegisterId.Contains(registerId), ct
 			);
 
-	public async Task<IEnumerable<Classroom>> GetClassroomsAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
+	public async Task<IEnumerable<Classroom>> GetClassroomsForTeacherAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
+			.AsNoTracking()
 			.Where(c =>
 				c.SchoolId == school.Id &&
 				c.Teachers.Contains(teacher))
@@ -54,14 +56,16 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync(Guid userId, CancellationToken ct = default)
 	{
-		var studentTask = _context.StudentProfiles.FindAsync([ userId ], ct).AsTask();
-		var teacherTask = _context.TeacherProfiles.FindAsync([ userId ], ct).AsTask();
-		await Task.WhenAll(studentTask, teacherTask).WaitAsync(ct);
-
-		return studentTask.Result is not null
-			? [ studentTask.Result.Classroom ]
-			: teacherTask.Result is not null 
-			? teacherTask.Result.Classrooms 
-			: (IEnumerable<Classroom>)[ ];
+		var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+		var result = new List<Classroom>();
+		if (user?.TeacherProfile is not null)
+		{
+			result.AddRange(user.TeacherProfile.Classrooms);
+		}
+		else if (user?.StudentProfile is not null)
+		{
+			result.Add(user.StudentProfile.Classroom);
+		}
+		return result;
 	}
 }

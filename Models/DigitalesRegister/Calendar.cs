@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using Util;
 using Util.Converters;
+using Util.Extensions;
 
 namespace Models.DigitalesRegister;
 

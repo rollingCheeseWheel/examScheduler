@@ -1,13 +1,13 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
-using Util;
+using Util.Extensions;
 
 namespace examScheduler.Services;
 
 public interface IScheduleService
 {
-	Task<Schedule?> GetScheduleAsync(Guid? id, CancellationToken ct = default);
+	Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default);
 	Task<Schedule?> GetScheduleForExamSlotAsync(Guid slotId, CancellationToken ct = default);
 	Task<ExamSlot?> GetExamSlotAsync(Guid id, CancellationToken ct = default);
 	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default);
@@ -34,9 +34,7 @@ public class ScheduleService(
 	private readonly AppDbContext _context = context;
 	private readonly IStudentService _studentService = studentService;
 
-	public async Task<Schedule?> GetScheduleAsync(Guid? id, CancellationToken ct = default) => id is null
-			? null
-			: await _context.Schedules.FindAsync([ id ], ct);
+	public async Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default) => await _context.Schedules.FindByIdAsync(id, ct);
 
 	public async Task<Schedule?> GetScheduleForExamSlotAsync(Guid slotId, CancellationToken ct = default)
 	{
@@ -51,11 +49,13 @@ public class ScheduleService(
 			.FirstOrDefaultAsync(e => e.Id == id, ct);
 
 	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
+			.AsNoTracking()
 			.Where(sp => sp.Id == userId)
 			.SelectMany(sp => sp.Classroom.Schedules)
 			.ToListAsync(ct);
 
 	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
+			.AsNoTracking()
 			.Where(sp => sp.Id == userId)
 			.SelectMany(sp => sp.Classroom.Schedules)
 			.Select(s => s.Id)
@@ -115,8 +115,6 @@ public class ScheduleService(
 
 	public async Task<Guid?> TryReportActualStudentsForScheduleSlot(Guid scheduleSlotId, IEnumerable<Models.API.UserProfile> participants, CancellationToken ct = default)
 	{
-		using var transaction = await _context.Database.BeginTransactionAsync(ct);
-
 		var slot = await GetExamSlotAsync(scheduleSlotId, ct);
 		if (slot is null)
 		{
@@ -132,13 +130,11 @@ public class ScheduleService(
 		slot.ActuallyParticipated.AddRange(students);
 
 		await _context.SaveChangesAsync(ct);
-		await transaction.CommitAsync(ct);
 		return slot.Id;
 	}
 
 	public async Task<Guid?> TryEnlistStudentAsync(Guid slotId, Guid studentId, CancellationToken ct = default)
 	{
-		using var transaction = await _context.Database.BeginTransactionAsync(ct);
 		var student = await _studentService.GetStudentProfileAsync(studentId, ct);
 		if (student is null)
 		{
@@ -154,7 +150,6 @@ public class ScheduleService(
 		if (schedule.TryEnlistStudent(slotId, student))
 		{
 			await _context.SaveChangesAsync(ct);
-			await transaction.CommitAsync(ct);
 			return schedule.Id;
 		}
 		return null;
@@ -162,8 +157,6 @@ public class ScheduleService(
 
 	public async Task<SwapRequest?> CreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedStudentId, DateTimeOffset expirationDate, CancellationToken ct = default)
 	{
-		using var transaction = await _context.Database.BeginTransactionAsync(ct);
-
 		var schedule = await _context.Schedules.FindAsync([ scheduleId ], ct);
 		if (schedule is null)
 		{
@@ -200,7 +193,6 @@ public class ScheduleService(
 		schedule.SwapRequests.Add(newSwapRequest);
 		await _context.SwapRequests.AddAsync(newSwapRequest, ct);
 		await _context.SaveChangesAsync(ct);
-		await transaction.CommitAsync(ct);
 
 		return newSwapRequest;
 	}
@@ -229,7 +221,6 @@ public class ScheduleService(
 
 	public async Task<SwapRequest?> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
-		using var transaction = await _context.Database.BeginTransactionAsync(ct);
 		var swapRequest = await _context.SwapRequests.FindAsync([ swapRequestId ], ct);
 		if (swapRequest is null)
 		{
@@ -268,7 +259,6 @@ public class ScheduleService(
 		await DeleteStaleAndMatchingSwapRequestsAsync(swapRequestId, ct);
 
 		await _context.SaveChangesAsync(ct);
-		await transaction.CommitAsync(ct);
 		return swapRequest;
 	}
 
@@ -297,11 +287,5 @@ public class ScheduleService(
 			.DistinctBy(sp => sp.Id)
 			.ToListAsync(ct);
 		return students.Count == ids.Count() ? students : null;
-	}
-
-	private static bool StudentsInSameClassroom(IEnumerable<StudentProfile> students)
-	{
-		var classroomId = students.FirstOrDefault()?.ClassroomId;
-		return classroomId is not null && students.All(s => s.ClassroomId == classroomId);
 	}
 }
