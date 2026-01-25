@@ -13,7 +13,7 @@ public class ClassroomController(IClassroomService classroomService) : Controlle
 {
 	private readonly IClassroomService _classroomService = classroomService;
 
-	[HttpGet("/all")]
+	[HttpGet("all")]
 	public async Task<Result<IEnumerable<Classroom>>> GetClassrooms(CancellationToken ct) => User.TryGetId(out var id)
 			? new(( await _classroomService.GetClassroomsForUserAsync(id, ct) )
 				.Select(x => x.ToDTO())

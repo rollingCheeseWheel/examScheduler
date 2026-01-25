@@ -23,4 +23,6 @@ public static class CalendarMappings
 	};
 
 	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { FirstName = entity.FirstName, LastName = entity.LastName };
+
+	public static Models.API.Subject ToDTO(this Subject entity) => new() { Name = entity.Name };
 }

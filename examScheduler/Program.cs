@@ -20,9 +20,10 @@ builder.AddServiceDefaults();
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("CORS", p =>
-		p.AllowAnyOrigin()
+		p.WithOrigins("https://examscheduler.app/", "https://localhost/")
 		.AllowAnyHeader()
 		.AllowAnyMethod()
+		.AllowCredentials()
 	);
 });
 
@@ -185,7 +186,7 @@ app.UseStaticFiles(new StaticFileOptions()
 
 app.MapControllers();
 
-app.MapHub<ScheduleHub>("/api/schedule");
+app.MapHub<ScheduleHub>("/api/hubs/schedule");
 
 app.MapFallbackToFile("index.html");
 

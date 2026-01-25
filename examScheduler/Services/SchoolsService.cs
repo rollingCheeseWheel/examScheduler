@@ -17,5 +17,5 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 	public async Task<IEnumerable<School>> GetSchoolsAsync(CancellationToken ct = default) => ( await _context.Schools
 			.AsNoTracking()
 			.ToListAsync(ct) )
-			.Select(SchoolMappings.ToDTO);
+			.Select(x => x.ToDTO());
 }
