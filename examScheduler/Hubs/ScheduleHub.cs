@@ -23,7 +23,7 @@ public interface IScheduleHub
 
 public interface IScheduleClient
 {
-	Task RecieveInitial(IEnumerable<Schedule> schedules);
+	Task ReceiveInitial(IEnumerable<Schedule> schedules);
 	Task UpdateSchedule(Guid scheduleId, Schedule schedule);
 }
 
@@ -189,6 +189,6 @@ public class ScheduleHub(
 	private async Task TransmitInitialSchedules(Guid userId, CancellationToken ct = default)
 	{
 		var schedules = await _scheduleService.GetSchedulesForStudentAsync(userId, ct);
-		await Clients.Caller.RecieveInitial(schedules.Select(x => x.ToDTO()));
+		await Clients.Caller.ReceiveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }
