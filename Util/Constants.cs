@@ -12,8 +12,4 @@ public static class Constants
 		AllowTrailingCommas = true,
 		ReferenceHandler = ReferenceHandler.Preserve
 	};
-
-	public const string PermissionClaimName = "permissions";
-	public const string ClassroomIdClaimName = "classroomId";
-	public const string StudentIdClaimName = "studentId";
 }

@@ -21,6 +21,9 @@ public class Teacher : EntityBase<Teacher>
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(Teacher b) => Name == b.Name &&
 		SchoolId == b.SchoolId &&
 		Subjects.ValueEquals(b.Subjects) &&

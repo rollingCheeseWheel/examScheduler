@@ -14,6 +14,9 @@ public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 	[Required, Range(0, int.MaxValue)]
 	public required int MinParticipants { get; set; }
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(ScheduleGeneratorSlot b) => Offset == b.Offset &&
 		MaxParticipants == b.MaxParticipants &&
 		MinParticipants == b.MinParticipants;

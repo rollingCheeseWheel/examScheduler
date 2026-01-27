@@ -38,10 +38,29 @@ public class Schedule : EntityBase<Schedule>
 	[Required]
 	public ICollection<SwapRequest> SwapRequests { get; set; } = [ ];
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public bool TryEnlistStudent(Guid examslotId, StudentProfile student)
 	{
 		var slot = ExamSlots.FirstOrDefault(s => s.Id == examslotId);
 		return slot?.TryEnlistStudent(student) ?? false;
+	}
+
+	public bool TrySwapStudents(Guid firstStudentId, Guid secondStudentId)
+	{
+		var participants = ExamSlots
+			.Where(e => !e.IsLocked)
+			.SelectMany(e => e.Participants)
+			.ToList();
+
+		var firstStudent = participants.FindById(firstStudentId);
+		var secondStudent = participants.FindById(secondStudentId);
+		if (firstStudent is null || secondStudent is null)
+		{
+			return false;
+		}
+		return TrySwapStudents(firstStudent, secondStudent);
 	}
 
 	public bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)

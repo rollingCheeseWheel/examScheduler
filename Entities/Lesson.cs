@@ -29,7 +29,11 @@ public class Lesson : EntityBase<Lesson>
 
 	[Required]
 	public required Subject Subject { get; set; }
+	[Required]
 	public required ICollection<Teacher> Teachers { get; set; } = [ ];
+
+	[Timestamp]
+	public override uint Version { get; set; }
 
 	public bool EqualsModel(Models.DigitalesRegister.Lesson? other) => other is not null
 		&& DayOfWeek == other.Date.DayOfWeek

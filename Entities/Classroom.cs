@@ -25,6 +25,9 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public ICollection<Schedule> Schedules { get; set; } = [ ];
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(Classroom b) => Name == b.Name &&
 		SchoolId == b.SchoolId;
 

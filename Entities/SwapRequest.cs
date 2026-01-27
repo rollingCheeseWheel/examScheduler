@@ -11,20 +11,16 @@ public class SwapRequest : EntityBase<SwapRequest>
 	[Required]
 	public required string RequestingStudentName { get; set; }
 	[Required]
-	public required string RequestedStudentName { get; set; }
-	[Required]
 	public required Guid RequestingStudentId { get; set; }
 	[Required]
-	public required Guid RequestedStudentId { get; set; }
-	[Required]
-	public required DateTimeOffset ExpirationDate { get; set; } = DateTimeOffset.UtcNow.AddDays(30);
+	public required Guid RequestedSlotId { get; set; }
+
+	[Timestamp]
+	public override uint Version { get; set; }
 
 	public override bool EqualsCore(SwapRequest b) => ScheduleId == b.ScheduleId &&
 		RequestingStudentId == b.RequestingStudentId &&
-		RequestedStudentId == b.RequestedStudentId &&
-		ExpirationDate == b.ExpirationDate;
+		RequestedSlotId == b.RequestedSlotId;
 
-	public override int GetHashCode() => HashCode.Combine(ScheduleId, RequestingStudentId, RequestedStudentId, ExpirationDate);
-
-	public override int CompareTo(SwapRequest? b) => ExpirationDate.CompareTo(b?.ExpirationDate ?? DateTimeOffset.MinValue);
+	public override int GetHashCode() => HashCode.Combine(ScheduleId, RequestingStudentId, RequestedSlotId);
 }

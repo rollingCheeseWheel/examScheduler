@@ -15,6 +15,9 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public Teacher? Teacher { get; set; }
 	public Guid? TeacherId { get; private set; }
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(TeacherProfile b) => UserProfile.Equals(b.UserProfile) &&
 		Classrooms.ValueEquals(b.Classrooms);
 

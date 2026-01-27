@@ -20,6 +20,9 @@ public class AuditLog : EntityBase<AuditLog>
 	public required string Action { get; set; }
 	public string? Description { get; set; }
 
+	[Timestamp]
+	public override uint Version { get; set ; }
+
 	public override bool EqualsCore(AuditLog b) => Id == b.Id &&
 		Timestamp == b.Timestamp &&
 		ActorId == b.ActorId &&

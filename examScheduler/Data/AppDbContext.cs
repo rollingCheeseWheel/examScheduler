@@ -70,6 +70,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<Lesson>()
 			.HasOne(l => l.Subject)
 			.WithMany();
+
+		modelBuilder.Entity<Lesson>()
+			.Navigation(l => l.Teachers)
+			.AutoInclude();
+		modelBuilder.Entity<Lesson>()
+			.Navigation(l => l.Subject)
+			.AutoInclude();
 		#endregion
 
 		#region Teacher
@@ -135,11 +142,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		#region SwapRequest
 		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestingStudentId })
-			.IsUnique();
-
-		modelBuilder.Entity<SwapRequest>()
-			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedStudentId })
+			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedSlotId })
 			.IsUnique();
 		#endregion
 

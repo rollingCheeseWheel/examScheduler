@@ -13,6 +13,9 @@ public class RefreshTokenSession : EntityBase<RefreshTokenSession>
 	[Required]
 	public required Guid UserProfileId { get; set; }
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(RefreshTokenSession b) => ExpirationDate == b.ExpirationDate &&
 		TokenValue == b.TokenValue &&
 		UserProfileId == b.UserProfileId;

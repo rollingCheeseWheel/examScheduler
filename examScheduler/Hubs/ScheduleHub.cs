@@ -9,6 +9,11 @@ using Util;
 
 namespace examScheduler.Hubs;
 
+/*
+	1.	Swap requests target slots instead of students
+	2.	If two students from different slots want to swap with each others slots, the swap should resolve instantly	
+ */
+
 public interface IScheduleHub
 {
 	Task<Result<bool>> RegisterForSlot(Guid slotId);
@@ -88,14 +93,14 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
-	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId)
+	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid examSlotId)
 	{
 		if (!_isGuidSet)
 		{
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var swapRequest = await _scheduleService.CreateSwapRequestAsync(scheduleId, _guid, userId, DateTimeOffset.UtcNow.AddDays(30), _ct);
+		var swapRequest = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid, examSlotId, DateTimeOffset.UtcNow.AddDays(30), _ct);
 		if (swapRequest is not null)
 		{
 			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);

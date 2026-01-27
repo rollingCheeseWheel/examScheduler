@@ -7,12 +7,13 @@ public class Calendar : EntityBase<Calendar>
 {
 	[Key]
 	public override Guid Id { get; set; } = Guid.NewGuid();
-
 	[Required]
 	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.MinValue;
-
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
+
+	[Timestamp]
+	public override uint Version { get; set; }
 
 	public IEnumerable<Lesson> Normalize()
 	{

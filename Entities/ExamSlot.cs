@@ -42,6 +42,9 @@ public class ExamSlot : EntityBase<ExamSlot>
 		};
 	}
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	internal bool TrySwapStudents(StudentProfile replaced, StudentProfile replacement)
 	{
 		if (IsLocked)

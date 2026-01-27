@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using System.Diagnostics.Tracing;
 
 namespace Util.Extensions;
@@ -39,9 +40,21 @@ public static class LinqExtensions
 
 	public static IEnumerable<TResult> DistinctMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector) where TResult : IEquatable<TResult> => source.SelectMany(selector).Distinct();
 
+	public static IQueryable<TSource> WhereId<TSource>(this IQueryable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id);
+
+	public static IEnumerable<TSource> WhereId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id);
+
+	public static IQueryable<TSource> WhereIds<TSource>(this IQueryable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
+
+	public static IEnumerable<TSource> WhereIds<TSource>(this IEnumerable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
+
 	public static TSource? FindById<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.FirstOrDefault(x => x.Id == id);
 
-	public static TSource? FindById<TSource>(this IQueryable<TSource> source, Guid id) where TSource : IGuidEntity => source.FirstOrDefault(x => x.Id == id);
-
 	public static async Task<TSource?> FindByIdAsync<TSource>(this IQueryable<TSource> source, Guid id, CancellationToken ct = default) where TSource : IGuidEntity => await source.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+	public static async Task<IDictionary<Guid, TSource>> FindByIdAsync<TSource>(this IQueryable<TSource> source, ICollection<Guid> ids, CancellationToken ct = default) where TSource : IGuidEntity
+	{
+		var entities = await source.Where(x => ids.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
+		return entities.Count == ids.Count ? entities : [];
+	}
 }

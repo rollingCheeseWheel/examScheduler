@@ -9,9 +9,7 @@ public static class SwapRequestMappings
 		Id = entity.Id,
 		ScheduleId = entity.ScheduleId,
 		RequestingStudentName = entity.RequestingStudentName,
-		RequestedStudentName = entity.RequestedStudentName,
-		RequestedStudentId = entity.RequestedStudentId,
-		RequestingStudentId = entity.RequestedStudentId,
-		ExpirationDate = entity.ExpirationDate
+		RequestingStudentId = entity.RequestingStudentId,
+		RequestedSlotId = entity.RequestedSlotId,
 	};
 }

@@ -19,6 +19,9 @@ public class School : EntityBase<School>
 	[Required]
 	public required bool IsEnabled { get; set; }
 
+	[Timestamp]
+	public override uint Version { get; set; }
+
 	public override bool EqualsCore(School b) => Name == b.Name &&
 		RegisterUri == b.RegisterUri &&
 		SchoolId == b.SchoolId &&

@@ -9,6 +9,7 @@ public abstract class EntityBase<T>
 	where T : EntityBase<T>
 {
 	public abstract Guid Id { get; set; }
+	public abstract uint Version { get; set; }
 
 	public abstract bool EqualsCore(T b);
 	public abstract override int GetHashCode();
