@@ -18,7 +18,7 @@ public interface IScheduleHub
 {
 	Task<Result<bool>> RegisterForSlot(Guid slotId);
 
-	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid userId);
+	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid examSlotId);
 	Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId);
 	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
 
