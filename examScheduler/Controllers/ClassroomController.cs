@@ -15,7 +15,7 @@ public class ClassroomController(IClassroomService classroomService) : Controlle
 
 	[HttpGet("all")]
 	public async Task<Result<IEnumerable<Classroom>>> GetClassrooms(CancellationToken ct) => User.TryGetId(out var id)
-			? new(( await _classroomService.GetClassroomsForUserAsync(id, ct) )
+			? new(( await _classroomService.GetClassroomsForUserAsync_AsNoTracking(id, ct) )
 				.Select(x => x.ToDTO())
 			)
 			: new([ ]);

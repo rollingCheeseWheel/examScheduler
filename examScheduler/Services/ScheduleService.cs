@@ -10,8 +10,8 @@ public interface IScheduleService
 	Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default);
 	Task<Schedule?> GetScheduleForExamSlotAsync(Guid slotId, CancellationToken ct = default);
 	Task<ExamSlot?> GetExamSlotAsync(Guid id, CancellationToken ct = default);
-	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default);
-	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default);
+	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
+	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 
 	Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
 	Task<Guid?> TryReportActualStudentsForScheduleSlot(Guid scheduleSlotId, IEnumerable<Models.API.UserProfile> actualParticipants, CancellationToken ct = default);
@@ -48,13 +48,13 @@ public class ScheduleService(
 			.SelectMany(s => s.ExamSlots)
 			.FirstOrDefaultAsync(e => e.Id == id, ct);
 
-	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
+	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
 			.AsNoTracking()
 			.Where(sp => sp.Id == userId)
 			.SelectMany(sp => sp.Classroom.Schedules)
 			.ToListAsync(ct);
 
-	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
+	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default) => await _context.StudentProfiles
 			.AsNoTracking()
 			.Where(sp => sp.Id == userId)
 			.SelectMany(sp => sp.Classroom.Schedules)

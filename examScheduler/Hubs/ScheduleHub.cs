@@ -57,7 +57,7 @@ public class ScheduleHub(
 		_isGuidSet = true;
 		_guid = userId;
 
-		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync(userId, _ct);
+		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync_AsNoTracking(userId, _ct);
 		foreach (var scheduleId in scheduleIds)
 		{
 			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), _ct);
@@ -188,7 +188,7 @@ public class ScheduleHub(
 
 	private async Task TransmitInitialSchedules(Guid userId, CancellationToken ct = default)
 	{
-		var schedules = await _scheduleService.GetSchedulesForStudentAsync(userId, ct);
+		var schedules = await _scheduleService.GetSchedulesForStudentAsync_AsNoTracking(userId, ct);
 		await Clients.Caller.ReceiveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }

@@ -10,5 +10,5 @@ public class SchoolsController(ISchoolsService schoolService) : ControllerBase
 	private readonly ISchoolsService _schoolService = schoolService;
 
 	[HttpGet]
-	public async Task<IActionResult> Get(CancellationToken ct) => Ok(await _schoolService.GetSchoolsAsync(ct));
+	public async Task<IActionResult> Get(CancellationToken ct) => Ok(await _schoolService.GetSchoolsAsync_AsNoTracking(ct));
 }

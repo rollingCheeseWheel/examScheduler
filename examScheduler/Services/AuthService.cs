@@ -29,7 +29,8 @@ public class AuthService(
 	ITokenProvider jwtProvider,
 	JwtOptions jwtOptions,
 	ILogger<AuthService> logger,
-	ICalendarWorker calendarWorker
+	ICalendarWorker calendarWorker,
+	ISchoolsService schoolsService
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -40,12 +41,13 @@ public class AuthService(
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
 	private readonly ICalendarWorker _calendarWorker = calendarWorker;
+	private readonly ISchoolsService _schoolsService = schoolsService;
 
 	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
 
-		var school = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.SchoolId == request.SchoolId, ct);
+		var school = await _schoolsService.GetSchoolBySchoolIdAsync_AsNoTracking(request.SchoolId);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
@@ -334,14 +336,14 @@ public class AuthService(
 			var calendarService = serviceProvider.ServiceProvider.GetRequiredService<ICalendarService>();
 			using var copiedRegisterClient = registerClient.Copy();
 
-			var student = await dbcontext.StudentProfiles.AsNoTracking().FindByIdAsync(user.Id, ct);
+			var student = await dbcontext.StudentProfiles.FindByIdAsync(user.Id, ct);
 			if (student is null)
 			{
 				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");
 				return;
 			}
 
-			var classroom = await dbcontext.Classrooms.AsNoTracking().FindByIdAsync(student.ClassroomId, ct);
+			var classroom = student.Classroom;
 			if (classroom is null || classroom.Calendar is null)
 			{
 				logger.LogWarning("Calendar or classroom is null");
