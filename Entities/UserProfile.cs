@@ -11,7 +11,7 @@ public class UserProfile
 	IComparable<UserProfile>, IEquatable<UserProfile> // would be EntityBase<UserProfile>
 {
 	[Required]
-	public Guid SchoolId { get; set; }
+	public required string SchoolId { get; set; }
 	[Required]
 	public required long RegiserId { get; set; }
 	[Required, ValidEnum]

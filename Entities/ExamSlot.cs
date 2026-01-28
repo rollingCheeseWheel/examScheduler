@@ -42,7 +42,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	internal bool TryReportStudents(params StudentProfile[] students)
+	internal bool TryReportStudents(IEnumerable<StudentProfile> students)
 	{
 		if (IsLocked)
 		{

@@ -1,12 +1,13 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
+using Util.Extensions;
 
 namespace examScheduler.Services;
 
 public interface ICalendarService
 {
-	Task<bool> TryExtendCalendar(Guid calendarId, Guid schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
+	Task<bool> TryExtendCalendar(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
 	//Task NormalizeCalendar(Guid calendarId, CancellationToken ct = default);
 }
 
@@ -14,9 +15,12 @@ public class CalendarService(AppDbContext context) : ICalendarService
 {
 	private readonly AppDbContext _context = context;
 
-	public async Task<bool> TryExtendCalendar(Guid calendarId, Guid schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
+	public async Task<bool> TryExtendCalendar(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
 	{
-		var calendar = await _context.Calendars.FindAsync([ calendarId ], ct);
+		var calendar = await _context.Classrooms
+			.Select(c => c.Calendar)
+			.WhereNotNull()
+			.FindByIdAsync(calendarId, ct);
 		if (calendar is null)
 		{
 			return false;

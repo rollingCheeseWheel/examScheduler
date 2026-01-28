@@ -7,11 +7,13 @@ public class AuditLog
 {
 	[Required]
 	public DateTimeOffset Timestamp { get; set; }
-	public Guid? ActorId { get; set; }
-	[Required]
-	public required AuditLogActor ActorType { get; set; }
-	public string? ActorName { get; set; }
 	[Required]
 	public required string Action { get; set; }
+	[Required]
+	public required AuditLogActor ActorType { get; set; }
+	public Guid? FirstActorId { get; set; }
+	public Guid? SecondActorId { get; set; }
+	public string? FirstActorName { get; set; }
+	public string? SecondActorName { get; set; }
 	public string? Description { get; set; }
 }

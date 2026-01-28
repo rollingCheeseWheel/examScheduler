@@ -9,7 +9,7 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public required string Name { get; set; }
 	[Required]
-	public Guid SchoolId { get; set; }
+	public required string SchoolId { get; set; }
 	[Required]
 	public required ICollection<int> RegisterId { get; set; } = [ ];
 	[Required]
@@ -17,7 +17,7 @@ public class Classroom() : EntityBase<Classroom>
 
 	// Navigation Properties
 	[Required]
-	public Calendar? Calendar { get; set; }
+	public required Calendar Calendar { get; set; }
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]

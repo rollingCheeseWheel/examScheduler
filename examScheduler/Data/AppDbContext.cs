@@ -9,16 +9,11 @@ namespace examScheduler.Data;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
-	public DbSet<AuditLog> AuditLogs { get; set; }
-	public DbSet<Calendar> Calendars { get; set; }
 	public DbSet<Classroom> Classrooms { get; set; }
-	public DbSet<Lesson> Lessons { get; set; }
 	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
-	public DbSet<Schedule> Schedules { get; set; }
 	public DbSet<School> Schools { get; set; }
 	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
-	public DbSet<SwapRequest> SwapRequests { get; set; }
 	public DbSet<Teacher> Teachers { get; set; }
 	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
 
@@ -49,6 +44,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Classroom>()
 			.Navigation(c => c.Calendar)
+			.AutoInclude();
+
+		modelBuilder.Entity<Classroom>()
+			.Navigation(c => c.Teachers)
 			.AutoInclude();
 		#endregion
 

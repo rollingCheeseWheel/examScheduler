@@ -15,7 +15,7 @@ public class Teacher : EntityBase<Teacher>
 	[NotMapped]
 	public string Name => string.Join(" ", FirstName, LastName);
 	[Required]
-	public Guid SchoolId { get; set; }
+	public required string SchoolId { get; set; }
 
 	public Guid? TeacherProfileId { get; set; }
 	[Required]

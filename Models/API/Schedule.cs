@@ -22,6 +22,8 @@ public class Schedule
 	[Required]
 	public required string SubjectName { get; set; }
 	[Required]
+	public required IEnumerable<Teacher> Teachers { get; set; }
+	[Required]
 	public required IEnumerable<ExamSlot> ExamSlots { get; set; }
 	[Required]
 	public required IEnumerable<AuditLog> AuditLogs { get; set; }
@@ -41,6 +43,8 @@ public class ExamSlot
 	public required int MaxParticipants { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }
+	[Required]
+	public required bool IsLocked { get; set; }
 }
 
 public class ScheduleCreateRequest

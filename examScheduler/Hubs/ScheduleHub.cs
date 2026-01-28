@@ -100,15 +100,15 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var swapRequest = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid, examSlotId, DateTimeOffset.UtcNow.AddDays(30), _ct);
-		if (swapRequest is not null)
+		var isSuccess = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid, examSlotId, _ct);
+		if (isSuccess)
 		{
-			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
+			await TransmitScheduleAsync(scheduleId, _ct);
 		}
 		return new(
-			swapRequest is null,
+			isSuccess,
 			HttpStatusCode.BadRequest,
-			swapRequest is null
+			isSuccess
 		);
 	}
 
@@ -120,12 +120,12 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var swapRequest = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
-		if (swapRequest is not null)
+		var scheduleId = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
+		if (scheduleId is not null)
 		{
-			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
+			await TransmitScheduleAsync(scheduleId.Value, _ct);
 		}
-		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
+		return new(scheduleId is not null, HttpStatusCode.BadRequest, scheduleId is not null);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -136,12 +136,12 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var swapRequest = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
-		if (swapRequest is not null)
+		var scheduleId = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
+		if (scheduleId is not null)
 		{
-			await TransmitScheduleAsync(swapRequest.ScheduleId, _ct);
+			await TransmitScheduleAsync(scheduleId.Value, _ct);
 		}
-		return new(swapRequest is not null, HttpStatusCode.BadRequest, swapRequest is not null);
+		return new(scheduleId is not null, HttpStatusCode.BadRequest, scheduleId is not null);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
@@ -171,7 +171,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, actualParticipants);
+		var scheduleId = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, _guid, actualParticipants);
 		if (scheduleId is not null)
 		{
 			await TransmitScheduleAsync(scheduleId.Value, _ct);

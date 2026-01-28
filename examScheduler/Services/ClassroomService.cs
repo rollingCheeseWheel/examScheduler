@@ -29,27 +29,24 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 		{
 			Name = userProfile.StudentData.MainClass.Name,
 			RegisterId = [ userProfile.StudentData.MainClass.Id ],
-			SchoolId = school.Id,
+			SchoolId = school.SchoolId,
+			Calendar = new()
 		};
-		//var newCalendar = new Calendar { Classroom = newClassroom };
-		var newCalendar = new Calendar();
-		newClassroom.Calendar = newCalendar;
 
 		_context.Classrooms.Add(newClassroom);
-		_context.Calendars.Add(newCalendar);
 		return newClassroom;
 	}
 
 	public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default) => await _context.Classrooms
 			.FirstOrDefaultAsync(c =>
-				c.SchoolId == school.Id &&
+				c.SchoolId == school.SchoolId &&
 				c.RegisterId.Contains(registerId), ct
 			);
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForTeacherAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
 			.AsNoTracking()
 			.Where(c =>
-				c.SchoolId == school.Id &&
+				c.SchoolId == school.SchoolId &&
 				c.Teachers.Contains(teacher))
 			.ToListAsync(ct);
 

@@ -16,6 +16,7 @@ public static class ScheduleMappings
 		ExamSlots = entity.ExamSlots.Select(ToDTO),
 		AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
 		SwapRequests = entity.SwapRequests.Select(x => x.ToDTO()),
+		Teachers = entity.Teachers.Select(x => x.ToDTO()),
 	};
 
 	public static Models.API.ExamSlot ToDTO(this ExamSlot entity) => new()
@@ -24,7 +25,8 @@ public static class ScheduleMappings
 		Date = entity.Date,
 		MinParticipants = entity.MinParticipants,
 		MaxParticipants = entity.MaxParticipants,
-		Participants = entity.Participants.Select(x => x.ToDTO())
+		Participants = entity.Participants.Select(x => x.ToDTO()),
+		IsLocked = entity.IsLocked,
 	};
 
 	public static Models.API.ScheduleGeneratorSlot ToDTO(this ScheduleGeneratorSlot entity) => new()

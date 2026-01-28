@@ -1,6 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using System.Diagnostics.Tracing;
+using System.Linq.Expressions;
 
 namespace Util.Extensions;
 
@@ -11,10 +13,10 @@ public interface IGuidEntity
 
 public static class LinqExtensions
 {
-	public static bool ValueEquals<T>(this IEnumerable<T> first, IEnumerable<T> second)
-		where T : IComparable<T> => ValueEquals(first, second, x => x);
+	public static bool ValueEquals<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second)
+		where TSource : IComparable<TSource> => ValueEquals(first, second, x => x);
 
-	public static bool ValueEquals<T, TKey>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, TKey> selector)
+	public static bool ValueEquals<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> selector)
 		where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
 
 	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
@@ -29,11 +31,23 @@ public static class LinqExtensions
 		}
 	}
 
-	public static ICollection<T> AddRange<T>(this ICollection<T> source, IEnumerable<T> items)
+	public static ICollection<TSource> AddRange<TSource>(this ICollection<TSource> source, params TSource[ ] items) => source.AddRange(items.ToList());
+	public static ICollection<TSource> AddRange<TSource>(this ICollection<TSource> source, IEnumerable<TSource> items)
 	{
 		foreach (var item in items)
 		{
 			source.Add(item);
+		}
+		return source;
+	}
+
+	public static ICollection<TSource> RemoveRange<TSource>(this ICollection<TSource> source, params TSource[ ] items) => source.RemoveRange(items.ToList());
+
+	public static ICollection<TSource> RemoveRange<TSource>(this ICollection<TSource> source, IEnumerable<TSource> items)
+	{
+		foreach (var item in items)
+		{
+			source.Remove(item);
 		}
 		return source;
 	}
@@ -55,6 +69,26 @@ public static class LinqExtensions
 	public static async Task<IDictionary<Guid, TSource>> FindByIdAsync<TSource>(this IQueryable<TSource> source, ICollection<Guid> ids, CancellationToken ct = default) where TSource : IGuidEntity
 	{
 		var entities = await source.Where(x => ids.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
-		return entities.Count == ids.Count ? entities : [];
+		return entities.Count == ids.Count ? entities : [ ];
 	}
+
+	public static bool ContainsId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Select(x => x.Id).Contains(id);
+
+	public static IQueryable<TSource> WhereNotNull<TSource>(this IQueryable<TSource?> source) => source.Where(x => x != null).Cast<TSource>();
+
+	public static IQueryable<TSource> WhereNotNull<TSource, TKey>(
+		this IQueryable<TSource?> source,
+		Expression<Func<TSource, TKey>> selector
+	)
+	{
+		var param = selector.Parameters[ 0 ];
+		var body = Expression.NotEqual(
+			selector.Body,
+			Expression.Constant(null, typeof(TKey))
+		);
+
+		var predicate = Expression.Lambda<Func<TSource?, bool>>(body, param);
+		return source.Where(predicate).Cast<TSource>();
+	}
+
 }

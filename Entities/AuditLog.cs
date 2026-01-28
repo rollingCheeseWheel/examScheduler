@@ -11,26 +11,22 @@ public class AuditLog : EntityBase<AuditLog>
 
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
-	public Guid? ActorId { get; set; }
-	[Required, ValidEnum]
-	public required AuditLogActor ActorType { get; set; }
-	public string? ActorName { get; set; }
 	[Required]
 	public required string Action { get; set; }
+	[Required, ValidEnum]
+	public required AuditLogActor ActorType { get; set; }
+	public Guid? FirstActorId { get; set; }
+	public Guid? SecondActorId { get; set; }
+	public string? FirstActorName { get; set; }
+	public string? SecondActorName { get; set; }
 	public string? Description { get; set; }
 
 	[Timestamp]
 	public override uint Version { get; set ; }
 
-	public override bool EqualsCore(AuditLog b) => Id == b.Id &&
-		Timestamp == b.Timestamp &&
-		ActorId == b.ActorId &&
-		ActorType == b.ActorType &&
-		ActorName == b.ActorName &&
-		Action == b.Action &&
-		Description == b.Description;
+	public override bool EqualsCore(AuditLog b) => Id == b.Id;
 
-	public override int GetHashCode() => HashCode.Combine(Id, Timestamp, ActorId, ActorType, ActorName, Action, Description);
+	public override int GetHashCode() => HashCode.Combine(Id);
 
 	public override int CompareTo(AuditLog? b) => Timestamp.CompareTo(b?.Timestamp ?? DateTimeOffset.MinValue);
 }

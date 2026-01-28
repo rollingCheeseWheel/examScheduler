@@ -49,7 +49,6 @@ builder.Services
 	.AddScoped<IClassroomService, ClassroomService>()
 	.AddScoped<IScheduleService, ScheduleService>()
 	.AddScoped<ISchoolsService, SchoolsService>()
-	.AddScoped<IStudentService, StudentService>()
 	.AddScoped<ITokenProvider, TokenProvider>();
 /*////*/
 

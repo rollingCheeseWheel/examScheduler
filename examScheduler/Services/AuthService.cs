@@ -61,7 +61,7 @@ public class AuthService(
 		}
 
 		var existingUser = await _userManager.Users
-			.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
+			.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
 		Result<UserProfile>? response = null;
 		if (existingUser is not null)
 		{
@@ -80,7 +80,7 @@ public class AuthService(
 			_logger.LogInformation("Successfully logged in");
 			await transcation.CommitAsync(ct);
 
-			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.Id && u.RegiserId == userProfile.Id, ct);
+			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
 			if (justCreatedUser is not null)
 			{
 				await ExtendCalendar(registerClient, justCreatedUser, ct);
@@ -98,7 +98,7 @@ public class AuthService(
 	{
 		var token = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken, ct);
 		if (token is null) { return new(HttpStatusCode.NotFound); }
-		var user = await _context.Users.FindAsync([ token.UserProfileId ], ct);
+		var user = await _context.Users.FindAsync(token.UserProfileId, ct);
 		if (user is null) { return new(HttpStatusCode.NotFound); }
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokens = await _jwtProvider.RefreshTokenPairAsync(claims, refreshToken, user, ct);
@@ -114,7 +114,7 @@ public class AuthService(
 	{
 		if (user.TeacherProfile is not null)
 		{
-			await ConnectTeacherWithCalendarTeacherAsync(user.Id, user.SchoolId, ct);
+			await ConnectTeacherWithCalendarTeacherAsync(user.Id, ct);
 		}
 
 		var claims = await GetUserClaimsAsync(user, ct);
@@ -219,6 +219,8 @@ public class AuthService(
 			return new(HttpStatusCode.InternalServerError, userCreateResult.Errors);
 		}
 
+		await _context.StudentProfiles.AddAsync(studentProfile);
+
 		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
 		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
 		return !roleAddedResult.Succeeded
@@ -259,7 +261,7 @@ public class AuthService(
 
 		// on each login the connection will be tried to be established
 		var existingTeacherProfile = await _context.Teachers
-			.Where(t => t.SchoolId == school.Id)
+			.Where(t => t.SchoolId == school.SchoolId)
 			.Where(t => t.FirstName == userProfile.FirstName && t.LastName == userProfile.LastName)
 			.FirstOrDefaultAsync(ct);
 
@@ -269,7 +271,8 @@ public class AuthService(
 			Teacher = existingTeacherProfile,
 		};
 
-		await _context.TeacherProfiles.AddAsync(teacherProfile, ct);
+		await _context.TeacherProfiles
+			.AddAsync(teacherProfile, ct);
 
 		return await LoginAsync(userProfile, httpContext, ct);
 	}
@@ -290,7 +293,7 @@ public class AuthService(
 			FirstName = registerUserProfile.FirstName,
 			LastName = registerUserProfile.LastName,
 			Role = (UserRoles)role!,
-			SchoolId = school.Id,
+			SchoolId = school.SchoolId,
 		};
 	}
 
@@ -305,9 +308,12 @@ public class AuthService(
 		return roleName;
 	}
 
-	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, Guid schoolId, CancellationToken ct = default)
+	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, CancellationToken ct = default)
 	{
-		var teacherProfile = await _context.TeacherProfiles.FindAsync([ teacherId ], ct);
+		var teacherProfile = await _context.Users
+			.Select(u => u.TeacherProfile)
+			.WhereNotNull()
+			.FindByIdAsync(teacherId, ct);
 		if (teacherProfile is null) { return; }
 
 		var teacher = await _context.Teachers
@@ -336,7 +342,10 @@ public class AuthService(
 			var calendarService = serviceProvider.ServiceProvider.GetRequiredService<ICalendarService>();
 			using var copiedRegisterClient = registerClient.Copy();
 
-			var student = await dbcontext.StudentProfiles.FindByIdAsync(user.Id, ct);
+			var student = await dbcontext.Users
+				.Select(u => u.StudentProfile)
+				.WhereNotNull()
+				.FindByIdAsync(user.Id, ct);
 			if (student is null)
 			{
 				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");

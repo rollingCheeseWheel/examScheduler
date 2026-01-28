@@ -11,7 +11,7 @@ public class Classroom
 	[Required, Range(0, int.MaxValue)]
 	public required int StudentCount { get; set; }
 	[Required]
-	public required Guid SchoolId { get; set; }
+	public required string SchoolId { get; set; }
 	public required Calendar? Calendar { get; set; }
 	public required Guid? CalendarId { get; set; }
 }
