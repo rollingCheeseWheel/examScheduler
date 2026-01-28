@@ -1,6 +1,7 @@
 ﻿using Entities;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 using Util.Extensions;
 
 namespace examScheduler.Services;
@@ -124,7 +125,8 @@ public class ScheduleService(
 			return null;
 		}
 
-		slot.ActuallyParticipated.AddRange(students);
+		slot.Participants.Clear();
+		slot.Participants.AddRange(students);
 
 		await _context.SaveChangesAsync(ct);
 		return slot.Id;

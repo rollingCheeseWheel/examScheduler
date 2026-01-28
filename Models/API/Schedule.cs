@@ -16,7 +16,7 @@ public class Schedule
 	public required DateTimeOffset EndDate { get; set; }
 	[Required, ValidEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
-	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	[Required, PositiveTimeSpan]
 	public required TimeSpan LockInOffset { get; set; }
 	public string? Description { get; set; }
 	[Required]
@@ -38,8 +38,6 @@ public class ExamSlot
 	[Required]
 	public required IEnumerable<UserProfile> Participants { get; set; }
 	[Required]
-	public required IEnumerable<UserProfile> ActuallyParticipated { get; set; }
-	[Required]
 	public required int MaxParticipants { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }
@@ -57,7 +55,7 @@ public class ScheduleCreateRequest
 	public required DateTimeOffset StartDate { get; set; }
 	[Required]
 	public required DateTimeOffset EndDate { get; set; }
-	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	[Required, PositiveTimeSpan]
 	public required TimeSpan LockInOffset { get; set; }
 	public string? Description { get; set; }
 	[Required]
@@ -68,7 +66,7 @@ public class ScheduleCreateRequest
 
 public class ScheduleGeneratorSlot
 {
-	[Required, JsonConverter(typeof(TimeSpanToDateTimeConverter)), PositiveTimeSpan]
+	[Required, PositiveTimeSpan]
 	public required TimeSpan Offset { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }

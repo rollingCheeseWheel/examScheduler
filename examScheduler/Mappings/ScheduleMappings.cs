@@ -24,7 +24,6 @@ public static class ScheduleMappings
 		Date = entity.Date,
 		MinParticipants = entity.MinParticipants,
 		MaxParticipants = entity.MaxParticipants,
-		ActuallyParticipated = entity.ActuallyParticipated.Select(x => x.ToDTO()),
 		Participants = entity.Participants.Select(x => x.ToDTO())
 	};
 

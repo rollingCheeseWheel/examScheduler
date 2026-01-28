@@ -122,14 +122,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithMany();
 
 		modelBuilder.Entity<ExamSlot>()
-			.HasMany(e => e.ActuallyParticipated)
-			.WithMany();
-
-		modelBuilder.Entity<ExamSlot>()
 			.Navigation(s => s.Participants)
-			.AutoInclude();
-		modelBuilder.Entity<ExamSlot>()
-			.Navigation(s => s.ActuallyParticipated)
 			.AutoInclude();
 		modelBuilder.Entity<ExamSlot>()
 			.Navigation(s => s.GeneratorSlot)

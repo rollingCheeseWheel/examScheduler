@@ -21,9 +21,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Required]
 	public Guid ScheduleId { get; private set; }
 	[Required]
-	public ICollection<StudentProfile> Participants { get; set; } = [ ];
-	[Required]
-	public ICollection<StudentProfile> ActuallyParticipated { get; set; } = [ ];
+	public ICollection<StudentProfile> Participants { get; private set; } = [ ];
 
 	[NotMapped]
 	public int MinParticipants => GeneratorSlot.MinParticipants;
