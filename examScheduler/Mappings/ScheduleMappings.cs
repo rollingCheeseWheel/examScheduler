@@ -12,7 +12,7 @@ public static class ScheduleMappings
 		LockInOffset = entity.AutoLockInOffset,
 		StartDate = entity.StartDate,
 		EndDate = entity.EndDate,
-		SubjectName = entity.Subject.Name,
+		Subject = entity.Subject.ToDTO(),
 		ExamSlots = entity.ExamSlots.Select(ToDTO),
 		AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
 		SwapRequests = entity.SwapRequests.Select(x => x.ToDTO()),

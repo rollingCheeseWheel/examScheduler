@@ -20,7 +20,7 @@ public class Schedule
 	public required TimeSpan LockInOffset { get; set; }
 	public string? Description { get; set; }
 	[Required]
-	public required string SubjectName { get; set; }
+	public required Subject Subject{ get; set; }
 	[Required]
 	public required IEnumerable<Teacher> Teachers { get; set; }
 	[Required]

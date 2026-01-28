@@ -18,11 +18,11 @@ public static class CalendarMappings
 		ToHour = entity.ToHour,
 		LessonName = entity.Name,
 		Occurances = entity.Occurances,
-		SubjectName = entity.Subject.Name,
+		Subject = entity.Subject.ToDTO(),
 		Teachers = entity.Teachers.Select(ToDTO)
 	};
 
-	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { FirstName = entity.FirstName, LastName = entity.LastName };
+	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { Name = entity.Name };
 
 	public static Models.API.Subject ToDTO(this Subject entity) => new() { Name = entity.Name };
 }
