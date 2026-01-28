@@ -11,8 +11,7 @@ public class AuditLog : EntityBase<AuditLog>
 
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
-	[Required]
-	public required Guid ActorId { get; set; }
+	public Guid? ActorId { get; set; }
 	[Required, ValidEnum]
 	public required AuditLogActor ActorType { get; set; }
 	public string? ActorName { get; set; }
@@ -34,4 +33,15 @@ public class AuditLog : EntityBase<AuditLog>
 	public override int GetHashCode() => HashCode.Combine(Id, Timestamp, ActorId, ActorType, ActorName, Action, Description);
 
 	public override int CompareTo(AuditLog? b) => Timestamp.CompareTo(b?.Timestamp ?? DateTimeOffset.MinValue);
+}
+
+public static class AuditLogAction
+{
+	public const string EnlistInExamslot = "schedule.enlist";
+
+	public const string CreateSwapRequest = "schedule.swaprequest.create";
+	public const string AcceptSwapRequest = "schedule.swaprequest.accept";
+	public const string DeleteSwapRequest = "schedule.swaprequest.delete";
+
+	public const string ReportStudents = "schedule.reportstudents";
 }

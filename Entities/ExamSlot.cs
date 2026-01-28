@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
+using Util.Extensions;
 
 namespace Entities;
 
@@ -10,8 +11,6 @@ public class ExamSlot : EntityBase<ExamSlot>
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
 	public required ScheduleGeneratorSlot GeneratorSlot { get; set; }
-	/*[Required]
-	public required int SlotIndex { get; init; }*/
 	[Required]
 	public required DateTimeOffset Date { get; set; }
 
@@ -42,6 +41,19 @@ public class ExamSlot : EntityBase<ExamSlot>
 
 	[Timestamp]
 	public override uint Version { get; set; }
+
+	internal bool TryReportStudents(params StudentProfile[] students)
+	{
+		if (IsLocked)
+		{
+			return false;
+		}
+
+		Participants.Clear();
+		Participants.AddRange(students);
+
+		return true;
+	}
 
 	internal bool TrySwapStudents(StudentProfile replaced, StudentProfile replacement)
 	{

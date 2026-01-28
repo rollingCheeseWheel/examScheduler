@@ -1,12 +1,24 @@
 ﻿using Microsoft.DotNet.PlatformAbstractions;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
 using Util;
 using Util.Extensions;
 using Util.Validation;
 
 namespace Entities;
 
-public class Schedule : EntityBase<Schedule>
+public interface ISchedule
+{
+	bool TryEnlistStudent(Guid examSlotId, StudentProfile studentId);
+
+	bool TryAddSwapRequest(SwapRequest swapRequest);
+	bool TryAcceptSwapRequest(Guid swapRequestId, Guid acceptingStudentId);
+	bool TryDeleteSwapRequest(Guid swapRequestId, Guid? actingStudent);
+
+	bool TryReportStudents(Guid studentId, params StudentProfile[ ] students);
+}
+
+public class Schedule : EntityBase<Schedule>, ISchedule
 {
 	[Key]
 	public override Guid Id { get; set; } = Guid.NewGuid();
@@ -29,8 +41,6 @@ public class Schedule : EntityBase<Schedule>
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
-	//[Required]
-	//public required Classroom Classroom { get; set; }
 	[Required]
 	public ICollection<ExamSlot> ExamSlots { get; private set; } = [ ];
 	[Required]
@@ -41,13 +51,88 @@ public class Schedule : EntityBase<Schedule>
 	[Timestamp]
 	public override uint Version { get; set; }
 
+	public bool TryReportStudents(Guid examslotId, params StudentProfile[ ] students)
+	{
+		var slot = ExamSlots.FindById(examslotId);
+		if (slot is null)
+		{
+			return false;
+		}
+		var isSuccess = slot.TryReportStudents(students);
+		if (isSuccess)
+		{
+			AuditLogs.Add(new()
+			{
+				Action = AuditLogAction.ReportStudents,
+				ActorType = AuditLogActor.Teacher,
+			});
+		}
+		return isSuccess;
+	}
+
 	public bool TryEnlistStudent(Guid examslotId, StudentProfile student)
 	{
 		var slot = ExamSlots.FirstOrDefault(s => s.Id == examslotId);
 		return slot?.TryEnlistStudent(student) ?? false;
 	}
 
-	public bool TrySwapStudents(Guid firstStudentId, Guid secondStudentId)
+	public bool TryAddSwapRequest(SwapRequest swapRequest)
+	{
+		var slot = ExamSlots.FindById(swapRequest.RequestedSlotId);
+		var requestingStudent = ExamSlots.SelectMany(s => s.Participants).FindById(swapRequest.RequestingStudentId);
+
+		if (slot is null || requestingStudent is null || Id != swapRequest.ScheduleId)
+		{
+			return false;
+		}
+		SwapRequests.Add(swapRequest);
+		AuditLogs.Add(new()
+		{
+			Action = AuditLogAction.CreateSwapRequest,
+			ActorType = AuditLogActor.Student,
+			ActorId = swapRequest.RequestedSlotId,
+			ActorName = swapRequest.RequestingStudentName
+		});
+		return true;
+	}
+
+	public bool TryAcceptSwapRequest(Guid swapRequestId, Guid acceptingStudentId)
+	{
+		var swapRequest = SwapRequests.FindById(swapRequestId);
+		if (swapRequest is null)
+		{
+			return false;
+		}
+		var isSuccess = TrySwapStudents(acceptingStudentId, swapRequest.RequestingStudentId);
+		if (isSuccess)
+		{
+			AuditLogs.Add(new()
+			{
+				Action = AuditLogAction.AcceptSwapRequest,
+				ActorType = AuditLogActor.Student,
+				ActorId = swapRequest.RequestedSlotId,
+			});
+		}
+		return isSuccess;
+	}
+	public bool TryDeleteSwapRequest(Guid swapRequestId)
+	{
+		var swapRequest = SwapRequests.FindById(swapRequestId);
+		if (swapRequest is null)
+		{
+			return false;
+		}
+		SwapRequests.Remove(swapRequest);
+		AuditLogs.Add(new()
+		{
+			Action = AuditLogAction.DeleteSwapRequest,
+			ActorType = AuditLogActor.Student,
+			ActorId = swapRequest.RequestedSlotId,
+		});
+		return true;
+	}
+
+	private bool TrySwapStudents(Guid firstStudentId, Guid secondStudentId)
 	{
 		var participants = ExamSlots
 			.Where(e => !e.IsLocked)
@@ -63,15 +148,24 @@ public class Schedule : EntityBase<Schedule>
 		return TrySwapStudents(firstStudent, secondStudent);
 	}
 
-	public bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)
+	private bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)
 	{
 		var firstStudentExamSlot = ExamSlots.FirstOrDefault(s => !s.IsLocked && s.Participants.Contains(firstStudent));
 		var secondStudentExamSlot = ExamSlots.FirstOrDefault(s => !s.IsLocked && s.Participants.Contains(secondStudent));
-		return firstStudentExamSlot is not null &&
+
+		var isSuccess = firstStudentExamSlot is not null &&
 			 secondStudentExamSlot is not null &&
 			 firstStudentExamSlot.Id != secondStudentExamSlot.Id &&
 			 firstStudentExamSlot.TrySwapStudents(firstStudent, secondStudent) &&
 			 secondStudentExamSlot.TrySwapStudents(secondStudent, firstStudent);
+		if (isSuccess)
+		{
+			AuditLogs.Add(new()
+			{
+				Action = AuditLogAction.swap
+			})
+		}
+		return isSuccess;
 	}
 
 	public override bool EqualsCore(Schedule b) =>

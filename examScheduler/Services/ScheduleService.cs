@@ -67,10 +67,10 @@ public class ScheduleService(
 			return null;
 		}
 
-		var teacherProfile = await _context.TeacherProfiles.FindAsync([ teacherId ], ct);
+		var teacherProfile = await _context.TeacherProfiles.FindByIdAsync( teacherId , ct);
 		if (teacherProfile is null) { return null; }
 
-		var classroom = await _context.Classrooms.FindAsync([ request.ClassroomId ], ct);
+		var classroom = await _context.Classrooms.FindByIdAsync(request.ClassroomId , ct);
 		if (classroom is null || !teacherProfile.Classrooms.Contains(classroom))
 		{
 			return null;
@@ -196,7 +196,6 @@ public class ScheduleService(
 
 		var resolvedImplicitSwaps = ResolveImplicitSwaps(ref schedule);
 		_context.RemoveRange(resolvedImplicitSwaps);
-
 
 		await _context.SaveChangesAsync(ct);
 
