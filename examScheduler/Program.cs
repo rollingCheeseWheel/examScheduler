@@ -114,17 +114,17 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 /*builder.Services.AddOpenApi("openapi");*/
 
-builder.Services.AddResponseCompression(options =>
-{
-	options.EnableForHttps = true;
-	options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-		[ /*"application/json",*/ "application/javascript", "style/css", "text/html" ]
-	);
-});
+//builder.Services.AddResponseCompression(options =>
+//{
+//	options.EnableForHttps = true;
+//	options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+//		[ /*"application/json",*/ "application/javascript", "style/css", "text/html" ]
+//	);
+//});
 
 var app = builder.Build();
 
-app.UseResponseCompression();
+//app.UseResponseCompression();
 
 app.MapDefaultEndpoints();
 
@@ -137,7 +137,7 @@ if (app.Environment.IsDevelopment())
 	var db = schoolScope.ServiceProvider.GetRequiredService<AppDbContext>();
 	db.Database.Migrate();
 
-	List<Entities.School> schools = [
+	List<School> schools = [
 		new()
 		{
 			Name = "Test WFO Bruneck Innichen",
@@ -159,7 +159,7 @@ if (app.Environment.IsDevelopment())
 			Name = "some other school",
 			RegisterUri = new("https://some-other-school.digitalesregister.it/"),
 			SchoolId = "some-other-school",
-			ClientId = "asdfölijasdlfkjhask",
+			ClientId = "kkjdhzfgszdgfjkahakjs",
 			Secret = "alsdkhjfgxcvhyölhdfjlhasgu",
 			IsEnabled = true,
 		}

@@ -1,14 +1,14 @@
-﻿using examScheduler.Data;
+﻿using Entities;
+using examScheduler.Data;
 using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
-using Models.API;
 
 namespace examScheduler.Services;
 
 public interface ISchoolsService
 {
 	Task<IEnumerable<School>> GetSchoolsAsync_AsNoTracking(CancellationToken ct = default);
-	Task<Entities.School?> GetSchoolBySchoolIdAsync_AsNoTracking(string schoolId, CancellationToken ct = default);
+	Task<School?> GetSchoolBySchoolIdAsync_AsNoTracking(string schoolId, CancellationToken ct = default);
 }
 
 public class SchoolsService(AppDbContext context) : ISchoolsService
@@ -17,10 +17,9 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 
 	public async Task<IEnumerable<School>> GetSchoolsAsync_AsNoTracking(CancellationToken ct = default) => await _context.Schools
 			.AsNoTracking()
-			.Select(x => x.ToDTO())
 			.ToListAsync(ct);
 
-	public async Task<Entities.School?> GetSchoolBySchoolIdAsync_AsNoTracking(string schoolId, CancellationToken ct = default) => await _context.Schools
+	public async Task<School?> GetSchoolBySchoolIdAsync_AsNoTracking(string schoolId, CancellationToken ct = default) => await _context.Schools
 		.AsNoTracking()
 		.FirstOrDefaultAsync(s => s.SchoolId == schoolId, ct);
 }

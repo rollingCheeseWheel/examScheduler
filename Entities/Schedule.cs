@@ -40,13 +40,11 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 
 	// Navigation properties
 	[Required]
-	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; }
-	[Required]
 	public required Subject Subject { get; set; }
 	[Required]
 	public required ICollection<Teacher> Teachers { get; set; }
 	[Required]
-	public ICollection<ExamSlot> ExamSlots { get; private set; } = [ ];
+	public required ICollection<ExamSlot> ExamSlots { get; set; } = [ ];
 	[Required]
 	public ICollection<AuditLog> AuditLogs { get; private set; } = [ ];
 	[Required]
@@ -274,7 +272,6 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		AutoLockInOffset == b.AutoLockInOffset &&
 		Description == b.Description &&
 		Subject == b.Subject &&
-		GeneratorSlots.ValueEquals(b.GeneratorSlots) &&
 		ExamSlots.ValueEquals(b.ExamSlots) &&
 		AuditLogs.ValueEquals(b.AuditLogs) &&
 		SwapRequests.ValueEquals(b.SwapRequests);
@@ -288,7 +285,6 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		combiner.Add(AutoLockInOffset);
 		combiner.Add(Description);
 		combiner.Add(Subject);
-		combiner.Add(GeneratorSlots.Order());
 		combiner.Add(ExamSlots.Order());
 		combiner.Add(AuditLogs.Order());
 		combiner.Add(SwapRequests.Order());

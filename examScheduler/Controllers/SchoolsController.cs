@@ -1,4 +1,5 @@
-﻿using examScheduler.Services;
+﻿using examScheduler.Mappings;
+using examScheduler.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace examScheduler.Controllers;
@@ -10,5 +11,8 @@ public class SchoolsController(ISchoolsService schoolService) : ControllerBase
 	private readonly ISchoolsService _schoolService = schoolService;
 
 	[HttpGet]
-	public async Task<IActionResult> Get(CancellationToken ct) => Ok(await _schoolService.GetSchoolsAsync_AsNoTracking(ct));
+	public async Task<IActionResult> Get(CancellationToken ct) => Ok(
+		( await _schoolService.GetSchoolsAsync_AsNoTracking(ct) )
+		.Select(s => s.ToDTO())
+	);
 }

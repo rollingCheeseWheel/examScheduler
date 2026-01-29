@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
 using Util.Extensions;
+using Util.Validation;
 
 namespace Entities;
 
@@ -10,24 +11,20 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Key]
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
-	public required ScheduleGeneratorSlot GeneratorSlot { get; set; }
-	[Required]
 	public required DateTimeOffset Date { get; set; }
 
 	// Navigation Properties
 	[Required]
-	public required Schedule Schedule { get; set; }
+	public Schedule Schedule { get; set; } = null!;
 	[Required]
 	public Guid ScheduleId { get; private set; }
 	[Required]
 	public ICollection<StudentProfile> Participants { get; private set; } = [ ];
 
-	[NotMapped]
-	public int MinParticipants => GeneratorSlot.MinParticipants;
-	[NotMapped]
-	public int MaxParticipants => GeneratorSlot.MaxParticipants;
-	[NotMapped]
-	public bool HasAlreadyHappened => Date < DateTimeOffset.UtcNow;
+	[Required, Range(0, int.MaxValue)]
+	public required int MinParticipants { get; set; }
+	[Required, Range(0, int.MaxValue), GreaterThan<int>(nameof(MinParticipants))]
+	public required int MaxParticipants { get; set; }
 	[NotMapped]
 	public bool IsLocked
 	{
@@ -82,11 +79,14 @@ public class ExamSlot : EntityBase<ExamSlot>
 		return true;
 	}
 
-	public override bool EqualsCore(ExamSlot b) => Schedule == b.Schedule &&
+	public override bool EqualsCore(ExamSlot b) =>
+		Schedule == b.Schedule &&
 		Date == b.Date &&
-		GeneratorSlot == b.GeneratorSlot;
+		Participants.ValueEquals(b.Participants) &&
+		MinParticipants == b.MinParticipants &&
+		MaxParticipants == b.MaxParticipants;
 
-	public override int GetHashCode() => HashCode.Combine(Schedule, Date, GeneratorSlot);
+	public override int GetHashCode() => HashCode.Combine(Schedule, Date, Participants.Order(), MinParticipants, MaxParticipants);
 
 	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
 }

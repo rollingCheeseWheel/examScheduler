@@ -43,8 +43,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey(s => s.ClassroomId);
 
 		modelBuilder.Entity<Classroom>()
-			.Navigation(c => c.Calendar)
-			.AutoInclude();
+			.HasMany(c => c.Teachers)
+			.WithMany();
 
 		modelBuilder.Entity<Classroom>()
 			.Navigation(c => c.Teachers)
@@ -123,9 +123,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<ExamSlot>()
 			.Navigation(s => s.Participants)
 			.AutoInclude();
-		modelBuilder.Entity<ExamSlot>()
-			.Navigation(s => s.GeneratorSlot)
-			.AutoInclude();
 		#endregion
 
 		#region AuditLog
@@ -161,6 +158,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne<School>()
 			.WithMany()
 			.HasForeignKey(u => u.SchoolId);
+
+		modelBuilder.Entity<UserProfile>()
+			.Navigation(u => u.TeacherProfile)
+			.AutoInclude();
+		modelBuilder.Entity<UserProfile>()
+			.Navigation(u => u.StudentProfile)
+			.AutoInclude();
 		#endregion
 
 		#region StudentProfile
@@ -174,10 +178,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne(tp => tp.Teacher)
 			.WithOne()
 			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
-
-		modelBuilder.Entity<TeacherProfile>()
-			.HasMany(tp => tp.Classrooms)
-			.WithMany();
 
 		modelBuilder.Entity<TeacherProfile>()
 			.Navigation(tp => tp.Teacher)

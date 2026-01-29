@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Util.Validation;
 
 namespace Models.API;
 
@@ -6,8 +7,6 @@ public class Calendar
 {
 	[Required]
 	public required Guid Id { get; set; }
-	//[Required]
-	//public required Guid ClassroomId { get; set; }
 	[Required]
 	public required DateTimeOffset LastsUntil { get; set; }
 	[Required]
@@ -21,9 +20,9 @@ public class Lesson
 	public required Guid Id { get; set; }
 	[Required]
 	public required IEnumerable<DateTimeOffset> Occurances { get; set; }
-	[Required]
+	[Required, MinValue(0)]
 	public required int FromHour { get; set; }
-	[Required]
+	[Required, GreaterThan<int>(nameof(FromHour))]
 	public required int ToHour { get; set; }
 	[Required]
 	public required string LessonName { get; set; }

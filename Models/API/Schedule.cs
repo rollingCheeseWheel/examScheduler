@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 using Util;
-using Util.Converters;
 using Util.Validation;
 
 namespace Models.API;
@@ -20,7 +18,7 @@ public class Schedule
 	public required TimeSpan LockInOffset { get; set; }
 	public string? Description { get; set; }
 	[Required]
-	public required Subject Subject{ get; set; }
+	public required Subject Subject { get; set; }
 	[Required]
 	public required IEnumerable<Teacher> Teachers { get; set; }
 	[Required]
@@ -55,9 +53,9 @@ public class ScheduleCreateRequest
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
 	[Required, ValidEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
-	[Required]
+	[Required, PositiveDateTimeOffset]
 	public required DateTimeOffset StartDate { get; set; }
-	[Required]
+	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
 	public required DateTimeOffset EndDate { get; set; }
 	[Required, PositiveTimeSpan]
 	public required TimeSpan LockInOffset { get; set; }
@@ -72,8 +70,8 @@ public class ScheduleGeneratorSlot
 {
 	[Required, PositiveTimeSpan]
 	public required TimeSpan Offset { get; set; }
-	[Required]
+	[Required, MinValue(0)]
 	public required int MinParticipants { get; set; }
-	[Required]
+	[Required, GreaterThan<int>(nameof(MinParticipants))]
 	public required int MaxParticipants { get; set; }
 }

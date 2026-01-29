@@ -28,11 +28,4 @@ public static class ScheduleMappings
 		Participants = entity.Participants.Select(x => x.ToDTO()),
 		IsLocked = entity.IsLocked,
 	};
-
-	public static Models.API.ScheduleGeneratorSlot ToDTO(this ScheduleGeneratorSlot entity) => new()
-	{
-		MaxParticipants = entity.MaxParticipants,
-		MinParticipants = entity.MinParticipants,
-		Offset = entity.Offset,
-	};
 }

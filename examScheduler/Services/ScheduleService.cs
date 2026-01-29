@@ -76,15 +76,6 @@ public class ScheduleService(
 			return null;
 		}
 
-		var generatorSlots = request.GeneratorSlots
-			.Select(g => new ScheduleGeneratorSlot
-			{
-				MaxParticipants = g.MaxParticipants,
-				MinParticipants = g.MinParticipants,
-				Offset = g.Offset,
-			})
-			.ToList();
-
 		var newSchedule = new Schedule
 		{
 			SlotFillingBehaviour = request.SlotFillingBehaviour,
@@ -92,10 +83,20 @@ public class ScheduleService(
 			AutoLockInOffset = request.LockInOffset,
 			StartDate = request.StartDate,
 			EndDate = request.EndDate,
-			GeneratorSlots = generatorSlots,
 			Subject = subject,
-			Teachers = [ .. classroom.Teachers.Where(t => t.Subjects.Contains(subject)) ]
+			Teachers = [ .. classroom.Teachers.Where(t => t.Subjects.Contains(subject)) ],
+			ExamSlots = [ .. request.GeneratorSlots.Select(g => new ExamSlot
+			{
+				Date = request.StartDate + g.Offset,
+				MaxParticipants = g.MaxParticipants,
+				MinParticipants = g.MinParticipants,
+			}) ]
 		};
+
+		foreach (var slot in newSchedule.ExamSlots)
+		{
+			slot.Schedule = newSchedule;
+		}
 
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);

@@ -11,5 +11,5 @@ public class UserProfile
 	[Required]
 	public required string Name { get; set; }
 	[Required, ValidEnum]
-	public required UserRoles Role { get; init; }
+	public required UserRoles Role { get; set; }
 }
