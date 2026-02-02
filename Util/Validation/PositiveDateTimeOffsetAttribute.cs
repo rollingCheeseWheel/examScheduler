@@ -2,13 +2,12 @@
 
 namespace Util.Validation;
 
-public class PositiveDateTimeOffsetAttribute(int secondsTolerance = 0) : ValidationAttribute
+public class PositiveDateTimeOffsetAttribute(int secondsTolerance = 0) : AssertTypeAttribute<DateTimeOffset>
 {
 	private readonly int _secondsTolerance = secondsTolerance;
 
-	protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+	public override ValidationResult? IsValid(DateTimeOffset value, ValidationContext validationContext)
 	{
-		var isValid = value is DateTimeOffset asDate && asDate >= DateTimeOffset.UtcNow.AddSeconds(-_secondsTolerance);
-		return isValid ? ValidationResult.Success : new("Date cannot be in the past");
+		return value >= DateTimeOffset.UtcNow.AddSeconds(-_secondsTolerance) ? ValidationResult.Success : new("Date cannot be in the past");
 	}
 }

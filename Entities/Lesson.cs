@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util.Extensions;
+using Util.Validation;
 
 namespace Entities;
 
@@ -14,7 +15,7 @@ public class Lesson : EntityBase<Lesson>
 	[Required, Range(0, 23)]
 	public required int FromHour { get; set; }
 	/// <inheritdoc path="Lesson.FromHour"/>
-	[Required, Range(0, 23)]
+	[Required, Range(0, 23), GreaterThan<int>(nameof(FromHour))]
 	public required int ToHour { get; set; }
 	[NotMapped, Range(1, 24)]
 	public int Duration => Math.Clamp(ToHour - FromHour + 1, 1, 24);
@@ -22,7 +23,7 @@ public class Lesson : EntityBase<Lesson>
 	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;
 	[NotMapped]
 	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
-	[Required]
+	[Required, SameDayOfWeek]
 	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
 	public required string Name { get; set; }

@@ -52,7 +52,6 @@ public class ScheduleService(
 			.Select(s => s.Id)
 			.ToListAsync(ct);
 
-	// TODO currently its not checked if the offsets even correlate to a valid day of the week where the teacher has a lesson
 	public async Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default)
 	{
 		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
@@ -79,6 +78,19 @@ public class ScheduleService(
 			classroom.Students.Count > maxCapacity)
 		{
 			return false;
+		}
+
+		foreach (var generatorSlot in request.GeneratorSlots)
+		{
+			var offsetDate = request.StartDate + generatorSlot.Offset;
+			var exists = classroom.Calendar.Lessons
+				.Where(l => l.Subject.Name == subject.Name)
+				.Where(l => l.DayOfWeek == offsetDate.DayOfWeek)
+				.Any();
+			if (!exists)
+			{
+				return false;
+			}
 		}
 
 		var newSchedule = new Schedule

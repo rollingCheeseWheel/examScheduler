@@ -2,11 +2,10 @@
 
 namespace Util.Validation;
 
-public class PositiveTimeSpanAttribute : ValidationAttribute
+public class PositiveTimeSpanAttribute : AssertTypeAttribute<TimeSpan>
 {
-	protected override ValidationResult? IsValid(object? value, ValidationContext validationContext) => value is TimeSpan asTimeSpan
-			? asTimeSpan >= TimeSpan.Zero
-				? ValidationResult.Success
-				: new("TimeSpan is negative")
-			: new("Value is null or not a TimeSpan");
+	public override ValidationResult? IsValid(TimeSpan value, ValidationContext validationContext)
+	{
+		return value >= TimeSpan.Zero ? ValidationResult.Success : new("TimeSpan is negative");
+	}
 }
