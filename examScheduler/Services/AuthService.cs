@@ -1,4 +1,5 @@
-﻿using examScheduler.Data;
+﻿using examScheduler.BackgroundServices;
+using examScheduler.Data;
 using examScheduler.Mappings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

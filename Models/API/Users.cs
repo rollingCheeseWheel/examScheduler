@@ -10,6 +10,6 @@ public class UserProfile
 	public required Guid Id { get; set; }
 	[Required]
 	public required string Name { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required UserRoles Role { get; set; }
 }

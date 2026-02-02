@@ -13,16 +13,20 @@ public class AuditLog : EntityBase<AuditLog>
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
 	[Required]
 	public required string Action { get; set; }
-	[Required, ValidEnum]
-	public required AuditLogActor ActorType { get; set; }
-	public Guid? FirstActorId { get; set; }
-	public Guid? SecondActorId { get; set; }
-	public string? FirstActorName { get; set; }
-	public string? SecondActorName { get; set; }
+	[Required, DefinedEnum]
+	public required AuditLogActor OriginType { get; set; }
+	[Required]
+	public required Guid OriginId { get; set; }
+	[Required]
+	public required string OriginName { get; set; }
+	[DefinedEnum(true)]
+	public AuditLogActor? TargetType { get; set; }
+	public Guid? TargetId { get; set; }
+	public string? TargetName { get; set; }
 	public string? Description { get; set; }
 
 	[Timestamp]
-	public override uint Version { get; set ; }
+	public override uint Version { get; set; }
 
 	public override bool EqualsCore(AuditLog b) => Id == b.Id;
 

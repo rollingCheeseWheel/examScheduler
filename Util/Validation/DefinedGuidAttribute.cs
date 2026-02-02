@@ -2,7 +2,7 @@
 
 namespace Util.Validation;
 
-public class ValidGuidAttribute : ValidationAttribute
+public class DefinedGuidAttribute : ValidationAttribute
 {
 	protected override ValidationResult? IsValid(object? value, ValidationContext validationContext) => value is Guid asGuid && asGuid != Guid.Empty
 			? ValidationResult.Success

@@ -28,14 +28,14 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public required DateTimeOffset StartDate { get; set; }
 	[Required]
 	public required DateTimeOffset EndDate { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = StartDate - AutoLockInOffset
 	// AutoLockIn.TimeBeforeExamination = Examslot.Date - AutoLockInOffset 
 	[Required, PositiveTimeSpan]
 	public required TimeSpan AutoLockInOffset { get; set; } = TimeSpan.Zero; // offset into the past from the date of the examination
 	public string? Description { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
 
 	// Navigation properties
@@ -55,7 +55,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 
 	public bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students)
 	{
-		if (!Teachers.ContainsId(teacherId))
+		var teacher = Teachers.FindById(teacherId);
+		if (teacher is  null)
 		{
 			return false;
 		}
@@ -87,7 +88,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			AuditLogs.Add(new()
 			{
 				Action = AuditLogAction.ReportStudents,
-				ActorType = AuditLogActor.Teacher,
+				OriginType = AuditLogActor.Teacher,
+				OriginId = teacherId,
+				OriginName = teacher.Name,
 			});
 		}
 		return isSuccess;
@@ -112,9 +115,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		AuditLogs.Add(new()
 		{
 			Action = AuditLogAction.CreateSwapRequest,
-			ActorType = AuditLogActor.Student,
-			FirstActorId = swapRequest.RequestedSlotId,
-			FirstActorName = swapRequest.RequestingStudentName
+			OriginType = AuditLogActor.Student,
+			OriginId = swapRequest.RequestedSlotId,
+			OriginName = swapRequest.RequestingStudentName
 		});
 		return true;
 	}
@@ -152,11 +155,11 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			AuditLogs.Add(new()
 			{
 				Action = AuditLogAction.AcceptSwapRequest,
-				ActorType = AuditLogActor.Student,
-				FirstActorId = swapRequest.RequestingStudentId,
-				SecondActorId = acceptingStudentId,
-				FirstActorName = swapRequest.RequestingStudentName,
-				SecondActorName = acceptingStudent.UserProfile.Name,
+				OriginType = AuditLogActor.Student,
+				OriginId = swapRequest.RequestingStudentId,
+				TargetId = acceptingStudentId,
+				OriginName = swapRequest.RequestingStudentName,
+				TargetName = acceptingStudent.UserProfile.Name,
 			});
 		}
 		return isSuccess;
@@ -209,11 +212,11 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			AuditLogs.Add(new()
 			{
 				Action = AuditLogAction.AcceptSwapRequest,
-				ActorType = AuditLogActor.Student,
-				FirstActorId = firstSwapRequest.RequestingStudentId,
-				SecondActorId = secondSwapRequest.RequestingStudentId,
-				FirstActorName = firstSwapRequest.RequestingStudentName,
-				SecondActorName = secondSwapRequest.RequestingStudentName,
+				OriginType = AuditLogActor.Student,
+				OriginId = firstSwapRequest.RequestingStudentId,
+				TargetId = secondSwapRequest.RequestingStudentId,
+				OriginName = firstSwapRequest.RequestingStudentName,
+				TargetName = secondSwapRequest.RequestingStudentName,
 			});
 		}
 		return success;
@@ -230,9 +233,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		AuditLogs.Add(new()
 		{
 			Action = AuditLogAction.DeleteSwapRequest,
-			ActorType = AuditLogActor.Student,
-			FirstActorId = swapRequest.RequestingStudentId,
-			FirstActorName = swapRequest.RequestingStudentName,
+			OriginType = AuditLogActor.Student,
+			OriginId = swapRequest.RequestingStudentId,
+			OriginName = swapRequest.RequestingStudentName,
 		});
 		return true;
 	}

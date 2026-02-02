@@ -14,7 +14,7 @@ public class Schedule
 	public required DateTimeOffset StartDate { get; set; }
 	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
 	public required DateTimeOffset EndDate { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
@@ -51,9 +51,9 @@ public class ScheduleCreateRequest
 {
 	[Required]
 	public required Guid ClassroomId { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required, PositiveDateTimeOffset]
 	public required DateTimeOffset StartDate { get; set; }

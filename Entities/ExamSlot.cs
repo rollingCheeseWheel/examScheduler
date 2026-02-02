@@ -25,8 +25,11 @@ public class ExamSlot : EntityBase<ExamSlot>
 	public required int MinParticipants { get; set; }
 	[Required, Range(0, int.MaxValue), GreaterThan<int>(nameof(MinParticipants))]
 	public required int MaxParticipants { get; set; }
+	public DateTimeOffset? LockedAt { get; set; }
+	public DateTimeOffset? ProcessedAt { get; set; }
+
 	[NotMapped]
-	public bool IsLocked
+	private bool ShouldLock
 	{
 		get => Schedule.AutoLockIn switch
 		{
@@ -34,6 +37,15 @@ public class ExamSlot : EntityBase<ExamSlot>
 			AutoLockIn.TimeBeforeExamination => DateTimeOffset.UtcNow >= ( Date - Schedule.AutoLockInOffset ),
 			_ => true,
 		};
+	}
+	[NotMapped]
+	public bool IsLocked
+	{
+		get
+		{
+			UpdateLock();
+			return ShouldLock || LockedAt.HasValue || ProcessedAt.HasValue;
+		}
 	}
 
 	[Timestamp]
@@ -78,6 +90,15 @@ public class ExamSlot : EntityBase<ExamSlot>
 		Participants.Add(student);
 		return true;
 	}
+
+	private void UpdateLock()
+	{
+		if (ShouldLock)
+		{
+			LockedAt = DateTimeOffset.UtcNow;
+		}
+	}
+
 
 	public override bool EqualsCore(ExamSlot b) =>
 		Schedule == b.Schedule &&

@@ -8,11 +8,12 @@ public static class AuditLogMappings
 	{
 		Timestamp = entity.Timestamp,
 		Action = entity.Action,
-		ActorType = entity.ActorType,
-		FirstActorId = entity.FirstActorId,
-		SecondActorId = entity.SecondActorId,
-		FirstActorName = entity.FirstActorName,
-		SecondActorName	= entity.SecondActorName,
+		OriginType = entity.OriginType,
+		OriginId = entity.OriginId,
+		OriginName = entity.OriginName,
+		TargetType = entity.TargetType,
+		TargetId = entity.TargetId,
+		TargetName = entity.TargetName,
 		Description = entity.Description,
 	};
 }

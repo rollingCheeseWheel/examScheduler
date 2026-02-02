@@ -14,7 +14,7 @@ public class UserProfile
 	public required string SchoolId { get; set; }
 	[Required]
 	public required long RegiserId { get; set; }
-	[Required, ValidEnum]
+	[Required, DefinedEnum]
 	public required UserRoles Role { get; set; }
 	[Required]
 	public required string FirstName { get; set; }

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 
-namespace examScheduler;
+namespace examScheduler.BackgroundServices;
 
 public interface ICalendarWorker
 {

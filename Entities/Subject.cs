@@ -1,11 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Entities;
 
+[method: SetsRequiredMembers]
 public class Subject(string name) : IComparable<Subject>, IEquatable<Subject>
 {
 	[Key]
-	public string Name { get; set; } = name;
+	public required string Name { get; set; } = name;
 
 	public override bool Equals(object? obj) => obj is Subject asSubject && Equals(asSubject);
 	public bool Equals(Subject? other) => Name == other?.Name;

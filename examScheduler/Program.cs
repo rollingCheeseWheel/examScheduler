@@ -1,6 +1,7 @@
 using Entities;
-using examScheduler;
+using examScheduler.BackgroundServices;
 using examScheduler.Data;
+using examScheduler.Events;
 using examScheduler.Hubs;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -42,7 +43,7 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 
 builder.Services.AddSignalR();
 
-/*////*/
+/*// services //*/
 builder.Services
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<ICalendarService, CalendarService>()
@@ -52,11 +53,12 @@ builder.Services
 	.AddScoped<ITokenProvider, TokenProvider>();
 /*////*/
 
-/*////*/
+/*// singletons //*/
 builder.Services
 	.AddSingleton<CalendarWorker>()
 	.AddSingleton<ICalendarWorker>(sp => sp.GetRequiredService<CalendarWorker>())
-	.AddHostedService(sp => sp.GetRequiredService<CalendarWorker>());
+	.AddHostedService(sp => sp.GetRequiredService<CalendarWorker>())
+	.AddSingleton<IEventBus, EventBus>();
 /*////*/
 
 var tokenValidationParameters = new JwtOptions

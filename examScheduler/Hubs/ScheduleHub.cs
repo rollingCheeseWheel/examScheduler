@@ -1,4 +1,5 @@
-﻿using examScheduler.Mappings;
+﻿using examScheduler.Events;
+using examScheduler.Mappings;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -33,16 +34,22 @@ public interface IScheduleClient
 }
 
 [Authorize]
-public class ScheduleHub(
-	IScheduleService scheduleService
-) : Hub<IScheduleClient>, IScheduleHub
+public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 {
-	private readonly IScheduleService _scheduleService = scheduleService;
+	private readonly IScheduleService _scheduleService;
+	private readonly IEventBus _eventBus;
 
 	private Guid _guid = default;
 	private bool _isGuidSet = false;
 
 	private CancellationToken _ct => Context.ConnectionAborted;
+
+	public ScheduleHub(IScheduleService scheduleService, IEventBus eventBus)
+	{
+		_scheduleService = scheduleService;
+		_eventBus = eventBus;
+		_eventBus.Subscribe<ScheduleUpdatedEvent>(TransmitScheduleAsync);
+	}
 
 	public override async Task OnConnectedAsync()
 	{
@@ -81,15 +88,8 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var enlistedScheduleId = await _scheduleService.TryEnlistStudentAsync(slotId, _guid, _ct);
-		if (enlistedScheduleId is not null)
-		{
-			await TransmitScheduleAsync(enlistedScheduleId.Value, _ct);
-		}
-		return new(enlistedScheduleId is not null,
-			HttpStatusCode.BadRequest,
-			enlistedScheduleId is not null
-		);
+		var result = await _scheduleService.TryEnlistStudentAsync(slotId, _guid, _ct);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -100,16 +100,8 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var isSuccess = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid, examSlotId, _ct);
-		if (isSuccess)
-		{
-			await TransmitScheduleAsync(scheduleId, _ct);
-		}
-		return new(
-			isSuccess,
-			HttpStatusCode.BadRequest,
-			isSuccess
-		);
+		var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid, examSlotId, _ct);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -120,12 +112,8 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
-		if (scheduleId is not null)
-		{
-			await TransmitScheduleAsync(scheduleId.Value, _ct);
-		}
-		return new(scheduleId is not null, HttpStatusCode.BadRequest, scheduleId is not null);
+		var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid, _ct);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -136,12 +124,8 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
-		if (scheduleId is not null)
-		{
-			await TransmitScheduleAsync(scheduleId.Value, _ct);
-		}
-		return new(scheduleId is not null, HttpStatusCode.BadRequest, scheduleId is not null);
+		var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid, _ct);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
@@ -152,15 +136,8 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryCreateSchedule(request, _guid, _ct);
-		if (scheduleId is not null)
-		{
-			await TransmitScheduleAsync(scheduleId.Value, _ct);
-		}
-		return new(scheduleId is not null,
-			HttpStatusCode.BadRequest,
-			scheduleId is not null
-		);
+		var result = await _scheduleService.TryCreateSchedule(request, _guid, _ct);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
@@ -171,23 +148,16 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var scheduleId = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, _guid, actualParticipants);
-		if (scheduleId is not null)
-		{
-			await TransmitScheduleAsync(scheduleId.Value, _ct);
-		}
-		return new(scheduleId is not null,
-			HttpStatusCode.BadRequest,
-			scheduleId is not null
-		);
+		var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, _guid, actualParticipants);
+		return new(result, HttpStatusCode.BadRequest, x => x);
 	}
 
-	private async Task TransmitScheduleAsync(Guid scheduleId, CancellationToken ct = default)
+	private async Task TransmitScheduleAsync(ScheduleUpdatedEvent @event, CancellationToken ct)
 	{
-		var schedule = await _scheduleService.GetScheduleAsync(scheduleId, ct);
+		var schedule = await _scheduleService.GetScheduleAsync(@event.ScheduleId, ct);
 		if (schedule is not null)
 		{
-			await Clients.Group(scheduleId.ToString()).UpdateSchedule(scheduleId, schedule.ToDTO());
+			await Clients.Group(@event.ScheduleId.ToString()).UpdateSchedule(@event.ScheduleId, schedule.ToDTO());
 		}
 	}
 
@@ -197,3 +167,5 @@ public class ScheduleHub(
 		await Clients.Caller.ReceiveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }
+
+public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
