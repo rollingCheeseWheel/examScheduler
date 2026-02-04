@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_365 : Migration
+    public partial class postgresqlcontainer_migration_294 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -259,11 +259,12 @@ namespace examScheduler.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Action = table.Column<string>(type: "text", nullable: false),
-                    ActorType = table.Column<int>(type: "integer", nullable: false),
-                    FirstActorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SecondActorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    FirstActorName = table.Column<string>(type: "text", nullable: true),
-                    SecondActorName = table.Column<string>(type: "text", nullable: true),
+                    OriginType = table.Column<int>(type: "integer", nullable: false),
+                    OriginId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OriginName = table.Column<string>(type: "text", nullable: false),
+                    TargetType = table.Column<int>(type: "integer", nullable: true),
+                    TargetId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TargetName = table.Column<string>(type: "text", nullable: true),
                     Description = table.Column<string>(type: "text", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     ScheduleId = table.Column<Guid>(type: "uuid", nullable: true)
@@ -367,6 +368,8 @@ namespace examScheduler.Migrations
                     ScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
                     MinParticipants = table.Column<int>(type: "integer", nullable: false),
                     MaxParticipants = table.Column<int>(type: "integer", nullable: false),
+                    LockedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    ProcessedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>

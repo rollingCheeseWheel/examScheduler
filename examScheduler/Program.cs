@@ -168,7 +168,7 @@ if (app.Environment.IsDevelopment())
 	];
 
 	var existingSchools = await db.Schools.ToListAsync(app.Lifetime.ApplicationStopping);
-	if (schools.ValueEquals(existingSchools, s => s))
+	if (!schools.ValueEquals(existingSchools))
 	{
 		await db.Schools.ExecuteDeleteAsync(app.Lifetime.ApplicationStopping);
 		await db.Schools.AddRangeAsync(schools);
@@ -176,7 +176,7 @@ if (app.Environment.IsDevelopment())
 	}
 }
 
-app.UseStaticFiles(new StaticFileOptions()
+app.UseStaticFiles(new StaticFileOptions
 {
 	OnPrepareResponse = ctx =>
 	{

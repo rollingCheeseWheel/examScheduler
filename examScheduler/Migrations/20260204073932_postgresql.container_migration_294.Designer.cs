@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260129100755_postgresql.container_migration_365")]
-    partial class postgresqlcontainer_migration_365
+    [Migration("20260204073932_postgresql.container_migration_294")]
+    partial class postgresqlcontainer_migration_294
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -50,26 +50,30 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("ActorType")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("FirstActorId")
+                    b.Property<Guid>("OriginId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("FirstActorName")
+                    b.Property<string>("OriginName")
+                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("OriginType")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("ScheduleId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SecondActorId")
+                    b.Property<Guid?>("TargetId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("SecondActorName")
+                    b.Property<string>("TargetName")
                         .HasColumnType("text");
+
+                    b.Property<int?>("TargetType")
+                        .HasColumnType("integer");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
@@ -155,11 +159,17 @@ namespace examScheduler.Migrations
                     b.Property<DateTimeOffset>("Date")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("MaxParticipants")
                         .HasColumnType("integer");
 
                     b.Property<int>("MinParticipants")
                         .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ScheduleId")
                         .HasColumnType("uuid");

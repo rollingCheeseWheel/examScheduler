@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace examScheduler.Events;
 
@@ -8,12 +9,13 @@ public interface IEvent;
 public interface IEventBus
 {
 	Task PublishAsync(IEvent @event, CancellationToken ct = default);
-	void Subscribe<T>(Func<T, CancellationToken, Task> handler) where T : IEvent;
+	Guid Subscribe<T>(Func<T, CancellationToken, Task> handler) where T : IEvent;
+	void Unsubscribe(Guid? id);
 }
 
 public sealed class EventBus : IEventBus
 {
-	private readonly ConcurrentDictionary<Type, List<Func<IEvent, CancellationToken, Task>>> _handlers = new();
+	private readonly ConcurrentDictionary<Type, ConcurrentDictionary<Guid, Func<IEvent, CancellationToken, Task>>> _handlers = new();
 
 	public async Task PublishAsync(IEvent @event, CancellationToken ct = default)
 	{
@@ -22,25 +24,34 @@ public sealed class EventBus : IEventBus
 			return;
 		}
 
-		Func<IEvent, CancellationToken, Task>[ ] snapshot;
-		lock (handlers)
-		{
-			snapshot = [ .. handlers ];
-		}
-
-		foreach (var handler in snapshot)
+		foreach (var handler in handlers.Values.ToArray())
 		{
 			await handler(@event, ct);
 		}
 	}
 
-	public void Subscribe<T>(Func<T, CancellationToken, Task> handler) where T : IEvent
+	public Guid Subscribe<T>(Func<T, CancellationToken, Task> handler) where T : IEvent
 	{
-		var list = _handlers.GetOrAdd(typeof(T), []);
+		var id = Guid.NewGuid();
+		var handlers = _handlers.GetOrAdd(typeof(T), _ => new());
 		Task wrapper(IEvent @event, CancellationToken ct) => handler((T)@event, ct);
-		lock (list)
+		handlers.TryAdd(id, wrapper);
+		return id;
+	}
+
+	public void Unsubscribe(Guid? id)
+	{
+		if (!id.HasValue)
 		{
-			list.Add(wrapper);
+			return;
+		}
+
+		foreach (var handler in _handlers.Values)
+		{
+			if (handler.Remove(id.Value, out var _))
+			{
+				return;
+			}
 		}
 	}
 }
