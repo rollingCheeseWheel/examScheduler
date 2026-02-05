@@ -17,6 +17,17 @@ public static class Extensions
 	private const string HealthEndpointPath = "/health";
 	private const string AlivenessEndpointPath = "/alive";
 
+	public static IServiceCollection AddHostedService<TInterface, TService>(this IServiceCollection services)
+		where TInterface : class
+		where TService : class, IHostedService, TInterface
+	{
+		services
+			.AddSingleton<TService>()
+			.AddSingleton<TInterface>(sp => sp.GetRequiredService<TService>())
+			.AddHostedService(sp => sp.GetRequiredService<TService>());
+		return services;
+	}
+
 	public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{
 		builder.ConfigureOpenTelemetry();

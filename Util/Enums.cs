@@ -16,8 +16,8 @@ public enum AutoLockIn
 public enum SlotFillingBehaviour
 {
 	RandomizeUnassigned,
-	RandomizeUnassignedThenCompact,
-	CompactAll
+	//RandomizeUnassignedThenCompact,
+	//CompactAll
 }
 
 public enum AuditLogActor

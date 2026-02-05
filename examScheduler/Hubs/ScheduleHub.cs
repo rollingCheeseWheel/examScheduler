@@ -1,4 +1,4 @@
-﻿using examScheduler.Events;
+﻿using examScheduler.BackgroundServices;
 using examScheduler.Mappings;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,8 +12,8 @@ using Util;
 namespace examScheduler.Hubs;
 
 /*
-	1.	Swap requests target slots instead of students
-	2.	If two students from different slots want to swap with each others slots, the swap should resolve instantly	
+	1.	Swap requests target Slots instead of students
+	2.	If two students from different Slots want to swap with each others Slots, the swap should resolve instantly	
  */
 
 public interface IScheduleHub
@@ -25,6 +25,7 @@ public interface IScheduleHub
 	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
 
 	Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request);
+	Task<Result<bool>> DeleteSchedule(Guid scheduleId);
 	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<UserProfile> actualParticipants);
 }
 
@@ -74,8 +75,8 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 
 	private Guid? _guid = default;
 
-	private Guid? UpdateEventListenerId = null;
-	private Guid? RemoveEventListenerId = null;
+	private readonly Guid UpdateEventListenerId;
+	private readonly Guid RemoveEventListenerId;
 
 	private CancellationToken _ct => Context.ConnectionAborted;
 
@@ -83,8 +84,8 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 	{
 		_scheduleService = scheduleService;
 		_eventBus = eventBus;
-		_eventBus.Subscribe<ScheduleUpdatedEvent>(TransmitUpdateAsync);
-		_eventBus.Subscribe<ScheduleDeletedEvent>(TransmitRemoveAsync);
+		UpdateEventListenerId = _eventBus.Subscribe<ScheduleUpdatedEvent>(TransmitUpdateAsync);
+		RemoveEventListenerId = _eventBus.Subscribe<ScheduleDeletedEvent>(TransmitRemoveAsync);
 	}
 
 	public override async Task OnDisconnectedAsync(Exception? exception)
@@ -135,7 +136,7 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		}
 
 		var result = await _scheduleService.TryEnlistStudentAsync(slotId, _guid.Value, _ct);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -147,7 +148,7 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		}
 
 		var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid.Value, examSlotId, _ct);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -159,7 +160,7 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		}
 
 		var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid.Value, _ct);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
@@ -171,7 +172,7 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		}
 
 		var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid.Value, _ct);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
@@ -183,7 +184,19 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		}
 
 		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, _ct);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+		return new(result, HttpStatusCode.BadRequest, result);
+	}
+
+	[Authorize(Roles = nameof(UserRoles.Teacher))]
+	public async Task<Result<bool>> DeleteSchedule(Guid scheduleId)
+	{
+		if (!_guid.HasValue)
+		{
+			return new(HttpStatusCode.Unauthorized);
+		}
+
+		var result = await _scheduleService.TryDeleteSchedule(scheduleId, _guid.Value, _ct);
+		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]

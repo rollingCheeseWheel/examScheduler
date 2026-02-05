@@ -1,11 +1,12 @@
 ﻿using Entities;
+using examScheduler.BackgroundServices;
 using examScheduler.Data;
-using examScheduler.Events;
 using examScheduler.Hubs;
 using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography.X509Certificates;
+using Util;
 using Util.Extensions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace examScheduler.Services;
 
@@ -16,6 +17,7 @@ public interface IScheduleService
 	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 
 	Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
+	Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
 	Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Models.API.UserProfile> actualParticipants, CancellationToken ct = default);
 
 	Task<bool> TryEnlistStudentAsync(Guid slotId, Guid actingStudentId, CancellationToken ct = default);
@@ -54,6 +56,14 @@ public class ScheduleService(
 
 	public async Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default)
 	{
+		var hasOverLappingSlots = request.Generator.Slots
+			.GroupBy(s => s.DayOfWeek)
+			.Any(g => g.Count() > 1);
+		if (hasOverLappingSlots)
+		{
+			return false;
+		}
+
 		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
 		if (subject is null)
 		{
@@ -72,20 +82,19 @@ public class ScheduleService(
 			return false;
 		}
 
-		var minCapacity = request.GeneratorSlots.Sum(g => g.MinParticipants);
-		var maxCapacity = request.GeneratorSlots.Sum(g => g.MaxParticipants);
+		var minCapacity = request.Generator.Slots.Sum(g => g.MinParticipants);
+		var maxCapacity = request.Generator.Slots.Sum(g => g.MaxParticipants);
 		if (classroom.Students.Count < minCapacity ||
 			classroom.Students.Count > maxCapacity)
 		{
 			return false;
 		}
 
-		foreach (var generatorSlot in request.GeneratorSlots)
+		foreach (var generatorSlot in request.Generator.Slots.DistinctBy(s => s.DayOfWeek))
 		{
-			var offsetDate = request.StartDate + generatorSlot.Offset;
 			var exists = classroom.Calendar.Lessons
 				.Where(l => l.Subject.Name == subject.Name)
-				.Where(l => l.DayOfWeek == offsetDate.DayOfWeek)
+				.Where(l => l.DayOfWeek == generatorSlot.DayOfWeek)
 				.Any();
 			if (!exists)
 			{
@@ -93,31 +102,64 @@ public class ScheduleService(
 			}
 		}
 
+		var actualLessonDates = await _context.Classrooms
+			.WhereId(classroom.Id)
+			.Select(c => c.Calendar)
+			.SelectMany(c => c.Lessons)
+			.Where(l => l.Subject.Name == subject.Name)
+			.SelectMany(l => l.Occurances)
+			.ToListAsync(ct);
+
+		var newScheduleId = Guid.NewGuid();
 		var newSchedule = new Schedule
 		{
+			Id = newScheduleId,
+			Subject = subject,
+			Description = request.Description,
+			ScheduleGenerator = new() {
+				GeneratorSlots = [ .. request.Generator.Slots.Select(x => x.ToEntity()) ],
+				BlacklistedDays = [ .. actualLessonDates.Intersect(request.Generator.BlacklistedDays) ]
+			},
 			SlotFillingBehaviour = request.SlotFillingBehaviour,
 			AutoLockIn = request.AutoLockIn,
 			AutoLockInOffset = request.LockInOffset,
 			StartDate = request.StartDate,
-			EndDate = request.EndDate,
-			Subject = subject,
 			Teachers = [ .. classroom.Teachers.Where(t => t.Subjects.Contains(subject)) ],
-			ExamSlots = [ .. request.GeneratorSlots.Select(g => new ExamSlot
-			{
-				Date = request.StartDate + g.Offset,
-				MaxParticipants = g.MaxParticipants,
-				MinParticipants = g.MinParticipants,
-			}) ]
+			ExamSlots = [ ]
 		};
 
-		foreach (var slot in newSchedule.ExamSlots)
-		{
-			slot.Schedule = newSchedule;
-		}
+		newSchedule.Extend(classroom.Students.Count);
 
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
 		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(newSchedule.Id), ct);
+		return true;
+	}
+
+	public async Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default)
+	{
+		var teacher = await _context.TeacherProfiles.FindByIdAsync(actingTeacherId, ct);
+		if (teacher is null || teacher.Teacher is null)
+		{
+			return false;
+		}
+
+		var schedule = await _context.Classrooms
+			.SelectMany(c => c.Schedules)
+			.FindByIdAsync(scheduleId, ct);
+		if (schedule is null)
+		{
+			return false;
+		}
+
+		if (!schedule.Teachers.ContainsId(teacher.Teacher.Id))
+		{
+			return false;
+		}
+
+		_context.Remove(schedule);
+		await _context.SaveChangesAsync(ct);
+		await _eventBus.PublishAsync(new ScheduleDeletedEvent(schedule.Id), ct);
 		return true;
 	}
 

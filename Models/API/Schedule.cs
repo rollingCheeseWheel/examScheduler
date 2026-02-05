@@ -51,6 +51,9 @@ public class ScheduleCreateRequest
 {
 	[Required]
 	public required Guid ClassroomId { get; set; }
+	[Required]
+	public required string SubjectName { get; set; }
+	public string? Description { get; set; }
 	[Required, DefinedEnum]
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
 	[Required, DefinedEnum]
@@ -61,17 +64,22 @@ public class ScheduleCreateRequest
 	public required DateTimeOffset EndDate { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
-	public string? Description { get; set; }
 	[Required]
-	public required string SubjectName { get; set; }
-	[Required]
-	public required IEnumerable<ScheduleGeneratorSlot> GeneratorSlots { get; set; }
+	public required ScheduleGenerator Generator { get; set; }
+}
+
+public class ScheduleGenerator
+{
+	[Required, MaxLength(7)]
+	public required IEnumerable<ScheduleGeneratorSlot> Slots { get; set; }
+	[Required, MaxLength(20)]
+	public required IEnumerable<DateTimeOffset> BlacklistedDays { get; set; }
 }
 
 public class ScheduleGeneratorSlot
 {
-	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
-	public required TimeSpan Offset { get; set; }
+	[Required, DefinedEnum]
+	public required DayOfWeek DayOfWeek { get; set; }
 	[Required, MinValue(0)]
 	public required int MinParticipants { get; set; }
 	[Required, GreaterThan<int>(nameof(MinParticipants))]

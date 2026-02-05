@@ -2,52 +2,69 @@
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Util.Extensions;
 
 namespace examScheduler.BackgroundServices;
 
-public interface IScheduleWorker
-{
-
-}
+public interface IScheduleWorker;
 
 public class ScheduleWorkerConfig
 {
-	public required int PollingOffsetSeconds { get; set; }
+	public required int PollingDelaySeconds { get; set; } = 60;
 }
 
 public class ScheduleWorker(
 	IServiceScopeFactory serviceScopeFactory,
-	IOptions<ScheduleWorkerConfig> options,
+	IOptions<ScheduleWorkerConfig> config,
 	ILogger<ScheduleWorker> logger
 ) : BackgroundService, IScheduleWorker
 {
 	private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
-	private readonly IOptions<ScheduleWorkerConfig> _options = options;
+	private readonly IOptions<ScheduleWorkerConfig> _config = config;
 	private readonly ILogger _logger = logger;
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
+		_logger.LogInformation("Started Schedule Worker: {Config}", _config.Value.ToJson());
 		while (!stoppingToken.IsCancellationRequested)
 		{
 			try
 			{
-				await Task.Delay(TimeSpan.FromSeconds(_options.Value.PollingOffsetSeconds), stoppingToken);
+				await Task.Delay(TimeSpan.FromSeconds(_config.Value.PollingDelaySeconds), stoppingToken);
 				using var scope = _serviceScopeFactory.CreateScope();
 				using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-				var entities = await context.Classrooms
+				var schedules = await context.Classrooms
 					.SelectMany(c => c.Schedules)
-					.Where(s => s.ExamSlots.Any(e => e.LockedAt != null && e.ProcessedAt == null))
+					.Where(s => s.ExamSlots.Any(e =>
+						e.LockInDate <= DateTimeOffset.UtcNow &&
+						e.Date >= DateTimeOffset.UtcNow
+						)
+					)
 					.ToListAsync(stoppingToken);
-				if (entities.Count == 0)
+				if (schedules.Count == 0)
 				{
 					continue;
 				}
-				_logger.LogInformation("Found {Count} items to work on", entities.Count);
+
+				foreach (var schedule in schedules)
+				{
+					_logger.LogInformation("Working on {Id}", schedule.Id);
+					var students = await context.Classrooms
+						.Where(c => c.Schedules.ContainsId(schedule.Id))
+						.Select(c => c.Students)
+						.FirstOrDefaultAsync(stoppingToken);
+					if (students is null)
+					{
+						continue;
+					}
+					schedule.FillSlots(students);
+				}
+				await context.SaveChangesAsync(stoppingToken);
 			}
 			catch (Exception e)
 			{
-				_logger.LogError("Error caught in ScheduleWorker: {Message} - retrying in {Offset} seconds", e.Message, _options.Value.PollingOffsetSeconds);
+				_logger.LogError("Error caught in ScheduleWorker: {Message}", e.Message);
 			}
 
 		}

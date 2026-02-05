@@ -1,6 +1,8 @@
 ﻿using Microsoft.DotNet.PlatformAbstractions;
 using Models.API;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Cryptography.X509Certificates;
 using Util;
 using Util.Extensions;
 using Util.Validation;
@@ -17,6 +19,9 @@ public interface ISchedule
 	bool TryResolveImplicitSwapRequest(Guid firstSwapRequestId, Guid secondSwapRequestId);
 	bool TryDeleteSwapRequest(Guid swapRequestId);
 
+	void FillSlots(IEnumerable<StudentProfile> students);
+	void Extend(int studentCount);
+
 	bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students);
 }
 
@@ -26,8 +31,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
 	public required DateTimeOffset StartDate { get; set; }
-	[Required]
-	public required DateTimeOffset EndDate { get; set; }
+	[NotMapped]
+	public DateTimeOffset EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
 	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = StartDate - AutoLockInOffset
@@ -37,6 +42,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public string? Description { get; set; }
 	[Required, DefinedEnum]
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
+
+	[Required]
+	public required ScheduleGenerator ScheduleGenerator { get; set; }
 
 	// Navigation properties
 	[Required]
@@ -50,13 +58,21 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Required]
 	public ICollection<SwapRequest> SwapRequests { get; set; } = [ ];
 
+	[NotMapped]
+	public int ParticipantCount => ExamSlots.Sum(s => s.Participants.Count);
+	[NotMapped]
+	public int MaxParticipants => ExamSlots.Sum(s => s.MaxParticipants);
+	[NotMapped]
+	public int MinParticipants => ExamSlots.Sum(s => s.MinParticipants);
+
+
 	[Timestamp]
 	public override uint Version { get; set; }
 
 	public bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students)
 	{
 		var teacher = Teachers.FindById(teacherId);
-		if (teacher is  null)
+		if (teacher is null)
 		{
 			return false;
 		}
@@ -94,6 +110,71 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			});
 		}
 		return isSuccess;
+	}
+
+	public void FillSlots(IEnumerable<StudentProfile> students)
+	{
+		var studentsNotYetEnlisted = students.Except(ExamSlots.SelectMany(s => s.Participants)).ToList();
+		if (studentsNotYetEnlisted.Count == 0)
+		{
+			return;
+		}
+
+		var slotsToFill = ExamSlots
+			.Where(s => s.ShouldBeFilled)
+			.Order()
+			.ToList();
+
+		for (var i = 0; i < slotsToFill.Count; i++)
+		{
+			var slot = slotsToFill[ i ];
+			if (studentsNotYetEnlisted.Count == 0)
+			{
+				break;
+			}
+			var tempStudents = studentsNotYetEnlisted.Take(slot.MaxParticipants - slot.Participants.Count);
+			slot.Participants.AddRange(tempStudents);
+			studentsNotYetEnlisted.RemoveRange(tempStudents);
+		}
+	}
+
+	public void Extend(int studentCount)
+	{
+		DateTimeOffset GetLockInDate(DateTimeOffset slotDate)
+		{
+			return AutoLockIn switch
+			{
+				AutoLockIn.FixedDate => StartDate + AutoLockInOffset,
+				AutoLockIn.TimeBeforeExamination => slotDate - AutoLockInOffset,
+				_ => DateTimeOffset.MinValue
+			};
+		}
+
+		var nextDate = EndDate;
+		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(50))
+		{
+			if (ParticipantCount >= studentCount)
+			{
+				break;
+			}
+
+			nextDate = nextDate.RoundUpTo(generatorSlot.DayOfWeek);
+			if (ScheduleGenerator.BlacklistedDays.Contains(nextDate))
+			{
+				continue;
+			}
+
+
+			ExamSlots.Add(new()
+			{
+				ScheduleId = Id,
+				IsPostGenerated = true,
+				Date = nextDate,
+				LockInDate = GetLockInDate(nextDate),
+				MinParticipants = generatorSlot.MinParticipants,
+				MaxParticipants = generatorSlot.MaxParticipants,
+			});
+		}
 	}
 
 	public bool TryEnlistStudent(Guid examslotId, StudentProfile student)

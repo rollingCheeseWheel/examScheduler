@@ -100,7 +100,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#region Schedule
 		modelBuilder.Entity<Schedule>()
 			.HasMany(s => s.ExamSlots)
-			.WithOne(e => e.Schedule)
+			.WithOne()
 			.HasForeignKey(e => e.ScheduleId);
 
 		modelBuilder.Entity<Schedule>()
