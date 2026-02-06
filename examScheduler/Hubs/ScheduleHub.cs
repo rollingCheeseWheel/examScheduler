@@ -4,7 +4,6 @@ using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Models.API;
-using System.Collections.Concurrent;
 using System.Net;
 using System.Security.Claims;
 using Util;
@@ -36,67 +35,15 @@ public interface IScheduleClient
 	Task RemoveSchedule(Guid scheduleId);
 }
 
-public static class ScheduleHubConnectionIds
-{
-	private static ConcurrentDictionary<Guid, ConcurrentDictionary<string, byte>> _connections = new();
-
-	public static IEnumerable<string> GetConnections(Guid scheduleId)
-	{
-		if (!_connections.TryGetValue(scheduleId, out var connectionBag))
-		{
-			return [];
-		}
-		return connectionBag.Keys.ToArray();
-	}
-
-	public static void Add(Guid scheduleId, string connectionId)
-	{
-		var dict = _connections.GetOrAdd(scheduleId, _ => new());
-		dict.TryAdd(connectionId, new());
-	}
-
-	public static void Remove(string connectionId)
-	{
-		foreach (var dict in _connections.Values.ToArray())
-		{
-			if (dict.Remove(connectionId, out var _))
-			{
-				return;
-			}
-		}
-	}
-}
-
 [Authorize]
-public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
+public class ScheduleHub(IScheduleService scheduleService, IEventWorker eventWorker) : Hub<IScheduleClient>, IScheduleHub
 {
-	private readonly IScheduleService _scheduleService;
-	private readonly IEventBus _eventBus;
+	private readonly IScheduleService _scheduleService = scheduleService;
+	private readonly IEventWorker _eventWorker = eventWorker;
 
 	private Guid? _guid = default;
 
-	private readonly Guid UpdateEventListenerId;
-	private readonly Guid RemoveEventListenerId;
-
 	private CancellationToken _ct => Context.ConnectionAborted;
-
-	public ScheduleHub(IScheduleService scheduleService, IEventBus eventBus)
-	{
-		_scheduleService = scheduleService;
-		_eventBus = eventBus;
-		UpdateEventListenerId = _eventBus.Subscribe<ScheduleUpdatedEvent>(TransmitUpdateAsync);
-		RemoveEventListenerId = _eventBus.Subscribe<ScheduleDeletedEvent>(TransmitRemoveAsync);
-	}
-
-	public override async Task OnDisconnectedAsync(Exception? exception)
-	{
-		_eventBus.Unsubscribe(UpdateEventListenerId);
-		_eventBus.Unsubscribe(RemoveEventListenerId);
-
-		ScheduleHubConnectionIds.Remove(Context.ConnectionId);
-
-		await base.OnDisconnectedAsync(exception);
-	}
 
 	public override async Task OnConnectedAsync()
 	{
@@ -118,7 +65,6 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync_AsNoTracking(userId, _ct);
 		foreach (var scheduleId in scheduleIds)
 		{
-			ScheduleHubConnectionIds.Add(scheduleId, Context.ConnectionId);
 			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), _ct);
 		}
 
@@ -216,33 +162,4 @@ public class ScheduleHub : Hub<IScheduleClient>, IScheduleHub
 		var schedules = await _scheduleService.GetSchedulesForStudentAsync_AsNoTracking(userId, ct);
 		await Clients.Caller.ReceiveInitial(schedules.Select(x => x.ToDTO()));
 	}
-
-	private async Task TransmitUpdateAsync(ScheduleUpdatedEvent @event, CancellationToken ct)
-	{
-		var schedule = await _scheduleService.GetScheduleAsync(@event.ScheduleId, ct);
-		if (schedule is not null)
-		{
-			await ScheduleGroup(@event.ScheduleId).UpdateSchedule(@event.ScheduleId, schedule.ToDTO());
-		}
-	}
-	private async Task TransmitRemoveAsync(ScheduleDeletedEvent @event, CancellationToken ct)
-	{
-		await ScheduleGroup(@event.ScheduleId).RemoveSchedule(@event.ScheduleId);
-		await DissolveScheduleGuidAsync(@event.ScheduleId, ct);
-	}
-
-	private IScheduleClient ScheduleGroup(Guid scheduleId) => Clients.Group(scheduleId.ToString());
-
-	private async Task DissolveScheduleGuidAsync(Guid scheduleId, CancellationToken ct = default)
-	{
-		var tasks =  new List<Task>();
-		foreach (var connectionId in ScheduleHubConnectionIds.GetConnections(scheduleId))
-		{
-			tasks.Add(Groups.RemoveFromGroupAsync(connectionId, scheduleId.ToString(), ct));
-		}
-		await Task.WhenAll(tasks).WaitAsync(ct);
-	}
 }
-
-public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
-public sealed record ScheduleDeletedEvent(Guid ScheduleId) : IEvent;

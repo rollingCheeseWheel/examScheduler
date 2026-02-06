@@ -29,11 +29,11 @@ public interface IScheduleService
 
 public class ScheduleService(
 	AppDbContext context,
-	IEventBus eventBus
+	IEventWorker eventBus
 ) : IScheduleService
 {
 	private readonly AppDbContext _context = context;
-	private readonly IEventBus _eventBus = eventBus;
+	private readonly IEventWorker _eventBus = eventBus;
 
 	public async Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default) => await _context.Classrooms.SelectMany(c => c.Schedules).FindByIdAsync(id, ct);
 
@@ -159,7 +159,7 @@ public class ScheduleService(
 
 		_context.Remove(schedule);
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleDeletedEvent(schedule.Id), ct);
+		await _eventBus.PublishAsync(new ScheduleRemovedEvent(schedule.Id), ct);
 		return true;
 	}
 

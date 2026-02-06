@@ -151,7 +151,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		}
 
 		var nextDate = EndDate;
-		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(50))
+		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(200))
 		{
 			if (ParticipantCount >= studentCount)
 			{

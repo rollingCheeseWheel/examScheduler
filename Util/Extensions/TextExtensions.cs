@@ -11,15 +11,15 @@ public static class TextExtensions
 
 	public static async Task<string> ReadContentAsStringAsync(this HttpResponseMessage message, CancellationToken ct = default) => await message.Content.ReadAsStringAsync(ct);
 
-	public static string ToJson(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
+	public static string Stringify(this object? obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
 
-	public static string ToJson(this object? obj) => obj.ToJson(Constants.SerializerOptions);
+	public static string Stringify(this object? obj) => obj.Stringify(Constants.SerializerOptions);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).ToJson(options);
+	public static async Task<string> StringifyAsync<T>(this Task<T> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Stringify(options);
 
-	public static async Task<string> ToJsonAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.ToJsonAsync(Constants.SerializerOptions, ct);
+	public static async Task<string> StringifyAsync<T>(this Task<T> task, CancellationToken ct = default) => await task.StringifyAsync(Constants.SerializerOptions, ct);
 
-	public static T? Json<T>(this string str, JsonSerializerOptions options)
+	public static T? JsonParse<T>(this string str, JsonSerializerOptions options)
 	{
 		try
 		{
@@ -31,13 +31,13 @@ public static class TextExtensions
 		}
 	}
 
-	public static T? Json<T>(this string str) => str.Json<T>(Constants.SerializerOptions);
+	public static T? JsonParse<T>(this string str) => str.JsonParse<T>(Constants.SerializerOptions);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>(options);
+	public static async Task<T?> JsonParseAsync<T>(this Task<string> task, JsonSerializerOptions options, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).JsonParse<T>(options);
 
-	public static async Task<T?> JsonAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).Json<T>();
+	public static async Task<T?> JsonParseAsync<T>(this Task<string> task, CancellationToken ct = default) => ( await task.WaitAsync(ct) ).JsonParse<T>();
 
-	public static T JsonClone<T>(this T obj) => obj.ToJson().Json<T>()!;
+	public static T JsonClone<T>(this T obj) => obj.Stringify().JsonParse<T>()!;
 
-	public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.ToJson(options).Json<T>(options)!;
+	public static T JsonClone<T>(this T obj, JsonSerializerOptions options) => obj.Stringify(options).JsonParse<T>(options)!;
 }

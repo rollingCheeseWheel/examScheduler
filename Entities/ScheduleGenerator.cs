@@ -10,7 +10,7 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 	[Key]
 	public override Guid Id { get; set; } = Guid.NewGuid();
 
-	[Required]
+	[Required, DistinctBy<DayOfWeek>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];
 	[Required]
 	public required ICollection<DateTimeOffset> BlacklistedDays { get; set; } = [ ];

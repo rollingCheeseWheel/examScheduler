@@ -142,7 +142,7 @@ public class RegisterClient : IRegisterClient
 			iterdate = iterdate.AddDays(7);
 		}
 
-		Console.WriteLine(dates.ToJson());
+		Console.WriteLine(dates.Stringify());
 
 		var tasks = new List<Task<IEnumerable<Models.DigitalesRegister.Lesson>?>>();
 		foreach (var date in dates)

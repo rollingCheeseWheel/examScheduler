@@ -1,5 +1,6 @@
 ﻿
 using examScheduler.Data;
+using examScheduler.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Util.Extensions;
@@ -16,21 +17,23 @@ public class ScheduleWorkerConfig
 public class ScheduleWorker(
 	IServiceScopeFactory serviceScopeFactory,
 	IOptions<ScheduleWorkerConfig> config,
-	ILogger<ScheduleWorker> logger
+	ILogger<ScheduleWorker> logger,
+	EventWorker eventBus
 ) : BackgroundService, IScheduleWorker
 {
 	private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
 	private readonly IOptions<ScheduleWorkerConfig> _config = config;
 	private readonly ILogger _logger = logger;
+	private readonly EventWorker _eventBus = eventBus;
 
-	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	protected override async Task ExecuteAsync(CancellationToken ct)
 	{
-		_logger.LogInformation("Started Schedule Worker: {Config}", _config.Value.ToJson());
-		while (!stoppingToken.IsCancellationRequested)
+		_logger.LogInformation("{Name} started: {Config}", nameof(ScheduleWorker), _config.Value.Stringify());
+		while (!ct.IsCancellationRequested)
 		{
 			try
 			{
-				await Task.Delay(TimeSpan.FromSeconds(_config.Value.PollingDelaySeconds), stoppingToken);
+				await Task.Delay(TimeSpan.FromSeconds(_config.Value.PollingDelaySeconds), ct);
 				using var scope = _serviceScopeFactory.CreateScope();
 				using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -41,7 +44,7 @@ public class ScheduleWorker(
 						e.Date >= DateTimeOffset.UtcNow
 						)
 					)
-					.ToListAsync(stoppingToken);
+					.ToListAsync(ct);
 				if (schedules.Count == 0)
 				{
 					continue;
@@ -53,14 +56,15 @@ public class ScheduleWorker(
 					var students = await context.Classrooms
 						.Where(c => c.Schedules.ContainsId(schedule.Id))
 						.Select(c => c.Students)
-						.FirstOrDefaultAsync(stoppingToken);
+						.FirstOrDefaultAsync(ct);
 					if (students is null)
 					{
 						continue;
 					}
 					schedule.FillSlots(students);
+					await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
 				}
-				await context.SaveChangesAsync(stoppingToken);
+				await context.SaveChangesAsync(ct);
 			}
 			catch (Exception e)
 			{

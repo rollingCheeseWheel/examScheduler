@@ -53,8 +53,8 @@ builder.Services
 
 /*// background workers //*/
 builder.Services
-	.AddHostedService<ICalendarWorker, CalendarWorker>()
-	.AddHostedService<IEventBus, EventBusWorker>()
+	.AddHostedService<ITaskWorker, TaskWorker>()
+	.AddHostedService<IEventWorker, EventWorker>()
 	.AddHostedService<IScheduleWorker, ScheduleWorker>();
 /*////*/
 

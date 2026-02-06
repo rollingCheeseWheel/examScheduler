@@ -30,8 +30,9 @@ public class AuthService(
 	ITokenProvider jwtProvider,
 	JwtOptions jwtOptions,
 	ILogger<AuthService> logger,
-	ICalendarWorker calendarWorker,
-	ISchoolsService schoolsService
+	ITaskWorker calendarWorker,
+	ISchoolsService schoolsService,
+	IEventWorker eventWorker
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -41,14 +42,15 @@ public class AuthService(
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
-	private readonly ICalendarWorker _calendarWorker = calendarWorker;
+	private readonly ITaskWorker _calendarWorker = calendarWorker;
 	private readonly ISchoolsService _schoolsService = schoolsService;
+	private readonly IEventWorker _eventWorker = eventWorker;
 
 	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
 
-		var school = await _schoolsService.GetSchoolBySchoolIdAsync_AsNoTracking(request.SchoolId);
+		var school = await _schoolsService.GetSchoolBySchoolIdAsync_AsNoTracking(request.SchoolId, ct);
 		if (school is null)
 		{
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
@@ -82,14 +84,14 @@ public class AuthService(
 			await transcation.CommitAsync(ct);
 
 			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
-			if (justCreatedUser is not null)
+			if (justCreatedUser is not null && justCreatedUser.Role is UserRoles.Student)
 			{
 				await ExtendCalendar(registerClient, justCreatedUser, ct);
 			}
 		}
 		else
 		{
-			_logger.LogWarning("Login unsuccessful: {Reason}", response.Errors.ToJson());
+			_logger.LogWarning("Login unsuccessful: {Reason}", response.Errors.Stringify());
 			await transcation.RollbackAsync(ct);
 		}
 		return response;
@@ -99,7 +101,7 @@ public class AuthService(
 	{
 		var token = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken, ct);
 		if (token is null) { return new(HttpStatusCode.NotFound); }
-		var user = await _context.Users.FindAsync(token.UserProfileId, ct);
+		var user = await _context.Users.FindAsync([ token.UserProfileId ], ct);
 		if (user is null) { return new(HttpStatusCode.NotFound); }
 		var claims = await GetUserClaimsAsync(user, ct);
 		var tokens = await _jwtProvider.RefreshTokenPairAsync(claims, refreshToken, user, ct);
@@ -216,11 +218,13 @@ public class AuthService(
 		var userCreateResult = await _userManager.CreateAsync(userProfile);
 		if (!userCreateResult.Succeeded)
 		{
-			_logger.LogWarning("could not create user: {Reason}", userCreateResult.Errors.ToJson());
+			_logger.LogWarning("could not create user: {Reason}", userCreateResult.Errors.Stringify());
 			return new(HttpStatusCode.InternalServerError, userCreateResult.Errors);
 		}
 
-		await _context.StudentProfiles.AddAsync(studentProfile);
+		await _context.StudentProfiles.AddAsync(studentProfile, ct);
+		await _context.Classrooms.AddAsync(classroom, ct);
+		await _eventWorker.PublishAsync(new ClassroomStudentCountChangedEvent(classroom.Id, TimeSpan.FromSeconds(3)), ct);
 
 		var role = await EnsureRoleCreatedAsync(userProfile.Role, ct);
 		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
@@ -248,7 +252,7 @@ public class AuthService(
 		var userCreateResult = await _userManager.CreateAsync(userProfile);
 		if (!userCreateResult.Succeeded)
 		{
-			_logger.LogWarning("Unable to create user: {Reason}", userCreateResult.Errors.ToJson());
+			_logger.LogWarning("Unable to create user: {Reason}", userCreateResult.Errors.Stringify());
 			return new(HttpStatusCode.InternalServerError, userCreateResult.Errors);
 		}
 
@@ -256,7 +260,7 @@ public class AuthService(
 		var roleAddedResult = await _userManager.AddToRoleAsync(userProfile, role);
 		if (!roleAddedResult.Succeeded)
 		{
-			_logger.LogWarning("Unable to assign roles to user: {Reason}", roleAddedResult.Errors.ToJson());
+			_logger.LogWarning("Unable to assign roles to user: {Reason}", roleAddedResult.Errors.Stringify());
 			return new(HttpStatusCode.InternalServerError, roleAddedResult.Errors);
 		}
 
@@ -341,12 +345,9 @@ public class AuthService(
 			await Task.Delay(1000, ct);
 			using var dbcontext = serviceProvider.ServiceProvider.GetRequiredService<AppDbContext>();
 			var calendarService = serviceProvider.ServiceProvider.GetRequiredService<ICalendarService>();
-			using var copiedRegisterClient = registerClient.Copy();
+			using var copiedRegisterClient = registerClient;
 
-			var student = await dbcontext.Users
-				.Select(u => u.StudentProfile)
-				.WhereNotNull()
-				.FindByIdAsync(user.Id, ct);
+			var student = await dbcontext.StudentProfiles.FindByIdAsync(user.Id, ct);
 			if (student is null)
 			{
 				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");

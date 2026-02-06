@@ -70,7 +70,7 @@ public class ScheduleCreateRequest
 
 public class ScheduleGenerator
 {
-	[Required, MaxLength(7)]
+	[Required, DistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required IEnumerable<ScheduleGeneratorSlot> Slots { get; set; }
 	[Required, MaxLength(20)]
 	public required IEnumerable<DateTimeOffset> BlacklistedDays { get; set; }
