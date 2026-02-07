@@ -17,7 +17,7 @@ public class Classroom() : EntityBase<Classroom>
 
 	// Navigation Properties
 	[Required]
-	public required Calendar Calendar { get; set; }
+	public Calendar Calendar { get; set; } = new();
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]

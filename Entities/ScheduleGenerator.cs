@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Util;
+using Util.DataStructures;
 using Util.Extensions;
 using Util.Validation;
 
@@ -22,7 +22,7 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 	public LoopingEnumerable<ScheduleGeneratorSlot> GetLoopingEnumerable(int maxIterations = -1) => new([ .. GeneratorSlots ], maxIterations);
 
 	public override bool EqualsCore(ScheduleGenerator b) => GeneratorSlots.ValueEquals(b.GeneratorSlots) && BlacklistedDays.ValueEquals(b.BlacklistedDays);
-	public override int GetHashCode() => HashCode.Combine(GeneratorSlots.Order(), BlacklistedDays.Order());
+	public override int GetHashCode() => HashCode.Combine(GeneratorSlots.GetValueHashCode(), BlacklistedDays.GetValueHashCode());
 }
 
 public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>

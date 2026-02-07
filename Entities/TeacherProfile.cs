@@ -21,7 +21,7 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public override bool EqualsCore(TeacherProfile b) => UserProfile.Equals(b.UserProfile) &&
 		Classrooms.ValueEquals(b.Classrooms);
 
-	public override int GetHashCode() => HashCode.Combine(UserProfile, Classrooms.Order());
+	public override int GetHashCode() => HashCode.Combine(UserProfile, Classrooms.GetValueHashCode());
 
 	public override int CompareTo(TeacherProfile? other) => UserProfile.CompareTo(other?.UserProfile);
 }

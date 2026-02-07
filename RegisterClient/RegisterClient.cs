@@ -3,6 +3,7 @@ using Models.DigitalesRegister;
 using System.Text;
 using System.Text.Json;
 using Util;
+using Util.DataStructures;
 using Util.Extensions;
 
 namespace registerClient;
@@ -90,7 +91,7 @@ public class RegisterClient : IRegisterClient
 	{
 		"student" => UserRoles.Student,
 		"teacher" => UserRoles.Teacher,
-		"admin" => UserRoles.Admin,
+		//"admin" => UserRoles.Admin,
 		//"parent" => UserRoles.Parent,
 		_ => null
 	};

@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
-using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
 
 namespace Util.Extensions;
@@ -57,6 +55,22 @@ public static class LinqExtensions
 	public static IQueryable<TSource> WhereId<TSource>(this IQueryable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id).Take(1);
 
 	public static IEnumerable<TSource> WhereId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id).Take(1);
+
+	public static IQueryable<TSource> WhereId<TSource, TItem>(this IQueryable<TSource> source, Expression<Func<TSource, TItem>> selector, Guid id) where TItem : IGuidEntity
+	{
+		var parameter = selector.Parameters[ 0 ];
+
+		var body = Expression.Equal(
+			Expression.Property(selector.Body, nameof(IGuidEntity.Id)),
+			Expression.Constant(id)
+		);
+
+		var predicate = Expression.Lambda<Func<TSource, bool>>(body, parameter);
+
+		return source.Where(predicate).Take(1);
+	}
+
+	public static IEnumerable<TSource> WhereId<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, TItem> selector, Guid id) where TItem : IGuidEntity => source.Where(x => selector(x).Id == id).Take(1);
 
 	public static IQueryable<TSource> WhereIds<TSource>(this IQueryable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
 

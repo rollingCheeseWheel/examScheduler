@@ -13,8 +13,7 @@ namespace examScheduler.Services;
 public interface IScheduleService
 {
 	Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default);
-	Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
-	Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
+	Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 
 	Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
 	Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
@@ -37,13 +36,19 @@ public class ScheduleService(
 
 	public async Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default) => await _context.Classrooms.SelectMany(c => c.Schedules).FindByIdAsync(id, ct);
 
-	public async Task<IEnumerable<Schedule>> GetSchedulesForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default) => await _context.Users
-			.Select(u => u.StudentProfile)
-			.WhereNotNull()
+	public async Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
+	{
+		var user = await _context.Users
 			.AsNoTracking()
-			.Where(sp => sp.Id == userId)
-			.SelectMany(sp => sp.Classroom.Schedules)
-			.ToListAsync(ct);
+			.WhereId(userId)
+			.Select(u => new
+			{
+				u.TeacherProfile,
+				u.StudentProfile
+			})
+			.FirstOrDefaultAsync(ct);
+		return user?.StudentProfile?.Classroom.Schedules ?? user?.TeacherProfile?.Classrooms.SelectMany(c => c.Schedules) ?? [ ];
+	}
 
 	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default) => await _context.Users
 			.Select(u => u.StudentProfile)
@@ -116,7 +121,8 @@ public class ScheduleService(
 			Id = newScheduleId,
 			Subject = subject,
 			Description = request.Description,
-			ScheduleGenerator = new() {
+			ScheduleGenerator = new()
+			{
 				GeneratorSlots = [ .. request.Generator.Slots.Select(x => x.ToEntity()) ],
 				BlacklistedDays = [ .. actualLessonDates.Intersect(request.Generator.BlacklistedDays) ]
 			},
@@ -132,7 +138,7 @@ public class ScheduleService(
 
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(newSchedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(newSchedule.Id));
 		return true;
 	}
 
@@ -159,7 +165,7 @@ public class ScheduleService(
 
 		_context.Remove(schedule);
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleRemovedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleRemovedEvent(schedule.Id));
 		return true;
 	}
 
@@ -193,7 +199,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -223,7 +229,7 @@ public class ScheduleService(
 			return false;
 		}
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -256,7 +262,7 @@ public class ScheduleService(
 		schedule.ResolveImplicitSwaps();
 
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -279,7 +285,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -301,7 +307,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		await _eventBus.PublishAsync(new ScheduleUpdatedEvent(schedule.Id), ct);
+		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 

@@ -7,6 +7,7 @@ using Models.API;
 using System.Net;
 using System.Security.Claims;
 using Util;
+using Util.Extensions;
 
 namespace examScheduler.Hubs;
 
@@ -30,16 +31,25 @@ public interface IScheduleHub
 
 public interface IScheduleClient
 {
-	Task ReceiveInitial(IEnumerable<Schedule> schedules);
+	Task ReceiveInitialSchedules(IEnumerable<Schedule> schedules);
 	Task UpdateSchedule(Guid scheduleId, Schedule schedule);
 	Task RemoveSchedule(Guid scheduleId);
+
+	Task ReceiveInitialClassrooms(IEnumerable<Classroom> classrooms);
+	Task UpdateClassroom(Classroom classroom);
+	Task RemoveClassroom(Guid classroomId);
 }
 
 [Authorize]
-public class ScheduleHub(IScheduleService scheduleService, IEventWorker eventWorker) : Hub<IScheduleClient>, IScheduleHub
+public class ScheduleHub(
+	IScheduleService scheduleService,
+	IEventWorker eventWorker,
+	IClassroomService classroomService
+) : Hub<IScheduleClient>, IScheduleHub
 {
 	private readonly IScheduleService _scheduleService = scheduleService;
 	private readonly IEventWorker _eventWorker = eventWorker;
+	private readonly IClassroomService _classroomService = classroomService;
 
 	private Guid? _guid = default;
 
@@ -62,13 +72,21 @@ public class ScheduleHub(IScheduleService scheduleService, IEventWorker eventWor
 		}
 		_guid = userId;
 
-		var scheduleIds = await _scheduleService.GetScheduleIdsForStudentAsync_AsNoTracking(userId, _ct);
-		foreach (var scheduleId in scheduleIds)
+		var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(userId, _ct);
+		var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(userId, _ct);
+
+		foreach (var schedule in schedules)
 		{
-			await Groups.AddToGroupAsync(Context.ConnectionId, scheduleId.ToString(), _ct);
+			await this.AddToScheduleGroupAsync(schedule.Id, _ct);
 		}
 
-		await TransmitInitialSchedules(userId, _ct);
+		foreach (var classroom in classrooms)
+		{
+			await this.AddToClassroomGroupAsync(classroom.Id);
+		}
+
+		await Clients.Caller.ReceiveInitialSchedules(schedules.Select(x => x.ToDTO()));
+		await Clients.Caller.ReceiveInitialClassrooms(classrooms.Select(x => x.ToDTO()));
 
 		await base.OnConnectedAsync();
 	}
@@ -155,11 +173,5 @@ public class ScheduleHub(IScheduleService scheduleService, IEventWorker eventWor
 
 		var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, _guid.Value, actualParticipants);
 		return new(result, HttpStatusCode.BadRequest, x => x);
-	}
-
-	private async Task TransmitInitialSchedules(Guid userId, CancellationToken ct = default)
-	{
-		var schedules = await _scheduleService.GetSchedulesForStudentAsync_AsNoTracking(userId, ct);
-		await Clients.Caller.ReceiveInitial(schedules.Select(x => x.ToDTO()));
 	}
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util.Extensions;
 using Util.Validation;
@@ -19,10 +20,13 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[NotMapped]
 	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow;
 	[NotMapped]
-	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow;
+	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow || !HasBeenProcessed;
+
+	[Required, EditorBrowsable(EditorBrowsableState.Never)]
+	public bool HasBeenProcessed { get; set; } = false;
 
 	[Required]
-	public bool IsPostGenerated { get; set; }
+	public bool IsGenerated { get; set; }
 	[Required, Range(0, int.MaxValue)]
 	public required int MinParticipants { get; set; }
 	[Required, Range(0, int.MaxValue), GreaterThan<int>(nameof(MinParticipants))]
@@ -83,7 +87,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 		MinParticipants == b.MinParticipants &&
 		MaxParticipants == b.MaxParticipants;
 
-	public override int GetHashCode() => HashCode.Combine(ScheduleId, Date, Participants.Order(), MinParticipants, MaxParticipants);
+	public override int GetHashCode() => HashCode.Combine(ScheduleId, Date, Participants.GetValueHashCode(), MinParticipants, MaxParticipants);
 
 	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
 }

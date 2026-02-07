@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Util;
+namespace Util.DataStructures;
 
 public class LoopingEnumerable<T>(IList<T> items, int maxIterations = -1) : IEnumerable<T>
 {

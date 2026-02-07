@@ -33,7 +33,7 @@ if (keyvaultConnectionString is not null)
 }
 
 // Add services
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName)));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName) + ";Include Error Detail=true"));
 
 builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
@@ -160,7 +160,7 @@ if (app.Environment.IsDevelopment())
 			SchoolId = "some-other-school",
 			ClientId = "kkjdhzfgszdgfjkahakjs",
 			Secret = "alsdkhjfgxcvhyölhdfjlhasgu",
-			IsEnabled = true,
+			IsEnabled = false,
 		}
 	];
 

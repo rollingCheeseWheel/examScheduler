@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Util;
+namespace Util.DataStructures;
 
 public class RequestThrottler(double actionsPerSecond) : IDisposable
 {

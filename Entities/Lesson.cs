@@ -55,7 +55,7 @@ public class Lesson : EntityBase<Lesson>
 		Duration == b.Duration &&
 		Subject == b.Subject;
 
-	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.Order(), FromHour, Duration, Subject);
+	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.GetValueHashCode(), FromHour, Duration, Subject);
 
 	public override int CompareTo(Lesson? b) => FirstOccurance.CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
 }

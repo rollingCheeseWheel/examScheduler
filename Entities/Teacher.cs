@@ -9,11 +9,7 @@ public class Teacher : EntityBase<Teacher>
 	[Key]
 	public override Guid Id { get; set; } = Guid.NewGuid();
 	[Required]
-	public required string FirstName { get; set; }
-	[Required]
-	public required string LastName { get; set; }
-	[NotMapped]
-	public string Name => string.Join(" ", FirstName, LastName);
+	public required string Name { get; set; }
 	[Required]
 	public required string SchoolId { get; set; }
 
@@ -29,7 +25,7 @@ public class Teacher : EntityBase<Teacher>
 		Subjects.ValueEquals(b.Subjects) &&
 		TeacherProfileId == b.TeacherProfileId;
 
-	public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.Order(), TeacherProfileId);
+	public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.GetValueHashCode(), TeacherProfileId);
 
 	public override int CompareTo(Teacher? b) => Name.CompareTo(b?.Name);
 }

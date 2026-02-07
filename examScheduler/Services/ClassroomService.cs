@@ -2,6 +2,7 @@
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
 using Models.DigitalesRegister;
+using Util.Extensions;
 
 namespace examScheduler.Services;
 
@@ -9,7 +10,6 @@ public interface IClassroomService
 {
 	Task<Classroom?> GetOrCreateClassroomAsync(School school, RegisterUserProfile userProfile, CancellationToken ct = default);
 	Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default);
-	Task<IEnumerable<Classroom>> GetClassroomsForTeacherAsync(School school, Entities.Teacher teacher, CancellationToken ct = default);
 	Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 }
 
@@ -30,10 +30,10 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			Name = userProfile.StudentData.MainClass.Name,
 			RegisterId = [ userProfile.StudentData.MainClass.Id ],
 			SchoolId = school.SchoolId,
-			Calendar = new()
 		};
 
-		_context.Classrooms.Add(newClassroom);
+		await _context.Classrooms.AddAsync(newClassroom, ct);
+		await _context.SaveChangesAsync(ct);
 		return newClassroom;
 	}
 
@@ -42,13 +42,6 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 				c.SchoolId == school.SchoolId &&
 				c.RegisterId.Contains(registerId), ct
 			);
-
-	public async Task<IEnumerable<Classroom>> GetClassroomsForTeacherAsync(School school, Entities.Teacher teacher, CancellationToken ct = default) => await _context.Classrooms
-			.AsNoTracking()
-			.Where(c =>
-				c.SchoolId == school.SchoolId &&
-				c.Teachers.Contains(teacher))
-			.ToListAsync(ct);
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{

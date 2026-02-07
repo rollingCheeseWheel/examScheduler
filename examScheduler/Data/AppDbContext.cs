@@ -139,7 +139,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<UserProfile>()
 			.HasIndex(u => new
 			{
-				u.UserName,
+				u.RegiserId,
 				u.SchoolId,
 			})
 			.IsUnique();

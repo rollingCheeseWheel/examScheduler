@@ -1,4 +1,5 @@
 ﻿using Entities;
+using examScheduler.BackgroundServices;
 using examScheduler.Data;
 using Microsoft.EntityFrameworkCore;
 using Util.Extensions;
@@ -11,9 +12,10 @@ public interface ICalendarService
 	//Task NormalizeCalendar(Guid calendarId, CancellationToken ct = default);
 }
 
-public class CalendarService(AppDbContext context) : ICalendarService
+public class CalendarService(AppDbContext context, IEventWorker eventWorker) : ICalendarService
 {
 	private readonly AppDbContext _context = context;
+	private readonly IEventWorker _eventWorker = eventWorker;
 
 	public async Task<bool> TryExtendCalendar(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
 	{
@@ -81,8 +83,7 @@ public class CalendarService(AppDbContext context) : ICalendarService
 				var t = g.First();
 				return new Teacher
 				{
-					FirstName = t.FirstName,
-					LastName = t.LastName,
+					Name = string.Join(" ", t.FirstName, t.LastName),
 					SchoolId = schoolId
 				};
 			})
@@ -132,6 +133,7 @@ public class CalendarService(AppDbContext context) : ICalendarService
 		}
 
 		await _context.SaveChangesAsync(ct);
+		_eventWorker.Publish(new CalendarUpdatedEvent(calendarId), 3);
 
 		return true;
 	}

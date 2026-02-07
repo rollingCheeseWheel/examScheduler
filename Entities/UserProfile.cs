@@ -2,13 +2,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Util;
+using Util.Extensions;
 using Util.Validation;
 
 namespace Entities;
 
 public class UserProfile
 	: IdentityUser<Guid>,
-	IComparable<UserProfile>, IEquatable<UserProfile> // would be EntityBase<UserProfile>
+	IComparable<UserProfile>, IEquatable<UserProfile>, // would be EntityBase<UserProfile>
+	IGuidEntity
 {
 	[Required]
 	public required string SchoolId { get; set; }
@@ -16,13 +18,9 @@ public class UserProfile
 	public required long RegiserId { get; set; }
 	[Required, DefinedEnum]
 	public required UserRoles Role { get; set; }
-	[Required]
-	public required string FirstName { get; set; }
-	[Required]
-	public required string LastName { get; set; }
 
-	[NotMapped]
-	public string Name => string.Join(" ", FirstName, LastName);
+	[Required]
+	public required string Name { get; set; }
 
 	public StudentProfile? StudentProfile { get; set; }
 	public TeacherProfile? TeacherProfile { get; set; }

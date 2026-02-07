@@ -134,6 +134,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			}
 			var tempStudents = studentsNotYetEnlisted.Take(slot.MaxParticipants - slot.Participants.Count);
 			slot.Participants.AddRange(tempStudents);
+			slot.HasBeenProcessed = true;
 			studentsNotYetEnlisted.RemoveRange(tempStudents);
 		}
 	}
@@ -153,7 +154,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		var nextDate = EndDate;
 		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(200))
 		{
-			if (ParticipantCount >= studentCount)
+			if (MaxParticipants >= studentCount || MinParticipants >= studentCount)
 			{
 				break;
 			}
@@ -164,11 +165,10 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				continue;
 			}
 
-
 			ExamSlots.Add(new()
 			{
 				ScheduleId = Id,
-				IsPostGenerated = true,
+				IsGenerated = true,
 				Date = nextDate,
 				LockInDate = GetLockInDate(nextDate),
 				MinParticipants = generatorSlot.MinParticipants,
@@ -369,9 +369,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		combiner.Add(AutoLockInOffset);
 		combiner.Add(Description);
 		combiner.Add(Subject);
-		combiner.Add(ExamSlots.Order());
-		combiner.Add(AuditLogs.Order());
-		combiner.Add(SwapRequests.Order());
+		combiner.Add(ExamSlots.GetValueHashCode());
+		combiner.Add(AuditLogs.GetValueHashCode());
+		combiner.Add(SwapRequests.GetValueHashCode());
 		return combiner.CombinedHash;
 	}
 

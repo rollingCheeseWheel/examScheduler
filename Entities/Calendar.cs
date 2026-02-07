@@ -100,5 +100,5 @@ public class Calendar : EntityBase<Calendar>
 
 	public override bool EqualsCore(Calendar other) => Lessons.ValueEquals(other.Lessons);
 
-	public override int GetHashCode() => HashCode.Combine(Lessons.Order());
+	public override int GetHashCode() => Lessons.GetValueHashCode();
 }
