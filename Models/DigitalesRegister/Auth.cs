@@ -13,7 +13,7 @@ public class TokenCreateRequest
 public class TokenCreateResponse
 {
 	[Required, JsonPropertyName("user_id")]
-	public required int UserId { get; set; }
+	public required long UserId { get; set; }
 	[Required, JsonPropertyName("expiration"), JsonConverter(typeof(RegisterAPIDateTimeConverter))]
 	public required DateTime ExpirationDate { get; set; }
 	[Required]
@@ -24,11 +24,9 @@ public class TokenCreateResponse
 
 public class TokenRefreshRequest
 {
-	[Required]
-	[JsonPropertyName("user_id")]
-	public required int UserId { get; set; }
-	[Required]
-	[JsonPropertyName("refresh_token")]
+	[Required, JsonPropertyName("user_id")]
+	public required long UserId { get; set; }
+	[Required, JsonPropertyName("refresh_token")]
 	public required string RefreshToken { get; set; }
 }
 

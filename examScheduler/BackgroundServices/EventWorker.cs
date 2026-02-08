@@ -1,6 +1,7 @@
 ﻿using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Mappings;
+using examScheduler.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -20,6 +21,8 @@ public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
 public sealed record ScheduleRemovedEvent(Guid ScheduleId) : IEvent;
 public sealed record ClassroomStudentCountChangedEvent(Guid ClassroomId) : IEvent;
 public sealed record CalendarUpdatedEvent(Guid CalendarId) : IEvent;
+public sealed record ExtendCalendarEvent(Guid RegisterClientId, Guid StudentProfileId) : IEvent;
+public sealed record ApplicationStartedEvent : IEvent;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class EventAttribute(Type eventType) : Attribute
@@ -112,6 +115,61 @@ public class EventWorker : BackgroundService, IEventWorker
 		await hub.ClassroomGroup(classroom.Id).UpdateClassroom(classroom.ToDTO());
 	}
 
+	[Event(typeof(ExtendCalendarEvent))]
+	private async Task ExtendCalendar(ExtendCalendarEvent @event, CancellationToken ct)
+	{
+		using var scope = ScopeFactory.CreateScope();
+		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+		var clientService = scope.ServiceProvider.GetRequiredService<IDigitalRegisterClientService>();
+		var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
+
+		var client = clientService.TryGetClient(@event.RegisterClientId);
+		if (client is null)
+		{
+			return;
+		}
+
+		var student = await context.StudentProfiles.FindByIdAsync(@event.StudentProfileId, ct);
+		if (student is null)
+		{
+			return;
+		}
+
+		var classroom = await context.Classrooms
+			.Where(c => c.Students.ContainsId(@event.StudentProfileId))
+			.FirstOrDefaultAsync(ct);
+		if (classroom is null || classroom.Calendar is null)
+		{
+			return;
+		}
+
+		var digitalRegisterLessons = await client.GetCalendarAsync(classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
+		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
+		{
+			return;
+		}
+		await calendarService.TryExtendCalendar(classroom.Calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct);
+	}
+
+	[Event(typeof(ApplicationStartedEvent))]
+	private async Task ApplicationStarted(ApplicationStartedEvent @event, CancellationToken ct)
+	{
+		using var scope = ScopeFactory.CreateScope();
+		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+		var clientService = scope.ServiceProvider.GetRequiredService<IDigitalRegisterClientService>();
+
+		var schools = await context.Schools
+			.Where(s => s.IsEnabled)
+			.ToListAsync(ct);
+		foreach (var school in schools)
+		{
+			if (!clientService.TryAddSchool(school.SchoolId, school.RegisterUri, school.ClientId, school.Secret))
+			{
+				Logger.LogError("Unable to add school {School} to the {Service}", school.Stringify(), nameof(IDigitalRegisterClientService));
+			}
+		}
+	}
+
 	#region Logic
 	private readonly ILogger<EventWorker> Logger;
 	private readonly IServiceScopeFactory ScopeFactory;
@@ -124,6 +182,8 @@ public class EventWorker : BackgroundService, IEventWorker
 		Logger = logger;
 		ScopeFactory = serviceScopeFactory;
 		_handlers = GetDecoratedMethods().ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value.ToImmutableList());
+
+		Publish(new ApplicationStartedEvent());
 	}
 
 	public void Publish(IEvent @event) => Publish(@event, TimeSpan.Zero);

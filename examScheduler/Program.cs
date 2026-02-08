@@ -2,6 +2,7 @@ using Entities;
 using examScheduler.BackgroundServices;
 using examScheduler.Data;
 using examScheduler.Hubs;
+using examScheduler.Misc;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -41,11 +42,15 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 
 builder.Services.AddSignalR();
 
+builder.Services.AddHttpClient("secure")
+	.AddHttpMessageHandler<HttpsEnforcingHandler>();
+
 /*// services //*/
 builder.Services
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<ICalendarService, CalendarService>()
 	.AddScoped<IClassroomService, ClassroomService>()
+	.AddScoped<IDigitalRegisterClientService, DigitalRegisterClientService>()
 	.AddScoped<IScheduleService, ScheduleService>()
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<ITokenProvider, TokenProvider>();
@@ -53,7 +58,6 @@ builder.Services
 
 /*// background workers //*/
 builder.Services
-	.AddHostedService<ITaskWorker, TaskWorker>()
 	.AddHostedService<IEventWorker, EventWorker>()
 	.AddHostedService<IScheduleWorker, ScheduleWorker>();
 /*////*/

@@ -11,7 +11,7 @@ namespace registerClient;
 /// <summary>
 /// Cannot really make use of parallelisation since the API limits connections are throttled to 1 second after a certain delay
 /// </summary>
-public class RegisterClient : IRegisterClient
+public class DigitalRegisterClient : IDigitalRegisterClient, IDisposable
 {
 	public readonly Uri SchoolUri;
 	public readonly string ClientId;
@@ -25,15 +25,15 @@ public class RegisterClient : IRegisterClient
 	private string? _accessToken;
 	private string? _refreshToken;
 	public DateTimeOffset? TokenExpiration { get; private set; }
-	public int? UserId { get; private set; }
+	public long? UserId { get; private set; }
 
 	private readonly SemaphoreSlim _authenticationSemaphore = new(1, 1);
 
 	public RegisterUserProfile? UserProfile { get; private set; }
 
-	public RegisterClient(Entities.School school, string authCode, double targetRequestsPerSecond = 1) : this(school.RegisterUri, school.ClientId, school.Secret, authCode, targetRequestsPerSecond) { }
+	public DigitalRegisterClient(Entities.School school, string authCode, double targetRequestsPerSecond = 1) : this(school.RegisterUri, school.ClientId, school.Secret, authCode, targetRequestsPerSecond) { }
 
-	public RegisterClient(Uri schoolUri, string clientId, string secret, string authCode, double targetRequestsPerSecond = 1)
+	public DigitalRegisterClient(Uri schoolUri, string clientId, string secret, string authCode, double targetRequestsPerSecond = 1)
 	{
 		SchoolUri = schoolUri.GetSchemeAndAuthority();
 		ClientId = clientId;
@@ -52,49 +52,11 @@ public class RegisterClient : IRegisterClient
 		_targetRequestsPerSecond = targetRequestsPerSecond;
 	}
 
-	public RegisterClient(RegisterClient other)
-	{
-		SchoolUri = other.SchoolUri;
-		ClientId = other.ClientId;
-
-		_authCode = "copied";
-		_secret = "copeid";
-
-		_accessToken = other._accessToken;
-		_refreshToken = other._refreshToken;
-		TokenExpiration = other.TokenExpiration;
-
-		UserId = other.UserId;
-		UserProfile = other.UserProfile;
-
-		_clientHandler = new()
-		{
-			ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
-			{
-				return errors == System.Net.Security.SslPolicyErrors.None && ( message.RequestUri?.Scheme ) == Uri.UriSchemeHttps;
-			}
-		};
-		_httpClient = new(_clientHandler);
-		_requestThrottler = new(other._targetRequestsPerSecond);
-		_targetRequestsPerSecond = other._targetRequestsPerSecond;
-	}
-
-	public IRegisterClient Copy() => new RegisterClient(this);
-
 	public async Task<UserRoles?> GetRoleAsync(CancellationToken ct = default)
 	{
 		UserProfile ??= await GetUserProfileAsync(ct);
-		return GetRole(UserProfile);
+		return IDigitalRegisterClient.GetRole(UserProfile);
 	}
-
-	public static UserRoles? GetRole(RegisterUserProfile? userProfile) => userProfile?.Role switch
-	{
-		"student" => UserRoles.Student,
-		"teacher" => UserRoles.Teacher,
-		//"admin" => UserRoles.Admin,
-		//"parent" => UserRoles.Parent,
-		_ => null
-	};
 
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
@@ -110,28 +72,28 @@ public class RegisterClient : IRegisterClient
 	/// The calendar is only available for a couple of weeks after the start date
 	/// </summary>
 
-	public async Task<IEnumerable<Models.DigitalesRegister.Lesson>?> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
+	public async Task<IEnumerable<Lesson>> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
 		var args = new Dictionary<string, string> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null)
 		{
-			return null;
+			return [ ];
 		}
 
 		try
 		{
-			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct)));
+			return ParseCalendarDays(JsonDocument.Parse(await response.ReadContentAsStringAsync(ct))) ?? [ ];
 		}
 		catch
 		{
-			return default;
+			return [ ];
 		}
 	}
 
 	// TODO there is a bug where the same data gets outputted multiple times
-	public async Task<IEnumerable<Models.DigitalesRegister.Lesson>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
+	public async Task<IEnumerable<Lesson>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
 	{
 		if (!await AuthenticateAsync(ct)) { return [ ]; }
 
@@ -145,7 +107,7 @@ public class RegisterClient : IRegisterClient
 
 		Console.WriteLine(dates.Stringify());
 
-		var tasks = new List<Task<IEnumerable<Models.DigitalesRegister.Lesson>?>>();
+		var tasks = new List<Task<IEnumerable<Lesson>>>();
 		foreach (var date in dates)
 		{
 			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
@@ -160,9 +122,9 @@ public class RegisterClient : IRegisterClient
 			.ToList();
 	}
 
-	private static List<Models.DigitalesRegister.Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
+	private static List<Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
-		List<Models.DigitalesRegister.Lesson> result = [ ];
+		List<Lesson> result = [ ];
 		var rootElement = jsonDoc.RootElement;
 
 		foreach (var dateProp in rootElement.EnumerateObject()) // date
@@ -172,13 +134,13 @@ public class RegisterClient : IRegisterClient
 				continue;
 			}
 
-			List<Models.DigitalesRegister.Lesson> rawLessons = [ ];
+			List<Lesson> rawLessons = [ ];
 
 			foreach (var hour in dateProp.Value.EnumerateObject())
 			{
 				try
 				{
-					var parsedLesson = hour.Value.Deserialize<Models.DigitalesRegister.Lesson>(Constants.SerializerOptions)!;
+					var parsedLesson = hour.Value.Deserialize<Lesson>(Constants.SerializerOptions)!;
 
 					if (parsedLesson is not null)
 					{
@@ -191,7 +153,7 @@ public class RegisterClient : IRegisterClient
 				}
 			}
 
-			List<Models.DigitalesRegister.Lesson> compactedLessons = [ ];
+			List<Lesson> compactedLessons = [ ];
 			Models.DigitalesRegister.Lesson? currentLesson = null;
 			foreach (var lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ToList())
 			{
@@ -409,22 +371,18 @@ public class RegisterClient : IRegisterClient
 
 	private void ConfigureHeadersAuth(ref HttpRequestMessage request)
 	{
-		request.Headers.Add(ClientIdHeader, ClientId);
-		request.Headers.Add(ApiSecretHeader, _secret);
+		request.Headers.Add(IDigitalRegisterClient.ClientIdHeader, ClientId);
+		request.Headers.Add(IDigitalRegisterClient.ApiSecretHeader, _secret);
 	}
 
 	private void ConfigureHeadersDefault(ref HttpRequestMessage request)
 	{
-		request.Headers.Add(ClientIdHeader, ClientId);
-		request.Headers.Add(TokenHeader, _accessToken);
+		request.Headers.Add(IDigitalRegisterClient.ClientIdHeader, ClientId);
+		request.Headers.Add(IDigitalRegisterClient.TokenHeader, _accessToken);
 	}
 
-	public const string ClientIdHeader = "API-CLIENT-ID";
-	public const string ApiSecretHeader = "API-SECRET";
-	public const string TokenHeader = "API-TOKEN";
-
 	private bool _disposed = false;
-	~RegisterClient() => Dispose(false);
+	~DigitalRegisterClient() => Dispose(false);
 	public void Dispose()
 	{
 		Dispose(true);

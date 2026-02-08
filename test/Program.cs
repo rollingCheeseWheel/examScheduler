@@ -12,7 +12,7 @@ Console.WriteLine($"{config[ "API:schoolUrl" ]}v2/login/?client_id={config[ "API
 Console.Write("Authcode: ");
 var authCode = Console.ReadLine();
 
-using var client = new RegisterClient(
+using var client = new DigitalRegisterClient(
 	new(config[ "API:schoolUrl" ]!),
 	config[ "API:clientId" ]!,
 	config[ "API:secret" ]!,

@@ -3,6 +3,7 @@ using examScheduler.Data;
 using examScheduler.Mappings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Models.API;
 using Models.DigitalesRegister;
 using registerClient;
@@ -30,9 +31,9 @@ public class AuthService(
 	ITokenProvider jwtProvider,
 	JwtOptions jwtOptions,
 	ILogger<AuthService> logger,
-	ITaskWorker calendarWorker,
 	ISchoolsService schoolsService,
-	IEventWorker eventWorker
+	IEventWorker eventWorker,
+	IDigitalRegisterClientService digitalRegisterClientService
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -42,9 +43,9 @@ public class AuthService(
 	private readonly ITokenProvider _jwtProvider = jwtProvider;
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
-	private readonly ITaskWorker _calendarWorker = calendarWorker;
 	private readonly ISchoolsService _schoolsService = schoolsService;
 	private readonly IEventWorker _eventWorker = eventWorker;
+	private readonly IDigitalRegisterClientService _digitalRegisterClientService = digitalRegisterClientService;
 
 	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
@@ -57,7 +58,12 @@ public class AuthService(
 			return new(HttpStatusCode.BadRequest, "Unknown School ID");
 		}
 
-		using var registerClient = new RegisterClient(school, request.AuthCode);
+		var (registerClient, digitalRegiserClientId) = await _digitalRegisterClientService.TryCreateClientAsync(school.SchoolId, request.AuthCode, ct);
+		if (registerClient is null || digitalRegiserClientId is null)
+		{
+			return new(HttpStatusCode.InternalServerError, "Unable to log in");
+		}
+
 		var userProfile = await registerClient.GetUserProfileAsync(ct);
 		if (userProfile is null)
 		{
@@ -87,7 +93,7 @@ public class AuthService(
 			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
 			if (justCreatedUser is not null && justCreatedUser.Role is UserRoles.Student)
 			{
-				await ExtendCalendar(registerClient, justCreatedUser, ct);
+				await ExtendCalendar(registerClient, digitalRegiserClientId.Value, justCreatedUser, ct);
 			}
 		}
 		else
@@ -177,14 +183,14 @@ public class AuthService(
 		return claims;
 	}
 
-	private async Task<Result<UserProfile>> RegisterAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
+	private async Task<Result<UserProfile>> RegisterAsync(IDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
 		UserRoles.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
 		UserRoles.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
 		_ => new(HttpStatusCode.BadRequest)
 	};
 
-	private async Task<Result<UserProfile>> RegisterStudentAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterStudentAsync(IDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null ||
@@ -240,7 +246,7 @@ public class AuthService(
 		}
 	}
 
-	private async Task<Result<UserProfile>> RegisterTeacherAsync(RegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<UserProfile>> RegisterTeacherAsync(IDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
@@ -291,7 +297,7 @@ public class AuthService(
 
 	private static Entities.UserProfile? CreateUserProfile(RegisterUserProfile registerUserProfile, Entities.School school)
 	{
-		var role = RegisterClient.GetRole(registerUserProfile);
+		var role = IDigitalRegisterClient.GetRole(registerUserProfile);
 		if (role is null)
 		{
 			return null;
@@ -337,7 +343,7 @@ public class AuthService(
 		teacherProfile.Teacher = teacher;
 	}
 
-	private async Task ExtendCalendar(RegisterClient registerClient, Entities.UserProfile user, CancellationToken ct = default)
+	private async Task ExtendCalendar(IDigitalRegisterClient registerClient, Guid registerClientId, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		if (user.Role is not UserRoles.Student || user.StudentProfile is null || await registerClient.GetRoleAsync(ct) is not UserRoles.Student)
 		{
@@ -345,43 +351,6 @@ public class AuthService(
 			return;
 		}
 
-		_logger.LogInformation("Enqueuing task in worker");
-		await _calendarWorker.EnqueueAsync(async (serviceProvider, logger, ct) =>
-		{
-			await Task.Delay(1000, ct);
-			using var dbcontext = serviceProvider.ServiceProvider.GetRequiredService<AppDbContext>();
-			var calendarService = serviceProvider.ServiceProvider.GetRequiredService<ICalendarService>();
-			using var copiedRegisterClient = registerClient;
-
-			var student = await dbcontext.StudentProfiles.FindByIdAsync(user.Id, ct);
-			if (student is null)
-			{
-				logger.LogWarning("Unable to fetch user from DB, user does not have a studentprofile or is not a student");
-				return;
-			}
-
-			var classroom = student.Classroom;
-			if (classroom is null || classroom.Calendar is null)
-			{
-				logger.LogWarning("Calendar or classroom is null");
-				return;
-			}
-
-			var digitalRegisterLessons = await copiedRegisterClient.GetCalendarAsync(classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
-			if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
-			{
-				logger.LogWarning("Unable to fetch calendar from digital register for {student}", student.UserProfile.Name);
-				return;
-			}
-			var success = await calendarService.TryExtendCalendar(classroom.Calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct);
-			if (success)
-			{
-				logger.LogInformation("Successfully extended calendar for {student}", student.UserProfile.Name);
-			}
-			else
-			{
-				logger.LogWarning("Failed to extend calendar for {student}", student.UserProfile.Name);
-			}
-		}, ct);
+		_eventWorker.Publish(new ExtendCalendarEvent(registerClientId, user.Id), 5);
 	}
 }
