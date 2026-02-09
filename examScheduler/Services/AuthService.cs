@@ -32,8 +32,8 @@ public class AuthService(
 	JwtOptions jwtOptions,
 	ILogger<AuthService> logger,
 	ISchoolsService schoolsService,
-	IEventWorker eventWorker,
-	IDigitalRegisterClientService digitalRegisterClientService
+	IDigitalRegisterClientService digitalRegisterClientService,
+	IEventWorker eventWorker
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
@@ -44,8 +44,8 @@ public class AuthService(
 	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
 	private readonly ISchoolsService _schoolsService = schoolsService;
-	private readonly IEventWorker _eventWorker = eventWorker;
 	private readonly IDigitalRegisterClientService _digitalRegisterClientService = digitalRegisterClientService;
+	private readonly IEventWorker _eventWorker = eventWorker;
 
 	public async Task<Result<UserProfile>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
@@ -351,6 +351,6 @@ public class AuthService(
 			return;
 		}
 
-		_eventWorker.Publish(new ExtendCalendarEvent(registerClientId, user.Id), 5);
+		_eventWorker.Publish(new ExtendCalendarTask(registerClientId, user.Id), 5);
 	}
 }

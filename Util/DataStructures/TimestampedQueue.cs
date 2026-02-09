@@ -1,18 +1,18 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace Util.DataStructures;
+﻿namespace Util.DataStructures;
 
 public class TimestampedQueue<T>
 {
 	private readonly PriorityQueue<(DateTimeOffset timestamp, T item), DateTimeOffset> _queue = new();
 	private readonly SemaphoreSlim _signal = new(0);
 	private readonly object _lock = new();
+	private CancellationTokenSource _queueAddedCts = new();
 
 	public void Enqueue(DateTimeOffset timestampUtc, T item)
 	{
 		lock (_lock)
 		{
 			_queue.Enqueue((timestampUtc, item), timestampUtc);
+			CancelAndResetToken();
 		}
 
 		_signal.Release();
@@ -36,36 +36,28 @@ public class TimestampedQueue<T>
 					_queue.Dequeue();
 					return item;
 				}
-
-				_signal.Release();
 			}
 
+			using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _queueAddedCts.Token);
 			var delay = _queue.Peek().timestamp - DateTime.UtcNow;
 			if (delay > TimeSpan.Zero)
-				await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+			{
+				try
+				{
+					await Task.Delay(delay, linkedTokenSource.Token).ConfigureAwait(false);
+				}
+				catch
+				{
+
+				}
+			}
 		}
 	}
 
-	public bool TryDequeue([NotNullWhen(true)] out T item)
+	private void CancelAndResetToken()
 	{
-		lock (_lock)
-		{
-			if (_queue.Count == 0)
-			{
-				item = default!;
-				return false;
-			}
-
-			var (timestamp, value) = _queue.Peek();
-			if (timestamp > DateTime.UtcNow || value is null)
-			{
-				item = default!;
-				return false;
-			}
-
-			_queue.Dequeue();
-			item = value;
-			return true;
-		}
+		_queueAddedCts.Cancel();
+		_queueAddedCts.Dispose();
+		_queueAddedCts = new();
 	}
 }

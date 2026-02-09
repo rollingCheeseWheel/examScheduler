@@ -37,7 +37,6 @@ public interface IScheduleClient
 
 	Task ReceiveInitialClassrooms(IEnumerable<Classroom> classrooms);
 	Task UpdateClassroom(Classroom classroom);
-	Task RemoveClassroom(Guid classroomId);
 }
 
 [Authorize]

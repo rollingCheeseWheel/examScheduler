@@ -58,8 +58,7 @@ builder.Services
 
 /*// background workers //*/
 builder.Services
-	.AddHostedService<IEventWorker, EventWorker>()
-	.AddHostedService<IScheduleWorker, ScheduleWorker>();
+	.AddHostedService<IEventWorker, EventWorker>();
 /*////*/
 
 var tokenValidationParameters = new JwtOptions

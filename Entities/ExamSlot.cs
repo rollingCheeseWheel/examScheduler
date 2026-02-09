@@ -20,7 +20,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[NotMapped]
 	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow;
 	[NotMapped]
-	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow || !HasBeenProcessed;
+	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow && !HasBeenProcessed;
 
 	[Required, EditorBrowsable(EditorBrowsableState.Never)]
 	public bool HasBeenProcessed { get; set; } = false;

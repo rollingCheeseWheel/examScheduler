@@ -17,12 +17,17 @@ namespace examScheduler.BackgroundServices;
 
 public interface IEvent;
 
+
 public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
 public sealed record ScheduleRemovedEvent(Guid ScheduleId) : IEvent;
 public sealed record ClassroomStudentCountChangedEvent(Guid ClassroomId) : IEvent;
 public sealed record CalendarUpdatedEvent(Guid CalendarId) : IEvent;
-public sealed record ExtendCalendarEvent(Guid RegisterClientId, Guid StudentProfileId) : IEvent;
 public sealed record ApplicationStartedEvent : IEvent;
+
+public sealed record ExtendCalendarTask(Guid RegisterClientId, Guid StudentProfileId) : IEvent;
+public sealed record LockScheduleTask(Guid ScheduleId) : IEvent;
+
+
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class EventAttribute(Type eventType) : Attribute
@@ -32,6 +37,9 @@ public class EventAttribute(Type eventType) : Attribute
 
 public interface IEventWorker
 {
+	ILogger<EventWorker> Logger { get; }
+	IServiceScopeFactory ScopeFactory { get; }
+
 	void Publish(IEvent @event);
 	void Publish(IEvent @event, int offsetSeconds);
 	void Publish(IEvent @event, TimeSpan offset);
@@ -42,7 +50,7 @@ public class EventWorker : BackgroundService, IEventWorker
 {
 
 	[Event(typeof(ScheduleUpdatedEvent))]
-	private async Task ScheduleUpdated(ScheduleUpdatedEvent @event, CancellationToken ct)
+	public async Task ScheduleUpdated(ScheduleUpdatedEvent @event, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
@@ -59,11 +67,10 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 
 		await hub.ScheduleGroup(@event.ScheduleId).UpdateSchedule(@event.ScheduleId, schedule.ToDTO()).WaitAsync(ct);
-
 	}
 
 	[Event(typeof(ScheduleRemovedEvent))]
-	private async Task ScheduleRemoved(ScheduleRemovedEvent @event, CancellationToken ct)
+	public async Task ScheduleRemoved(ScheduleRemovedEvent @event, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
@@ -72,12 +79,11 @@ public class EventWorker : BackgroundService, IEventWorker
 	}
 
 	[Event(typeof(ClassroomStudentCountChangedEvent))]
-	private async Task ClassroomStudentCountChanged(ClassroomStudentCountChangedEvent @event, CancellationToken ct)
+	public async Task ClassroomStudentCountChanged(ClassroomStudentCountChangedEvent @event, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-		var scheduleWorker = scope.ServiceProvider.GetRequiredService<ScheduleWorker>();
 
 		var classroom = await context.Classrooms.FindByIdAsync(@event.ClassroomId, ct);
 		if (classroom is null)
@@ -88,16 +94,20 @@ public class EventWorker : BackgroundService, IEventWorker
 		foreach (var schedule in classroom.Schedules)
 		{
 			schedule.Extend(classroom.Students.Count);
-			scheduleWorker.Enqueue(schedule.Id, DateTimeOffset.UtcNow);
 		}
 
 		await context.SaveChangesAsync(ct);
+
+		foreach (var schedule in classroom.Schedules)
+		{
+			Publish(new ScheduleUpdatedEvent(schedule.Id));
+		}
 
 		await hub.ClassroomGroup(@event.ClassroomId).UpdateClassroom(classroom.ToDTO());
 	}
 
 	[Event(typeof(CalendarUpdatedEvent))]
-	private async Task CalendarChanged(CalendarUpdatedEvent @event, CancellationToken ct)
+	public async Task CalendarChanged(CalendarUpdatedEvent @event, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
@@ -115,28 +125,28 @@ public class EventWorker : BackgroundService, IEventWorker
 		await hub.ClassroomGroup(classroom.Id).UpdateClassroom(classroom.ToDTO());
 	}
 
-	[Event(typeof(ExtendCalendarEvent))]
-	private async Task ExtendCalendar(ExtendCalendarEvent @event, CancellationToken ct)
+	[Event(typeof(ExtendCalendarTask))]
+	public async Task ExtendCalendar(ExtendCalendarTask task, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 		var clientService = scope.ServiceProvider.GetRequiredService<IDigitalRegisterClientService>();
 		var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
 
-		var client = clientService.TryGetClient(@event.RegisterClientId);
+		var client = clientService.TryGetClient(task.RegisterClientId);
 		if (client is null)
 		{
 			return;
 		}
 
-		var student = await context.StudentProfiles.FindByIdAsync(@event.StudentProfileId, ct);
+		var student = await context.StudentProfiles.FindByIdAsync(task.StudentProfileId, ct);
 		if (student is null)
 		{
 			return;
 		}
 
 		var classroom = await context.Classrooms
-			.Where(c => c.Students.ContainsId(@event.StudentProfileId))
+			.Where(c => c.Students.ContainsId(task.StudentProfileId))
 			.FirstOrDefaultAsync(ct);
 		if (classroom is null || classroom.Calendar is null)
 		{
@@ -148,17 +158,51 @@ public class EventWorker : BackgroundService, IEventWorker
 		{
 			return;
 		}
-		await calendarService.TryExtendCalendar(classroom.Calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct);
+		if (!await calendarService.TryExtendCalendar(classroom.Calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct))
+		{
+			return;
+		}
+		await context.SaveChangesAsync(ct);
+		Publish(new CalendarUpdatedEvent(classroom.Calendar.Id));
+	}
+
+	[Event(typeof(LockScheduleTask))]
+	public async Task LockSchedule(LockScheduleTask task, CancellationToken ct)
+	{
+		using var scope = ScopeFactory.CreateScope();
+		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+		var schedule = await context.Classrooms
+			.SelectMany(c => c.Schedules)
+			.FindByIdAsync(task.ScheduleId, ct);
+		if (schedule is null)
+		{
+			return;
+		}
+
+		var students = await context.Classrooms
+			.Where(c => c.Schedules.ContainsId(task.ScheduleId))
+			.Select(c => c.Students)
+			.FirstOrDefaultAsync(ct);
+		if (students is null || students.Count == 0)
+		{
+			return;
+		}
+
+		schedule.FillSlots(students);
+		await context.SaveChangesAsync(ct);
+		Publish(new ScheduleUpdatedEvent(schedule.Id));
 	}
 
 	[Event(typeof(ApplicationStartedEvent))]
-	private async Task ApplicationStarted(ApplicationStartedEvent @event, CancellationToken ct)
+	public async Task AddSchoolsToDigitalRegisterClientService(ApplicationStartedEvent @event, CancellationToken ct)
 	{
 		using var scope = ScopeFactory.CreateScope();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 		var clientService = scope.ServiceProvider.GetRequiredService<IDigitalRegisterClientService>();
 
 		var schools = await context.Schools
+			.AsNoTracking()
 			.Where(s => s.IsEnabled)
 			.ToListAsync(ct);
 		foreach (var school in schools)
@@ -170,18 +214,46 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 	}
 
-	#region Logic
-	private readonly ILogger<EventWorker> Logger;
-	private readonly IServiceScopeFactory ScopeFactory;
+	[Event(typeof(ApplicationStartedEvent))]
+	public async Task InitializeScheduleLockTasks(ApplicationStartedEvent @event, CancellationToken ct)
+	{
+		using var scope = ScopeFactory.CreateScope();
+		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-	private readonly FrozenDictionary<Type, ImmutableList<EventHandler>> _handlers;
+		var scheduleLockInDates = await context.Classrooms
+			.AsNoTracking()
+			.SelectMany(c => c.Schedules)
+			.Where(s => s.ExamSlots.Any(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow))
+			.Select(s => new
+			{
+				s.Id, 
+				LockInDates = s.ExamSlots
+					.Where(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow)
+					.Select(e => e.LockInDate)
+					.ToList(),
+			})
+			.ToListAsync(ct);
+		foreach (var scheduleDates in scheduleLockInDates)
+		{
+			foreach (var date in scheduleDates.LockInDates)
+			{
+				Publish(new LockScheduleTask(scheduleDates.Id), date);
+			}
+		}
+	}
+
+	#region Logic
+	public ILogger<EventWorker> Logger { get; }
+	public IServiceScopeFactory ScopeFactory { get; }
+
+	private readonly FrozenDictionary<Type, FrozenSet<EventHandler>> _handlers;
 	private readonly TimestampedQueue<IEvent> _events = new();
 
 	public EventWorker(ILogger<EventWorker> logger, IServiceScopeFactory serviceScopeFactory)
 	{
 		Logger = logger;
 		ScopeFactory = serviceScopeFactory;
-		_handlers = GetDecoratedMethods().ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value.ToImmutableList());
+		_handlers = GetDecoratedMethods().ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value.ToFrozenSet());
 
 		Publish(new ApplicationStartedEvent());
 	}
@@ -261,9 +333,9 @@ public class EventWorker : BackgroundService, IEventWorker
 		return HandlerType.Invalid;
 	}
 
-	private static Func<object, IEvent, CancellationToken, Task> CompileHandler(MethodInfo method)
+	private static Func<IEventWorker, IEvent, CancellationToken, Task> CompileHandler(MethodInfo method)
 	{
-		var targetParam = Expression.Parameter(typeof(object), "target");
+		var targetParam = Expression.Parameter(typeof(IEventWorker), "target");
 		var eventParam = Expression.Parameter(typeof(IEvent), "event");
 		var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
 
@@ -273,7 +345,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		var call = Expression.Call(instance, method, typedEvent, ctParam);
 
 		return Expression
-			.Lambda<Func<object, IEvent, CancellationToken, Task>>(call, targetParam, eventParam, ctParam)
+			.Lambda<Func<IEventWorker, IEvent, CancellationToken, Task>>(call, targetParam, eventParam, ctParam)
 			.Compile();
 	}
 	#endregion
@@ -285,4 +357,4 @@ internal enum HandlerType
 	Asynchronous,
 }
 
-internal sealed record EventHandler(Func<object, IEvent, CancellationToken, Task> Handler);
+internal sealed record EventHandler(Func<IEventWorker, IEvent, CancellationToken, Task> Handler);

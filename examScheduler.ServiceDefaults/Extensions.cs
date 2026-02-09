@@ -20,13 +20,10 @@ public static class Extensions
 	public static IServiceCollection AddHostedService<TInterface, TService>(this IServiceCollection services)
 		where TInterface : class
 		where TService : class, IHostedService, TInterface
-	{
-		services
-			.AddSingleton<TService>()
-			.AddSingleton<TInterface>(sp => sp.GetRequiredService<TService>())
-			.AddHostedService(sp => sp.GetRequiredService<TService>());
-		return services;
-	}
+	=> services
+			.AddSingleton<TInterface, TService>()
+			.AddHostedService(sp => (IHostedService)sp.GetRequiredService<TInterface>());
+
 
 	public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{

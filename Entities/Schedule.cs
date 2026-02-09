@@ -20,7 +20,7 @@ public interface ISchedule
 	bool TryDeleteSwapRequest(Guid swapRequestId);
 
 	void FillSlots(IEnumerable<StudentProfile> students);
-	void Extend(int studentCount);
+	IEnumerable<ExamSlot> Extend(int studentCount);
 
 	bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students);
 }
@@ -64,6 +64,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public int MaxParticipants => ExamSlots.Sum(s => s.MaxParticipants);
 	[NotMapped]
 	public int MinParticipants => ExamSlots.Sum(s => s.MinParticipants);
+	[NotMapped]
+	public IEnumerable<DateTimeOffset> AutoLockinDates => ExamSlots.Select(e => e.LockInDate);
 
 
 	[Timestamp]
@@ -139,7 +141,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		}
 	}
 
-	public void Extend(int studentCount)
+	public IEnumerable<ExamSlot> Extend(int studentCount)
 	{
 		DateTimeOffset GetLockInDate(DateTimeOffset slotDate)
 		{
@@ -151,6 +153,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			};
 		}
 
+		var result = new List<ExamSlot>();
 		var nextDate = EndDate;
 		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(200))
 		{
@@ -165,7 +168,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				continue;
 			}
 
-			ExamSlots.Add(new()
+			var newSlot = new ExamSlot()
 			{
 				ScheduleId = Id,
 				IsGenerated = true,
@@ -173,8 +176,11 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				LockInDate = GetLockInDate(nextDate),
 				MinParticipants = generatorSlot.MinParticipants,
 				MaxParticipants = generatorSlot.MaxParticipants,
-			});
+			};
+			result.Add(newSlot);
+			ExamSlots.Add(newSlot);
 		}
+		return result;
 	}
 
 	public bool TryEnlistStudent(Guid examslotId, StudentProfile student)
@@ -246,6 +252,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		return isSuccess;
 	}
 
+	// could be moved to an event
 	public void ResolveImplicitSwaps()
 	{
 		var swapRequestAndOriginSlot = ExamSlots

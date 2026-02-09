@@ -26,13 +26,10 @@ public interface IScheduleService
 	Task<bool> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid acceptingStudentId, CancellationToken ct = default);
 }
 
-public class ScheduleService(
-	AppDbContext context,
-	IEventWorker eventBus
-) : IScheduleService
+public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : IScheduleService
 {
 	private readonly AppDbContext _context = context;
-	private readonly IEventWorker _eventBus = eventBus;
+	private readonly IEventWorker _eventWorker = eventWorker;
 
 	public async Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default) => await _context.Classrooms.SelectMany(c => c.Schedules).FindByIdAsync(id, ct);
 
@@ -134,11 +131,16 @@ public class ScheduleService(
 			ExamSlots = [ ]
 		};
 
-		newSchedule.Extend(classroom.Students.Count);
+		var newSlots = newSchedule.Extend(classroom.Students.Count);
 
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(newSchedule.Id));
+
+		_eventWorker.Publish(new ScheduleUpdatedEvent(newSchedule.Id));
+		foreach (var slot in newSlots)
+		{
+			_eventWorker.Publish(new LockScheduleTask(newScheduleId), slot.LockInDate);
+		}
 		return true;
 	}
 
@@ -165,7 +167,7 @@ public class ScheduleService(
 
 		_context.Remove(schedule);
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleRemovedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleRemovedEvent(schedule.Id));
 		return true;
 	}
 
@@ -199,7 +201,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -229,7 +231,7 @@ public class ScheduleService(
 			return false;
 		}
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -262,7 +264,7 @@ public class ScheduleService(
 		schedule.ResolveImplicitSwaps();
 
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -285,7 +287,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
@@ -307,7 +309,7 @@ public class ScheduleService(
 		}
 
 		await _context.SaveChangesAsync(ct);
-		_eventBus.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
 
