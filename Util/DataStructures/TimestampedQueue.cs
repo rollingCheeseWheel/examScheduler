@@ -2,7 +2,7 @@
 
 public class TimestampedQueue<T>
 {
-	private readonly PriorityQueue<(DateTimeOffset timestamp, T item), DateTimeOffset> _queue = new();
+	private readonly PriorityQueue<(DateTimeOffset Timestamp, T Item), DateTimeOffset> _queue = new();
 	private readonly SemaphoreSlim _signal = new(0);
 	private readonly object _lock = new();
 	private CancellationTokenSource _queueAddedCts = new();
@@ -39,7 +39,7 @@ public class TimestampedQueue<T>
 			}
 
 			using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _queueAddedCts.Token);
-			var delay = _queue.Peek().timestamp - DateTime.UtcNow;
+			var delay = _queue.Peek().Timestamp - DateTime.UtcNow;
 			if (delay > TimeSpan.Zero)
 			{
 				try
