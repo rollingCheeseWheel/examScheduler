@@ -128,7 +128,11 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			ExamSlots = [ ]
 		};
 
-		var newSlots = newSchedule.Extend(classroom.Students.Count);
+		var isExtendSuccess = newSchedule.TryExtend(classroom.Students.Count, out var newSlots);
+		if (!isExtendSuccess)
+		{
+			return false;
+		}
 
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
@@ -191,7 +195,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
-		var isSuccess = schedule.TryReportStudents(examSlotId, teacherId, students);
+		var isSuccess = schedule.TryReportStudents(examSlotId, teacherId, students, out var createdExamSlots);
 		if (!isSuccess)
 		{
 			return false;
@@ -199,6 +203,11 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
+		foreach (var createdSlot in createdExamSlots)
+		{
+			_eventWorker.Publish(new LockScheduleTask(createdSlot.Id), createdSlot.LockInDate);
+		}
+
 		return true;
 	}
 

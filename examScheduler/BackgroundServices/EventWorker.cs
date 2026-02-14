@@ -1,4 +1,5 @@
-﻿using examScheduler.Data;
+﻿using Entities;
+using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Mappings;
 using examScheduler.Services;
@@ -88,9 +89,12 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
+		var concatedCreatedSlots = new List<ExamSlot>();
 		foreach (var schedule in classroom.Schedules)
 		{
-			schedule.Extend(classroom.Students.Count);
+			schedule.TryExtend(classroom.Students.Count, out var createdSlots);
+			concatedCreatedSlots.AddRange(createdSlots);
+
 		}
 
 		await context.SaveChangesAsync(ct);
@@ -98,6 +102,10 @@ public class EventWorker : BackgroundService, IEventWorker
 		foreach (var schedule in classroom.Schedules)
 		{
 			Publish(new ScheduleUpdatedEvent(schedule.Id));
+		}
+		foreach (var createdSlot in concatedCreatedSlots)
+		{
+			Publish(new LockScheduleTask(createdSlot.ScheduleId), createdSlot.LockInDate);
 		}
 
 		await hub.ClassroomGroup(@event.ClassroomId).UpdateClassroom(classroom.ToDTO());
@@ -190,7 +198,11 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		schedule.FillSlots(students);
+		var isSuccess = schedule.TryFillSlots(students);
+		if (!isSuccess)
+		{
+			return;
+		}
 		await context.SaveChangesAsync(ct);
 		Publish(new ScheduleUpdatedEvent(schedule.Id));
 	}

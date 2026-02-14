@@ -25,6 +25,13 @@ public enum AuditLogActor
 {
 	Student,
 	Teacher,
-	Admin,
 	System
+}
+
+public enum AuditLogTarget
+{
+	Student,
+	Schedule,
+	ExamSlot,
+	SwapRequest
 }

@@ -21,6 +21,8 @@ public class ExamSlot : EntityBase<ExamSlot>
 	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow;
 	[NotMapped]
 	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow && !HasBeenProcessed;
+	[NotMapped]
+	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow;
 
 	[Required, EditorBrowsable(EditorBrowsableState.Never)]
 	public bool HasBeenProcessed { get; set; } = false;
@@ -40,13 +42,16 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	internal bool TryReportStudents(IEnumerable<StudentProfile> students)
+	internal bool TryReportStudents(IEnumerable<StudentProfile> students, out IEnumerable<StudentProfile> previousStudents)
 	{
-		if (IsLocked)
+		previousStudents = [ ];
+
+		if (!CanTeacherReportStudents)
 		{
 			return false;
 		}
 
+		previousStudents = [ .. Participants ];
 		Participants.Clear();
 		Participants.AddRange(students);
 

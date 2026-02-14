@@ -17,10 +17,10 @@ public interface ISchedule
 	bool TryResolveImplicitSwapRequest(Guid firstSwapRequestId, Guid secondSwapRequestId);
 	bool TryDeleteSwapRequest(Guid swapRequestId);
 
-	void FillSlots(IEnumerable<StudentProfile> students);
-	IEnumerable<ExamSlot> Extend(int studentCount);
+	bool TryFillSlots(IEnumerable<StudentProfile> students);
+	bool TryExtend(int studentCount, out IEnumerable<ExamSlot> createdSlots);
 
-	bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students);
+	bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students, out IEnumerable<ExamSlot> createdExamSlots);
 }
 
 public class Schedule : EntityBase<Schedule>, ISchedule
@@ -33,7 +33,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public DateTimeOffset EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
 	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
-	// AutoLockIn.FixedDate = StartDate - AutoLockInOffset
+	// AutoLockIn.FixedDate = StartDate + AutoLockInOffset
 	// AutoLockIn.TimeBeforeExamination = Examslot.Date - AutoLockInOffset 
 	[Required, PositiveTimeSpan]
 	public required TimeSpan AutoLockInOffset { get; set; } = TimeSpan.Zero; // offset into the past from the date of the examination
@@ -59,9 +59,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[NotMapped]
 	public int ParticipantCount => ExamSlots.Sum(s => s.Participants.Count);
 	[NotMapped]
-	public int MaxParticipants => ExamSlots.Sum(s => s.MaxParticipants);
+	public int MaxParticipants => ExamSlots.Sum(s => s.IsLocked ? s.Participants.Count : s.MaxParticipants);
 	[NotMapped]
-	public int MinParticipants => ExamSlots.Sum(s => s.MinParticipants);
+	public int MinParticipants => ExamSlots.Sum(s => s.IsLocked ? s.Participants.Count : s.MinParticipants);
 	[NotMapped]
 	public IEnumerable<DateTimeOffset> AutoLockinDates => ExamSlots.Select(e => e.LockInDate);
 
@@ -69,8 +69,10 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	public bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students)
+	public bool TryReportStudents(Guid examslotId, Guid teacherId, IEnumerable<StudentProfile> students, out IEnumerable<ExamSlot> createdExamslots)
 	{
+		createdExamslots = [ ];
+
 		var teacher = Teachers.FindById(teacherId);
 		if (teacher is null)
 		{
@@ -87,10 +89,12 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			return false;
 		}
 
+		var totalStudentCount = ExamSlots.Sum(s => s.Participants.Count);
+
 		foreach (var iterSlot in ExamSlots)
 		{
-			var intersection = iterSlot.Participants.Intersect(students);
-			iterSlot.Participants.RemoveRange(intersection);
+			var studentsToRemove = iterSlot.Participants.Intersect(students);
+			iterSlot.Participants.RemoveRange(studentsToRemove);
 		}
 
 		var slot = ExamSlots.FindById(examslotId);
@@ -98,7 +102,16 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		{
 			return false;
 		}
-		var isSuccess = slot.TryReportStudents(students);
+
+		var isSuccess = slot.TryReportStudents(students, out var previousStudents);
+		if (!TryExtend(totalStudentCount, out createdExamslots))
+		{
+			return false;
+		}
+		if (!TryFillSlots(previousStudents))
+		{
+			return false;
+		}
 		if (isSuccess)
 		{
 			AuditLogs.Add(new()
@@ -107,17 +120,19 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				OriginType = AuditLogActor.Teacher,
 				OriginId = teacherId,
 				OriginName = teacher.Name,
+				TargetType = AuditLogTarget.Schedule,
+				TargetId = Id,
 			});
 		}
 		return isSuccess;
 	}
 
-	public void FillSlots(IEnumerable<StudentProfile> students)
+	public bool TryFillSlots(IEnumerable<StudentProfile> students)
 	{
 		var studentsNotYetEnlisted = students.Except(ExamSlots.SelectMany(s => s.Participants)).ToList();
 		if (studentsNotYetEnlisted.Count == 0)
 		{
-			return;
+			return true;
 		}
 
 		var slotsToFill = ExamSlots
@@ -130,16 +145,18 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			var slot = slotsToFill[ i ];
 			if (studentsNotYetEnlisted.Count == 0)
 			{
-				break;
+				return true;
 			}
 			var tempStudents = studentsNotYetEnlisted.Take(slot.MaxParticipants - slot.Participants.Count);
 			slot.Participants.AddRange(tempStudents);
 			slot.HasBeenProcessed = true;
 			studentsNotYetEnlisted.RemoveRange(tempStudents);
 		}
+
+		return false;
 	}
 
-	public IEnumerable<ExamSlot> Extend(int studentCount)
+	public bool TryExtend(int studentCount, out IEnumerable<ExamSlot> createdSlots)
 	{
 		DateTimeOffset GetLockInDate(DateTimeOffset slotDate)
 		{
@@ -151,11 +168,12 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			};
 		}
 
+		createdSlots = [ ];
 		var result = new List<ExamSlot>();
 		var nextDate = EndDate;
 		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(200))
 		{
-			if (MaxParticipants >= studentCount || MinParticipants >= studentCount)
+			if (MinParticipants >= studentCount || MaxParticipants >= studentCount)
 			{
 				break;
 			}
@@ -178,13 +196,33 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			result.Add(newSlot);
 			ExamSlots.Add(newSlot);
 		}
-		return result;
+
+		if (MinParticipants >= studentCount || MaxParticipants >= studentCount)
+		{
+			createdSlots = result;
+			return true;
+		}
+		return false;
 	}
 
 	public bool TryEnlistStudent(Guid examslotId, StudentProfile student)
 	{
 		var slot = ExamSlots.FindById(examslotId);
-		return slot?.TryEnlistStudent(student) ?? false;
+		var isSuccess = slot?.TryEnlistStudent(student) ?? false;
+		if (isSuccess)
+		{
+			AuditLogs.Add(new()
+			{
+				Action = AuditLogAction.EnlistInExamslot,
+				OriginId = student.Id,
+				OriginName = student.UserProfile.Name,
+				OriginType = AuditLogActor.Student,
+				TargetId = examslotId,
+				TargetType = AuditLogTarget.ExamSlot
+			});
+		}
+
+		return isSuccess;
 	}
 
 	public bool TryAddSwapRequest(SwapRequest swapRequest)
@@ -202,7 +240,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			Action = AuditLogAction.CreateSwapRequest,
 			OriginType = AuditLogActor.Student,
 			OriginId = swapRequest.RequestedSlotId,
-			OriginName = swapRequest.RequestingStudentName
+			OriginName = swapRequest.RequestingStudentName,
+			TargetType = AuditLogTarget.SwapRequest,
+			TargetId = swapRequest.Id
 		});
 		return true;
 	}
@@ -241,6 +281,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			{
 				Action = AuditLogAction.AcceptSwapRequest,
 				OriginType = AuditLogActor.Student,
+				TargetType = AuditLogTarget.Student,
 				OriginId = swapRequest.RequestingStudentId,
 				TargetId = acceptingStudentId,
 				OriginName = swapRequest.RequestingStudentName,
@@ -299,6 +340,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			{
 				Action = AuditLogAction.AcceptSwapRequest,
 				OriginType = AuditLogActor.Student,
+				TargetType = AuditLogTarget.Student,
 				OriginId = firstSwapRequest.RequestingStudentId,
 				TargetId = secondSwapRequest.RequestingStudentId,
 				OriginName = firstSwapRequest.RequestingStudentName,
@@ -322,6 +364,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			OriginType = AuditLogActor.Student,
 			OriginId = swapRequest.RequestingStudentId,
 			OriginName = swapRequest.RequestingStudentName,
+			TargetType = AuditLogTarget.SwapRequest,
+			TargetId = swapRequest.Id
 		});
 		return true;
 	}

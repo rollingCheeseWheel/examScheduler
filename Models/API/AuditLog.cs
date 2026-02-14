@@ -17,7 +17,7 @@ public class AuditLog
 	[Required]
 	public required string OriginName { get; set; }
 	[DefinedEnum(true)]
-	public AuditLogActor? TargetType { get; set; }
+	public AuditLogTarget? TargetType { get; set; }
 	public Guid? TargetId { get; set; }
 	public string? TargetName { get; set; }
 	public string? Description { get; set; }

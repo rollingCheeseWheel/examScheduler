@@ -12,7 +12,7 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 
 	[Required, DistinctBy<DayOfWeek>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];
-	[Required]
+	[Required, Distinct<DateTimeOffset>, MaxLength(20)]
 	public required ICollection<DateTimeOffset> BlacklistedDays { get; set; } = [ ];
 
 
