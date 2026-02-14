@@ -17,11 +17,7 @@ public abstract class AssertTypeAttribute<T> : ValidationAttribute
 			value = property.GetValue(value);
 		}
 
-		if (value is not T cast)
-		{
-			return new($"Value is null or not of type {typeof(T).Name}");
-		}
-		return IsValid(cast, validationContext);
+		return value is not T cast ? new($"Value is null or not of type {typeof(T).Name}") : IsValid(cast, validationContext);
 	}
 
 	public abstract ValidationResult? IsValid(T value, ValidationContext validationContext);

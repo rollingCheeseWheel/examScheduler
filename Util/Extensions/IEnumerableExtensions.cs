@@ -8,11 +8,11 @@ public static class IEnumerableExtensions
 
 		long sum = 0;
 		long sumSquares = 0;
-		int count = 0;
+		var count = 0;
 
 		foreach (var item in source)
 		{
-			int h = item?.GetHashCode() ?? 0;
+			var h = item?.GetHashCode() ?? 0;
 			sum += h;
 			sumSquares += (long)h * h;
 			count++;

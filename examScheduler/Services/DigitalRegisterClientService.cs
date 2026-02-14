@@ -83,7 +83,7 @@ public class RegisterClient : IDigitalRegisterClient, IDisposable
 	private ClientSession _session;
 	private readonly DigitalRegisterSchool _school;
 	private readonly Lock _lock = new();
-	private SemaphoreSlim _authSemaphore = new(1);
+	private readonly SemaphoreSlim _authSemaphore = new(1);
 
 	internal RegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school)
 	{

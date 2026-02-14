@@ -4,12 +4,9 @@ using examScheduler.Mappings;
 using examScheduler.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Channels;
 using Util.DataStructures;
 using Util.Extensions;
 
@@ -115,7 +112,11 @@ public class EventWorker : BackgroundService, IEventWorker
 
 		var classroom = await context.Classrooms
 			.AsNoTracking()
-			.WhereId(c => c.Calendar, @event.CalendarId)
+			.JoinOnId(
+				context.Calendars,
+				c => c.CalendarId,
+				(o, i) => o
+			)
 			.FirstOrDefaultAsync(ct);
 		if (classroom is null)
 		{
@@ -226,7 +227,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			.Where(s => s.ExamSlots.Any(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow))
 			.Select(s => new
 			{
-				s.Id, 
+				s.Id,
 				LockInDates = s.ExamSlots
 					.Where(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow)
 					.Select(e => e.LockInDate)
@@ -291,9 +292,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 	}
 
-	private Dictionary<Type, IEnumerable<EventHandler>> GetDecoratedMethods()
-	{
-		return GetType()
+	private Dictionary<Type, IEnumerable<EventHandler>> GetDecoratedMethods() => GetType()
 				.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 				.Where(m => m.GetCustomAttribute<EventAttribute>() is not null)
 				.Select(m => new
@@ -309,7 +308,6 @@ public class EventWorker : BackgroundService, IEventWorker
 				})
 				.GroupBy(x => x.EventType)
 				.ToDictionary(g => g.Key, g => g.Select(x => x.EventHandler));
-	}
 
 	private static HandlerType IsValidHandler(MethodInfo method, Type eventType)
 	{

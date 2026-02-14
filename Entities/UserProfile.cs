@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using Util;
 using Util.Extensions;
 using Util.Validation;
@@ -21,6 +20,9 @@ public class UserProfile
 
 	[Required]
 	public required string Name { get; set; }
+
+	[Required]
+	public ICollection<Guid> ClassroomIds { get; set; } = [ ];
 
 	public StudentProfile? StudentProfile { get; set; }
 	public TeacherProfile? TeacherProfile { get; set; }

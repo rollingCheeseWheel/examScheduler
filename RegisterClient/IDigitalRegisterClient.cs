@@ -6,9 +6,9 @@ namespace registerClient;
 // when extended to multiple Digitales Register versions could be used to implement multiple adapters
 public interface IDigitalRegisterClient
 {
-	public const string ClientIdHeader = "API-CLIENT-ID";
-	public const string ApiSecretHeader = "API-SECRET";
-	public const string TokenHeader = "API-TOKEN";
+	const string ClientIdHeader = "API-CLIENT-ID";
+	const string ApiSecretHeader = "API-SECRET";
+	const string TokenHeader = "API-TOKEN";
 
 	RegisterUserProfile? UserProfile { get; }
 	long? UserId { get; }

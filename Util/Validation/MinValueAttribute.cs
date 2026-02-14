@@ -20,7 +20,7 @@ public class MinValueAttribute(long min) : ValidationAttribute
 			.MakeGenericType(valueType)
 			.GetProperty("Default")
 			?.GetValue(null);
-		if ( comparer is null)
+		if (comparer is null)
 		{
 			return new("Value is not comparable");
 		}
@@ -29,7 +29,8 @@ public class MinValueAttribute(long min) : ValidationAttribute
 		try
 		{
 			min = Convert.ChangeType(_min, valueType);
-		} catch
+		}
+		catch
 		{
 			return new("Mininum value type mismatch");
 		}

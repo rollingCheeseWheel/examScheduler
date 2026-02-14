@@ -1,12 +1,9 @@
 ﻿using Entities;
 using examScheduler.BackgroundServices;
 using examScheduler.Data;
-using examScheduler.Hubs;
 using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
-using Util;
 using Util.Extensions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace examScheduler.Services;
 

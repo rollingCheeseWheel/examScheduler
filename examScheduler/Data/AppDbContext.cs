@@ -12,10 +12,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	public DbSet<Classroom> Classrooms { get; set; }
 	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
 	public DbSet<School> Schools { get; set; }
-	public DbSet<StudentProfile> StudentProfiles { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
 	public DbSet<Teacher> Teachers { get; set; }
-	public DbSet<TeacherProfile> TeacherProfiles { get; set; }
+
+	public IQueryable<AuditLog> AuditLogs => _auditLogs.AsQueryable();
+	public IQueryable<Calendar> Calendars => _calendars.AsQueryable();
+	public IQueryable<ExamSlot> ExamSlots => _examSlots.AsQueryable();
+	public IQueryable<Lesson> Lessons => _lessons.AsQueryable();
+	public IQueryable<Schedule> Schedules => _schedules.AsQueryable();
+	public IQueryable<StudentProfile> StudentProfiles => _studentProfiles.AsQueryable();
+	public IQueryable<TeacherProfile> TeacherProfiles => _teacherProfiles.AsQueryable();
+
+	#region backing DbSets
+	private DbSet<AuditLog> _auditLogs { get; set; }
+	private DbSet<Calendar> _calendars { get; set; }
+	private DbSet<ExamSlot> _examSlots { get; set; }
+	private DbSet<Lesson> _lessons { get; set; }
+	private DbSet<Schedule> _schedules { get; set; }
+	private DbSet<StudentProfile> _studentProfiles { get; set; }
+	private DbSet<TeacherProfile> _teacherProfiles { get; set; }
+	#endregion
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -36,6 +52,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasOne<School>()
 			.WithMany()
 			.HasForeignKey(c => c.SchoolId);
+
+		modelBuilder.Entity<Classroom>()
+			.HasOne(c => c.Calendar)
+			.WithOne()
+			.HasForeignKey<Classroom>(c => c.CalendarId);
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Students)

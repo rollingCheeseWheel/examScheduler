@@ -11,4 +11,4 @@ public static class SwapRequestMappings
 		RequestingStudentId = entity.RequestingStudentId,
 		RequestedSlotId = entity.RequestedSlotId,
 	};
-}	
+}

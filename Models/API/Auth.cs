@@ -10,12 +10,6 @@ public class OAuthRequest
 	public required string SchoolId { get; set; }
 }
 
-public class TokenExtendRequest
-{
-	[Required]
-	public required string RefreshToken { get; set; }
-}
-
 public class TokenResponse
 {
 	[Required]

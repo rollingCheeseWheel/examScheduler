@@ -1,8 +1,6 @@
 ﻿using Microsoft.DotNet.PlatformAbstractions;
-using Models.API;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Security.Cryptography.X509Certificates;
 using Util;
 using Util.Extensions;
 using Util.Validation;
@@ -337,11 +335,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 
 		var firstStudent = participants.FindById(firstStudentId);
 		var secondStudent = participants.FindById(secondStudentId);
-		if (firstStudent is null || secondStudent is null)
-		{
-			return false;
-		}
-		return TrySwapStudents(firstStudent, secondStudent);
+		return firstStudent is not null && secondStudent is not null && TrySwapStudents(firstStudent, secondStudent);
 	}
 
 	private bool TrySwapStudents(StudentProfile firstStudent, StudentProfile secondStudent)

@@ -29,16 +29,11 @@ public class CollectionValidationAttribute<TTarget>(string childPropertyName) : 
 				results.AddRange(tempRes);
 			}
 		}
-		if (results.Count == 0)
-		{
-			return ValidationResult.Success;
-		}
-		else
-		{
-			return new(
-				string.Join("; ", results.Select(x => x.ErrorMessage)), 
+		return results.Count == 0
+			? ValidationResult.Success
+			: new(
+				string.Join("; ", results.Select(x => x.ErrorMessage)),
 				results.SelectMany(x => x.MemberNames)
 			);
-		}
 	}
 }

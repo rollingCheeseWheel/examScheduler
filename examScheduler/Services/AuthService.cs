@@ -3,7 +3,6 @@ using examScheduler.Data;
 using examScheduler.Mappings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Models.API;
 using Models.DigitalesRegister;
 using registerClient;
@@ -221,6 +220,9 @@ public class AuthService(
 			Classroom = classroom,
 			UserProfile = userProfile,
 		};
+
+		userProfile.StudentProfile = studentProfile;
+
 		classroom.Students.Add(studentProfile);
 
 		var userCreateResult = await _userManager.CreateAsync(userProfile);
@@ -262,6 +264,20 @@ public class AuthService(
 			return new(HttpStatusCode.BadRequest);
 		}
 
+		// on each login the connection will be tried to be established
+		var existingTeacherProfile = await _context.Teachers
+			.Where(t => t.SchoolId == school.SchoolId)
+			.Where(t => t.Name == userProfile.Name)
+			.FirstOrDefaultAsync(ct);
+
+		var teacherProfile = new Entities.TeacherProfile
+		{
+			UserProfile = userProfile,
+			Teacher = existingTeacherProfile,
+		};
+
+		userProfile.TeacherProfile = teacherProfile;
+
 		var userCreateResult = await _userManager.CreateAsync(userProfile);
 		if (!userCreateResult.Succeeded)
 		{
@@ -276,21 +292,6 @@ public class AuthService(
 			_logger.LogWarning("Unable to assign roles to user: {Reason}", roleAddedResult.Errors.Stringify());
 			return new(HttpStatusCode.InternalServerError, roleAddedResult.Errors);
 		}
-
-		// on each login the connection will be tried to be established
-		var existingTeacherProfile = await _context.Teachers
-			.Where(t => t.SchoolId == school.SchoolId)
-			.Where(t => t.Name == userProfile.Name)
-			.FirstOrDefaultAsync(ct);
-
-		var teacherProfile = new Entities.TeacherProfile
-		{
-			UserProfile = userProfile,
-			Teacher = existingTeacherProfile,
-		};
-
-		await _context.TeacherProfiles
-			.AddAsync(teacherProfile, ct);
 
 		return await LoginAsync(userProfile, httpContext, ct);
 	}
@@ -327,18 +328,21 @@ public class AuthService(
 
 	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, CancellationToken ct = default)
 	{
-		var teacherProfile = await _context.Users
-			.Select(u => u.TeacherProfile)
-			.WhereNotNull()
-			.FindByIdAsync(teacherId, ct);
-		if (teacherProfile is null) { return; }
+		var teacherProfile = await _context.TeacherProfiles.FindByIdAsync(teacherId, ct);
+		if (teacherProfile is null || teacherProfile.Teacher is not null)
+		{
+			return;
+		}
 
 		var teacher = await _context.Teachers
 			.Where(t => t.SchoolId == teacherProfile.UserProfile.SchoolId)
 			.Where(t => t.Name == teacherProfile.UserProfile.Name)
 			.FirstOrDefaultAsync(ct);
 
-		if (teacher is null) { return; }
+		if (teacher is null)
+		{
+			return;
+		}
 
 		teacherProfile.Teacher = teacher;
 	}

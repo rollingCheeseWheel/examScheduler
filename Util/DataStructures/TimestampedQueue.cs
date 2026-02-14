@@ -27,7 +27,9 @@ public class TimestampedQueue<T>
 			lock (_lock)
 			{
 				if (_queue.Count == 0)
+				{
 					continue;
+				}
 
 				var (timestamp, item) = _queue.Peek();
 

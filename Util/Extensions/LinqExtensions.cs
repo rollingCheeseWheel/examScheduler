@@ -105,4 +105,13 @@ public static class LinqExtensions
 		return source.Where(predicate).Cast<TSource>();
 	}
 
+	public static IQueryable<TResult> JoinOnId<TOuter, TInner, TResult>(this IQueryable<TOuter> outer, IQueryable<TInner> inner, Expression<Func<TOuter, Guid>> outerSelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
+		where TOuter : IGuidEntity
+		where TInner : IGuidEntity
+		=> outer.Join(inner, outerSelector, x => x.Id, resultSelector);
+
+	public static IQueryable<TInner> JoinInnerOnId<TOuter, TInner>(this IQueryable<TOuter> outer, IQueryable<TInner> inner, Expression<Func<TOuter, Guid>> outerSelector)
+		where TOuter : IGuidEntity
+		where TInner : IGuidEntity
+		=> outer.Join(inner, outerSelector, x => x.Id, (o, i) => i);
 }

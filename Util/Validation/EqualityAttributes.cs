@@ -33,15 +33,10 @@ public abstract class ComparisonAttribute<T>(string propertyName, bool allowNull
 	{
 		var property = validationContext.ObjectType.GetProperty(_propertyName) ?? throw new ArgumentException($"'{_propertyName}' not found on '{validationContext.ObjectType.Name}'");
 		var propertyValue = property?.GetValue(validationContext.ObjectInstance);
-		if (!_allowNull && ( propertyValue is null || value is null ))
-		{
-			return new("Values cannot be null");
-		}
-
-		if (( value is null || value is T ) && ( propertyValue is null || propertyValue is T ))
-		{
-			return Compare(Comparer<T>.Default, (T?)value, (T?)propertyValue) ? ValidationResult.Success : new("Equality does not match");
-		}
-		return new("Values don't have matching types");
+		return !_allowNull && ( propertyValue is null || value is null )
+			? new("Values cannot be null")
+			: ( value is null || value is T ) && ( propertyValue is null || propertyValue is T )
+			? Compare(Comparer<T>.Default, (T?)value, (T?)propertyValue) ? ValidationResult.Success : new("Equality does not match")
+			: new("Values don't have matching types");
 	}
 }

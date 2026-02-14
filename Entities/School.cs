@@ -25,11 +25,6 @@ public class School : IEquatable<School>, IComparable<School>
 	public override int GetHashCode() => HashCode.Combine(SchoolId);
 	public int CompareTo(School? b) => Name.CompareTo(b?.Name);
 
-	public static bool operator ==(School? a, School? b)
-	{
-		if (ReferenceEquals(a, b)) { return true; }
-		if (a is null || b is null) return false;
-		return a.Equals(b);
-	}
+	public static bool operator ==(School? a, School? b) => ReferenceEquals(a, b) || ( a is not null && b is not null && a.Equals(b) );
 	public static bool operator !=(School? a, School? b) => !( a == b );
 }

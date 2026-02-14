@@ -19,6 +19,8 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public Calendar Calendar { get; set; } = new();
 	[Required]
+	public Guid CalendarId { get; set; }
+	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]
 	public ICollection<Teacher> Teachers { get; set; } = [ ];

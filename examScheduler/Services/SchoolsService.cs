@@ -1,6 +1,5 @@
 ﻿using Entities;
 using examScheduler.Data;
-using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
 
 namespace examScheduler.Services;
