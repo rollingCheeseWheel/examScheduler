@@ -26,7 +26,7 @@ public interface IScheduleHub
 
 	Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request);
 	Task<Result<bool>> DeleteSchedule(Guid scheduleId);
-	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<UserProfile> actualParticipants);
+	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants);
 }
 
 public interface IScheduleClient
@@ -163,7 +163,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
-	public async Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<UserProfile> actualParticipants)
+	public async Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants)
 	{
 		if (!_guid.HasValue)
 		{

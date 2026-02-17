@@ -14,7 +14,7 @@ public interface IScheduleService
 
 	Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
 	Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
-	Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Models.API.UserProfile> actualParticipants, CancellationToken ct = default);
+	Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Guid> actualParticipants, CancellationToken ct = default);
 
 	Task<bool> TryEnlistStudentAsync(Guid slotId, Guid actingStudentId, CancellationToken ct = default);
 
@@ -172,7 +172,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		return true;
 	}
 
-	public async Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Models.API.UserProfile> participants, CancellationToken ct = default)
+	public async Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Guid> participants, CancellationToken ct = default)
 	{
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
@@ -189,7 +189,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
-		var students = await GetAllStudentsExactAsync(participants.Select(x => x.Id), ct);
+		var students = await GetAllStudentsExactAsync(participants, ct);
 		if (students is null || !students.Any())
 		{
 			return false;

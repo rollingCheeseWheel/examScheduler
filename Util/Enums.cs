@@ -35,3 +35,10 @@ public enum AuditLogTarget
 	ExamSlot,
 	SwapRequest
 }
+
+public enum SlotLockState
+{
+	Open,
+	Locked,
+	Definite,
+}

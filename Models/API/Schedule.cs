@@ -14,7 +14,7 @@ public class Schedule
 	public required DateTimeOffset StartDate { get; set; }
 	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
 	public required DateTimeOffset EndDate { get; set; }
-	[Required, DefinedEnum]
+	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
@@ -43,8 +43,8 @@ public class ExamSlot
 	public required int MaxParticipants { get; set; }
 	[Required]
 	public required int MinParticipants { get; set; }
-	[Required]
-	public required bool IsLocked { get; set; }
+	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<SlotLockState>))]
+	public required SlotLockState LockState { get; set; }
 }
 
 public class ScheduleCreateRequest
@@ -54,9 +54,9 @@ public class ScheduleCreateRequest
 	[Required]
 	public required string SubjectName { get; set; }
 	public string? Description { get; set; }
-	[Required, DefinedEnum]
+	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<SlotFillingBehaviour>))]
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
-	[Required, DefinedEnum]
+	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required, PositiveDateTimeOffset]
 	public required DateTimeOffset StartDate { get; set; }
@@ -78,7 +78,7 @@ public class ScheduleGenerator
 
 public class ScheduleGeneratorSlot
 {
-	[Required, DefinedEnum]
+	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<DayOfWeek>))]
 	public required DayOfWeek DayOfWeek { get; set; }
 	[Required, MinValue(0)]
 	public required int MinParticipants { get; set; }

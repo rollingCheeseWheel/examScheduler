@@ -26,7 +26,7 @@ public static class ScheduleMappings
 		MinParticipants = entity.MinParticipants,
 		MaxParticipants = entity.MaxParticipants,
 		Participants = entity.Participants.Select(x => x.ToDTO()),
-		IsLocked = entity.IsLocked,
+		LockState = entity.IsLocked ? Util.SlotLockState.Locked : entity.IsTeacherConfirmed ? Util.SlotLockState.Definite : Util.SlotLockState.Open,
 	};
 
 	public static ScheduleGeneratorSlot ToEntity(this Models.API.ScheduleGeneratorSlot dto) => new()
