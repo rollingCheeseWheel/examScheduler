@@ -18,6 +18,7 @@ public static class CalendarMappings
 		ToHour = entity.ToHour,
 		LessonName = entity.Name,
 		Occurances = entity.Occurances,
+		DayOfWeek = entity.FirstOccurance.DayOfWeek,
 		Subject = entity.Subject.ToDTO(),
 		Teachers = entity.Teachers.Select(ToDTO)
 	};

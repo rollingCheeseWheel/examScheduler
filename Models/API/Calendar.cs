@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using Util.Converters;
 using Util.Validation;
 
 namespace Models.API;
@@ -20,6 +22,8 @@ public class Lesson
 	public required Guid Id { get; set; }
 	[Required]
 	public required IEnumerable<DateTimeOffset> Occurances { get; set; }
+	[Required, DefinedEnum]
+	public required DayOfWeek DayOfWeek { get; set; }
 	[Required, MinValue(0)]
 	public required int FromHour { get; set; }
 	[Required, GreaterThan<int>(nameof(FromHour))]
