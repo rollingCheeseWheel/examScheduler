@@ -15,8 +15,5 @@ public class DistinctByAttribute<T>(string propertyName) : AssertTypeAttribute<I
 
 public class DistinctAttribute<T>() : AssertTypeAttribute<IEnumerable<T>>
 {
-	public override ValidationResult? IsValid(IEnumerable<T> value, ValidationContext validationContext)
-	{
-		return value.Distinct().Count() != value.Count() ? new("Values are not distinct") : ValidationResult.Success;
-	}
+	public override ValidationResult? IsValid(IEnumerable<T> value, ValidationContext validationContext) => value.Distinct().Count() != value.Count() ? new("Values are not distinct") : ValidationResult.Success;
 }

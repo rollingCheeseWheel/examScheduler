@@ -40,15 +40,9 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) 
 			new(authCode, AuthStatus.None, DateTimeOffset.MinValue),
 			school
 		);
-		if (!await client.AuthenticateAsync(ct))
-		{
-			return null;
-		}
-		if (!_sessions.TryAdd(client.Id, client))
-		{
-			return null;
-		}
-		return client;
+		return !await client.AuthenticateAsync(ct)
+			? null
+			: !_sessions.TryAdd(client.Id, client) ? null : (ILightWeightDigitalRegisterClient)client;
 	}
 
 	public IDigitalRegisterClient? TryGetClient(Guid clientId)

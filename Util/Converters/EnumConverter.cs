@@ -12,7 +12,9 @@ public class EnumConverter<TEnum> : JsonConverter<TEnum>
 		{
 			var value = reader.GetString();
 			if (Enum.TryParse<TEnum>(value, ignoreCase: true, out var result))
+			{
 				return result;
+			}
 		}
 
 		//if (reader.TokenType == JsonTokenType.Number)
@@ -24,8 +26,5 @@ public class EnumConverter<TEnum> : JsonConverter<TEnum>
 		throw new JsonException($"Unable to convert to {typeof(TEnum).Name}");
 	}
 
-	public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
-	{
-		writer.WriteStringValue(value.ToString().ToLowerInvariant());
-	}
+	public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString().ToLowerInvariant());
 }
