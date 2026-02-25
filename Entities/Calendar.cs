@@ -15,39 +15,90 @@ public class Calendar : EntityBase<Calendar>
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	public IEnumerable<Lesson> Normalize()
+	/// <summary>
+	/// Normalizes the collection of lessons to fit within a single week, resolving overlaps (by occurance count) and merging consecutive
+	/// lessons where appropriate.
+	/// </summary>
+	/// <returns>An enumerable collection of lessons adjusted to a single week's schedule, with overlapping lessons managed and
+	/// merged as needed.</returns>
+	public IEnumerable<Lesson> NormalizeToSingleWeek()
 	{
-		var result = new List<Lesson>();
+		var lessonMatrix = GetLessonMatrixFromWeek(Lessons);
+		return MergeLessonMatrix(lessonMatrix);
+	}
 
-		var daysInWeek = Enum.GetValues<DayOfWeek>();
-		var longestDayInWeek = Lessons
-			.GroupBy(l => l.DayOfWeek)
-			.Max(g => g.Select(l => l.FromHour + l.Duration).Max());
-		var lessonMatrix = new Lesson?[ daysInWeek.Length, longestDayInWeek ];
+	public IEnumerable<IEnumerable<Lesson>> NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(DateTimeOffset? includeSince)
+	{
+		includeSince ??= DateTimeOffset.MinValue;
 
-		for (var day = 0; day < daysInWeek.Length; day++)
+		var fallbackMatrix = GetLessonMatrixFromWeek(Lessons);
+
+		var groupedByWeek = Lessons
+			.Select(l => new Lesson
+			{
+				Id = l.Id,
+				Name = l.Name,
+				Subject = l.Subject,
+				FromHour = l.FromHour,
+				ToHour = l.ToHour,
+				Occurances = [ .. l.Occurances.Where(o => o >= includeSince) ],
+				Teachers = l.Teachers
+			})
+			.SelectMany(l => l.Occurances.Select(o => new { Date = o, Lesson = l }))
+			.GroupBy(l => l.Date.GetWeek())
+			.OrderBy(g => g.Key)
+			.Select(g => g
+				.Select(x => x.Lesson)
+				.ToArray()
+			)
+			.ToArray();
+
+		var longestDay = Lessons.Max(l => l.FromHour + l.Duration);
+
+		var result = new List<IEnumerable<Lesson>>();
+		foreach (var week in groupedByWeek)
+		{
+			var lessonMatrixForWeek = GetLessonMatrixFromWeek(week, fallbackMatrix);
+			result.Add(MergeLessonMatrix(lessonMatrixForWeek));
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Creates a two dimensional matrix of lessons with resolved overlaps, if the original enumerable of lessons doesnt contain a lesson for the specified hour, it tries to set it to a default from the replacements matrix ([ dayIndex, hourIndex])
+	/// </summary>
+	/// <param name="lessons"></param>
+	/// <returns>[ dayIndex , hourIndex ]</returns>
+	private Lesson?[ , ] GetLessonMatrixFromWeek(IEnumerable<Lesson> lessons, Lesson?[ , ]? replacements = null)
+	{
+		var longestDay = lessons.Max(l => l.FromHour + l.Duration);
+		var lessonMatrix = new Lesson?[ 7, longestDay ];
+
+		for (var dayIndex = 0; dayIndex < 7; dayIndex++)
 		{
 			// fill
-			for (var hour = 0; hour < longestDayInWeek; hour++)
+			for (var hour = 0; hour < longestDay; hour++)
 			{
-				lessonMatrix[ day, hour ] = Lessons
+				lessonMatrix[ dayIndex, hour ] = Lessons
 					.Where(l =>
-						l.DayOfWeek == daysInWeek[ day ] &&
+						l.DayOfWeek == (DayOfWeek)dayIndex &&
 						l.FromHour <= hour &&
 						l.ToHour >= hour
 					)
-					.MaxBy(l => l.Occurances.Count);
+					.MaxBy(l => l.Occurances.Count)
+					?? replacements?.GetOrDefault(dayIndex, hour);
 			}
 
 			// remove overlaps
-			for (var hour = 0; hour < longestDayInWeek; hour++)
+			for (var hour = 0; hour < longestDay; hour++)
 			{
-				var lesson = lessonMatrix.GetOrDefault(day, hour);
+				var lesson = lessonMatrix.GetOrDefault(dayIndex, hour);
 				if (lesson is null) { continue; }
 
 				for (var fromHour = lesson.FromHour; fromHour < lesson.FromHour + lesson.Duration; fromHour++)
 				{
-					var valueToOverride = lessonMatrix.GetOrDefault(day, fromHour);
+					var valueToOverride = lessonMatrix.GetOrDefault(dayIndex, fromHour);
 					if (valueToOverride is not null && valueToOverride.Occurances.Count > lesson.Occurances.Count)
 					{
 						continue;
@@ -62,21 +113,34 @@ public class Calendar : EntityBase<Calendar>
 						Subject = lesson.Subject,
 						Teachers = lesson.Teachers,
 					};
-					lessonMatrix.TrySet(day, fromHour, replacement);
+					lessonMatrix.TrySet(dayIndex, fromHour, replacement);
 				}
 			}
+		}
 
-			// merge
-			Lesson? cursor = null;
-			var tempResult = new List<Lesson>();
-			for (var hour = 0; hour < longestDayInWeek; hour++)
+		return lessonMatrix;
+	}
+
+	/// <summary>
+	/// Merges consecutive lessons
+	/// </summary>
+	/// <param name="lessonMatrix"><see cref="GetLessonMatrixFromWeek(IEnumerable{Lesson})"/>'s lesson matrix ([ dayIndex , hourIndex ])</param>
+	/// <returns>List containing the merged lessons</returns>
+	private static IEnumerable<Lesson> MergeLessonMatrix(Lesson?[ , ] lessonMatrix)
+	{
+		var result = new List<Lesson>();
+
+		Lesson? cursor = null;
+		for (var dayIndex = 0; dayIndex < lessonMatrix.GetLength(0); dayIndex++)
+		{
+			for (var hourIndex = 0; hourIndex < lessonMatrix.GetLength(1); hourIndex++)
 			{
-				var lesson = lessonMatrix.GetOrDefault(day, hour);
+				var lesson = lessonMatrix.GetOrDefault(dayIndex, hourIndex);
 				if (lesson is null) { continue; }
 				if (cursor is null || !cursor.ShallowEqual(lesson))
 				{
 					cursor = lesson;
-					tempResult.Add(lesson);
+					result.Add(lesson);
 				}
 				else
 				{
@@ -89,10 +153,9 @@ public class Calendar : EntityBase<Calendar>
 						Subject = cursor.Subject,
 						Teachers = cursor.Teachers,
 					};
-					tempResult[ ^1 ] = cursor;
+					result[ ^1 ] = cursor;
 				}
 			}
-			result.AddRange(tempResult);
 		}
 
 		return result;

@@ -11,7 +11,9 @@ public class Calendar
 	[Required]
 	public required DateTimeOffset LastsUntil { get; set; }
 	[Required]
-	public required IEnumerable<Lesson> Lessons { get; set; }
+	public required IEnumerable<Lesson> Fallback { get; set; }
+	[Required]
+	public required IEnumerable<IEnumerable<Lesson>> Actual { get; set; }
 
 }
 

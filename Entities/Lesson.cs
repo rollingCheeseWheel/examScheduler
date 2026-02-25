@@ -20,9 +20,9 @@ public class Lesson : EntityBase<Lesson>
 	[NotMapped, Range(1, 24)]
 	public int Duration => Math.Clamp(ToHour - FromHour + 1, 1, 24);
 	[NotMapped]
-	public DayOfWeek DayOfWeek => FirstOccurance.DayOfWeek;
+	public DayOfWeek? DayOfWeek => FirstOccurance?.DayOfWeek;
 	[NotMapped]
-	public DateTimeOffset FirstOccurance => Occurances.Order().FirstOrDefault();
+	public DateTimeOffset? FirstOccurance => Occurances.Order().FirstOrDefault();
 	[Required, SameDayOfWeek]
 	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
@@ -57,5 +57,5 @@ public class Lesson : EntityBase<Lesson>
 
 	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.GetValueHashCode(), FromHour, Duration, Subject);
 
-	public override int CompareTo(Lesson? b) => FirstOccurance.CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
+	public override int CompareTo(Lesson? b) => (FirstOccurance ?? DateTimeOffset.MinValue).CompareTo(b?.FirstOccurance ?? DateTimeOffset.MinValue);
 }

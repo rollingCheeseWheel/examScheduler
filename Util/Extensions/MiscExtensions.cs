@@ -25,9 +25,9 @@ public static class MiscExtensions
 		return false;
 	}
 
-	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimsion, int secondDimension) => firstDimsion >= 0 && firstDimsion < grid.GetLength(0) &&
+	public static T? GetOrDefault<T>(this T?[ , ] grid, int firstDimension, int secondDimension) => firstDimension >= 0 && firstDimension < grid.GetLength(0) &&
 			secondDimension >= 0 && secondDimension < grid.GetLength(1)
-			? grid[ firstDimsion, secondDimension ]
+			? grid[ firstDimension, secondDimension ]
 			: default;
 
 	public static bool TryGetId(this ClaimsPrincipal claims, out Guid id)
@@ -35,4 +35,6 @@ public static class MiscExtensions
 		var claim = claims.FindFirst(ClaimTypes.NameIdentifier);
 		return Guid.TryParse(claim?.Value, out id);
 	}
+
+	public static long GetWeek(this DateTimeOffset date) => (long)( ( date.ToUniversalTime() - DateTimeOffset.MinValue ).TotalDays / 7 );
 }

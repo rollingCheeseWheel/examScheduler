@@ -1,4 +1,5 @@
 ﻿using Entities;
+using Util.Extensions;
 
 namespace examScheduler.Mappings;
 
@@ -8,7 +9,10 @@ public static class CalendarMappings
 	{
 		Id = entity.Id,
 		LastsUntil = entity.LastsUntil,
-		Lessons = entity.Normalize().Select(ToDTO),
+		Actual = entity
+			.NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(DateTimeOffset.UtcNow.RoundDownToMonday())
+			.Select(x => x.Select(ToDTO)),
+		Fallback = entity.NormalizeToSingleWeek().Select(ToDTO),
 	};
 
 	public static Models.API.Lesson ToDTO(this Lesson entity) => new()
@@ -18,7 +22,7 @@ public static class CalendarMappings
 		ToHour = entity.ToHour,
 		LessonName = entity.Name,
 		Occurances = entity.Occurances,
-		DayOfWeek = entity.FirstOccurance.DayOfWeek,
+		DayOfWeek = entity.FirstOccurance?.DayOfWeek ?? (DayOfWeek)( -1 ),
 		Subject = entity.Subject.ToDTO(),
 		Teachers = entity.Teachers.Select(ToDTO)
 	};
