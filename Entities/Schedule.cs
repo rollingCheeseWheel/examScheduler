@@ -26,7 +26,7 @@ public interface ISchedule
 public class Schedule : EntityBase<Schedule>, ISchedule
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public required DateTimeOffset StartDate { get; set; }
 	[NotMapped]
@@ -114,6 +114,11 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		}
 		if (isSuccess)
 		{
+			foreach (var lowerSlot in ExamSlots.Where(s => s.Date <= slot.Date))
+			{
+				lowerSlot.IsTeacherConfirmed = true;
+			}
+
 			AuditLogs.Add(new()
 			{
 				Action = AuditLogAction.ReportStudents,

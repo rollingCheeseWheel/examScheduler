@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Util.Converters;
 using Util.Validation;
@@ -36,14 +37,20 @@ public class Lesson
 	public required Subject Subject { get; set; }
 }
 
-public class Teacher
+public class Teacher()
 {
 	[Required]
 	public required string Name { get; set; }
+
+	[SetsRequiredMembers]
+	public Teacher(string name) : this() => Name = name;
 }
 
-public class Subject
+public class Subject()
 {
 	[Required]
 	public required string Name { get; set; }
+
+	[SetsRequiredMembers]
+	public Subject(string name) : this() => Name = name;
 }

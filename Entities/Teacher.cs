@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using Util.Extensions;
 
 namespace Entities;
@@ -6,7 +7,7 @@ namespace Entities;
 public class Teacher : EntityBase<Teacher>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public required string Name { get; set; }
 	[Required]

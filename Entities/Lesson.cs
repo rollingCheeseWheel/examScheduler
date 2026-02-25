@@ -8,7 +8,7 @@ namespace Entities;
 public class Lesson : EntityBase<Lesson>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	/// <summary>
 	/// Zero-Indexed
 	/// </summary>

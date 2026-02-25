@@ -9,7 +9,7 @@ namespace Entities;
 public class ExamSlot : EntityBase<ExamSlot>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public required Guid ScheduleId { get; set; }
 	[Required]

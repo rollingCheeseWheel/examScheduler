@@ -114,4 +114,8 @@ public static class LinqExtensions
 		where TOuter : IGuidEntity
 		where TInner : IGuidEntity
 		=> outer.Join(inner, outerSelector, x => x.Id, (o, i) => i);
+
+	public static IEnumerable<TSource> DistinctById<TSource>(this IEnumerable<TSource> source) where TSource : IGuidEntity => source.DistinctBy(x => x.Id);
+
+	public static IQueryable<TSource> DistinctById<TSource>(this IQueryable<TSource> source) where TSource : IGuidEntity => source.DistinctBy(x => x.Id);
 }

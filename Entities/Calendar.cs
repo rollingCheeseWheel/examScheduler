@@ -6,7 +6,7 @@ namespace Entities;
 public class Calendar : EntityBase<Calendar>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.MinValue;
 	[Required]

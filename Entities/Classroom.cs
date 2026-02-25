@@ -5,7 +5,7 @@ namespace Entities;
 public class Classroom() : EntityBase<Classroom>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public required string Name { get; set; }
 	[Required]

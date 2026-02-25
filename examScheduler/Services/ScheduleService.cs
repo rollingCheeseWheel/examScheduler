@@ -109,7 +109,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			.SelectMany(l => l.Occurances)
 			.ToListAsync(ct);
 
-		var newScheduleId = Guid.NewGuid();
+		var newScheduleId = Guid.CreateVersion7();
 		var newSchedule = new Schedule
 		{
 			Id = newScheduleId,
@@ -174,6 +174,11 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 	public async Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid teacherId, IEnumerable<Guid> participants, CancellationToken ct = default)
 	{
+		if (!participants.Any())
+		{
+			return false;
+		}
+
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
 			.Where(s => s.ExamSlots.ContainsId(examSlotId))
@@ -190,7 +195,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		}
 
 		var students = await GetAllStudentsExactAsync(participants, ct);
-		if (students is null || !students.Any())
+		if (students is null)
 		{
 			return false;
 		}
@@ -325,6 +330,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			.Select(u => u.StudentProfile)
 			.WhereNotNull()
 			.WhereIds(ids)
+			.DistinctById()
 			.ToListAsync(ct);
 		return students.Count == ids.Count() ? students : null;
 	}

@@ -7,7 +7,7 @@ namespace Entities;
 public class AuditLog : EntityBase<AuditLog>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 
 	[Required]
 	public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;

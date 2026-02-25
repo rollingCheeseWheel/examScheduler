@@ -8,7 +8,7 @@ namespace Entities;
 public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.NewGuid();
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 
 	[Required, DistinctBy<DayOfWeek>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];

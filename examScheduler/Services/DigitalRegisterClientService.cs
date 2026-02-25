@@ -11,7 +11,7 @@ namespace examScheduler.Services;
 
 public interface IDigitalRegisterClientService
 {
-	Task<(IDigitalRegisterClient? Client, Guid? Id)> TryCreateClientAsync(string schoolId, string authCode, CancellationToken ct = default);
+	Task<ILightWeightDigitalRegisterClient?> TryCreateClientAsync(string schoolId, string authCode, CancellationToken ct = default);
 	IDigitalRegisterClient? TryGetClient(Guid clientId);
 
 	bool TryAddSchool(string schoolId, Uri digitalRegisterUri, string clientId, string secret);
@@ -22,33 +22,33 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) 
 {
 	private readonly IHttpClientFactory _clientFactory = httpClientFactory;
 	private readonly ConcurrentDictionary<string, DigitalRegisterSchool> _schools = new();
-	private readonly ConcurrentDictionary<Guid, RegisterClient> _sessions = new();
+	private readonly ConcurrentDictionary<Guid, LightWeightRegisterClient> _sessions = new();
 
-	public async Task<(IDigitalRegisterClient? Client, Guid? Id)> TryCreateClientAsync(string schoolId, string authCode, CancellationToken ct = default)
+	public async Task<ILightWeightDigitalRegisterClient?> TryCreateClientAsync(string schoolId, string authCode, CancellationToken ct = default)
 	{
 		RemoveExpiredClients();
 
 		if (!_schools.TryGetValue(schoolId, out var school))
 		{
-			return (null, null);
+			return null;
 		}
 
 		var httpClient = _clientFactory.CreateClient("secure");
 		httpClient.BaseAddress = school.RegisterURL;
-		var client = new RegisterClient(
+		var client = new LightWeightRegisterClient(
 			httpClient,
 			new(authCode, AuthStatus.None, DateTimeOffset.MinValue),
 			school
 		);
 		if (!await client.AuthenticateAsync(ct))
 		{
-			return (null, null);
+			return null;
 		}
 		if (!_sessions.TryAdd(client.Id, client))
 		{
-			return (null, null);
+			return null;
 		}
-		return (Client: client, client.Id);
+		return client;
 	}
 
 	public IDigitalRegisterClient? TryGetClient(Guid clientId)
@@ -73,19 +73,24 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) 
 	}
 }
 
+public interface ILightWeightDigitalRegisterClient : IDigitalRegisterClient
+{
+	Guid Id { get; }
+}
+
 /// <summary>
 /// Do not dispose of the client, it's lightweight and can be reobtained through its id
 /// </summary>
-public class RegisterClient : IDigitalRegisterClient, IDisposable
+public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDisposable
 {
-	public readonly Guid Id = Guid.NewGuid();
+	public Guid Id { get; } = Guid.CreateVersion7();
 	private readonly HttpClient _httpClient;
 	private ClientSession _session;
 	private readonly DigitalRegisterSchool _school;
 	private readonly Lock _lock = new();
 	private readonly SemaphoreSlim _authSemaphore = new(1);
 
-	internal RegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school)
+	internal LightWeightRegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school)
 	{
 		_httpClient = configuredHttpClient;
 		_session = session;
@@ -472,7 +477,7 @@ public class RegisterClient : IDigitalRegisterClient, IDisposable
 
 	#region Disposable
 	private bool _disposed = false;
-	~RegisterClient() => Dispose(true);
+	~LightWeightRegisterClient() => Dispose(true);
 	public void Dispose()
 	{
 		Dispose(true);

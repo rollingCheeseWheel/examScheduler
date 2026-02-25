@@ -8,7 +8,7 @@ public static class CalendarMappings
 	{
 		Id = entity.Id,
 		LastsUntil = entity.LastsUntil,
-		Lessons = entity.Lessons.Select(ToDTO),
+		Lessons = entity.Normalize().Select(ToDTO),
 	};
 
 	public static Models.API.Lesson ToDTO(this Lesson entity) => new()
@@ -23,7 +23,7 @@ public static class CalendarMappings
 		Teachers = entity.Teachers.Select(ToDTO)
 	};
 
-	public static Models.API.Teacher ToDTO(this Teacher entity) => new() { Name = entity.Name };
+	public static Models.API.Teacher ToDTO(this Teacher entity) => new(entity.Name);
 
-	public static Models.API.Subject ToDTO(this Subject entity) => new() { Name = entity.Name };
+	public static Models.API.Subject ToDTO(this Subject entity) => new(entity.Name);
 }
