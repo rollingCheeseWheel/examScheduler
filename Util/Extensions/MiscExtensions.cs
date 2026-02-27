@@ -35,6 +35,4 @@ public static class MiscExtensions
 		var claim = claims.FindFirst(ClaimTypes.NameIdentifier);
 		return Guid.TryParse(claim?.Value, out id);
 	}
-
-	public static long GetWeek(this DateTimeOffset date) => (long)( ( date.ToUniversalTime() - DateTimeOffset.MinValue ).TotalDays / 7 );
 }

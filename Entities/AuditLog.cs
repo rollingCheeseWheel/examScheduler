@@ -32,7 +32,7 @@ public class AuditLog : EntityBase<AuditLog>
 
 	public override int GetHashCode() => HashCode.Combine(Id);
 
-	public override int CompareTo(AuditLog? b) => Timestamp.CompareTo(b?.Timestamp ?? DateTimeOffset.MinValue);
+	public override int CompareTo(AuditLog? b) => Timestamp.CompareTo(b?.Timestamp ?? default);
 }
 
 public static class AuditLogAction

@@ -13,16 +13,16 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Required]
 	public required Guid ScheduleId { get; set; }
 	[Required]
-	public required DateTimeOffset Date { get; set; }
+	public required DateOnly Date { get; set; }
 	[Required]
 	public required DateTimeOffset LockInDate { get; set; }
 
 	[NotMapped]
 	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow;
 	[NotMapped]
-	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow && !HasBeenProcessed;
+	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow.ToDateOnly() && !HasBeenProcessed;
 	[NotMapped]
-	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow;
+	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow.ToDateOnly();
 
 	[Required, EditorBrowsable(EditorBrowsableState.Never)]
 	public bool HasBeenProcessed { get; set; } = false;
@@ -94,5 +94,5 @@ public class ExamSlot : EntityBase<ExamSlot>
 
 	public override int GetHashCode() => HashCode.Combine(ScheduleId, Date, Participants.GetValueHashCode(), MinParticipants, MaxParticipants);
 
-	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? DateTimeOffset.MinValue);
+	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? default);
 }

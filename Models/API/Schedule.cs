@@ -11,13 +11,13 @@ public class Schedule
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public required DateTimeOffset StartDate { get; set; }
-	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
-	public required DateTimeOffset EndDate { get; set; }
-	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
-	public required AutoLockIn AutoLockIn { get; set; }
-	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
-	public required TimeSpan LockInOffset { get; set; }
+	public required DateOnly StartDate { get; set; }
+	[Required, GreaterThan<DateOnly>(nameof(StartDate))]
+	public required DateOnly EndDate { get; set; }
+	//[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
+	//public required AutoLockIn AutoLockIn { get; set; }
+	//[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
+	//public required TimeSpan LockInOffset { get; set; }
 	public string? Description { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
@@ -36,7 +36,9 @@ public class ExamSlot
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public required DateTimeOffset Date { get; set; }
+	public required DateOnly Date { get; set; }
+	[Required]
+	public required DateTimeOffset LockInDate { get; set; }
 	[Required]
 	public required IEnumerable<UserProfile> Participants { get; set; }
 	[Required]
@@ -58,10 +60,10 @@ public class ScheduleCreateRequest
 	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
 	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
 	public required AutoLockIn AutoLockIn { get; set; }
-	[Required, PositiveDateTimeOffset]
-	public required DateTimeOffset StartDate { get; set; }
-	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
-	public required DateTimeOffset EndDate { get; set; }
+	[Required]
+	public required DateOnly StartDate { get; set; }
+	[Required, GreaterThan<DateOnly>(nameof(StartDate))]
+	public required DateOnly EndDate { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
 	[Required]
@@ -72,8 +74,8 @@ public class ScheduleGenerator
 {
 	[Required, DistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required IEnumerable<ScheduleGeneratorSlot> Slots { get; set; }
-	[Required, Distinct<DateTimeOffset>, MaxLength(20)]
-	public required IEnumerable<DateTimeOffset> BlacklistedDays { get; set; }
+	[Required, Distinct<DateOnly>, MaxLength(20)]
+	public required IEnumerable<DateOnly> BlacklistedDays { get; set; }
 }
 
 public class ScheduleGeneratorSlot

@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Util.DataStructures;
 using Util.Extensions;
 
 namespace Entities;
@@ -8,9 +10,33 @@ public class Calendar : EntityBase<Calendar>
 	[Key]
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
-	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.MinValue;
+	public DateTimeOffset LastsUntil { get; set; }
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
+
+	[NotMapped]
+	private Lesson?[ , ]? _fallbackLessonMatrix;
+	[NotMapped]
+	public Lesson?[ , ] FallbackLessonMatrix
+	{
+		get
+		{
+			_fallbackLessonMatrix ??= GetLessonMatrixLessons(Lessons);
+			return _fallbackLessonMatrix;
+		}
+	}
+
+	[NotMapped]
+	private IEnumerable<Lesson>? _fallback;
+	[NotMapped]
+	public IEnumerable<Lesson> FallbackWeek
+	{
+		get
+		{
+			_fallback ??= NormalizeToSingleWeek();
+			return _fallback;
+		}
+	}
 
 	[Timestamp]
 	public override uint Version { get; set; }
@@ -21,18 +47,10 @@ public class Calendar : EntityBase<Calendar>
 	/// </summary>
 	/// <returns>An enumerable collection of lessons adjusted to a single week's schedule, with overlapping lessons managed and
 	/// merged as needed.</returns>
-	public IEnumerable<Lesson> NormalizeToSingleWeek()
+	public IEnumerable<Lesson> NormalizeToSingleWeek() => MergeLessonMatrix(FallbackLessonMatrix);
+
+	public IEnumerable<IEnumerable<Lesson>> NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(DateTimeOffsetRange range = default)
 	{
-		var lessonMatrix = GetLessonMatrixFromWeek(Lessons);
-		return MergeLessonMatrix(lessonMatrix);
-	}
-
-	public IEnumerable<IEnumerable<Lesson>> NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(DateTimeOffset? includeSince)
-	{
-		includeSince ??= DateTimeOffset.MinValue;
-
-		var fallbackMatrix = GetLessonMatrixFromWeek(Lessons);
-
 		var groupedByWeek = Lessons
 			.Select(l => new Lesson
 			{
@@ -41,7 +59,7 @@ public class Calendar : EntityBase<Calendar>
 				Subject = l.Subject,
 				FromHour = l.FromHour,
 				ToHour = l.ToHour,
-				Occurances = [ .. l.Occurances.Where(o => o >= includeSince) ],
+				Occurances = [ .. l.Occurances.Where(range.Contains) ],
 				Teachers = l.Teachers
 			})
 			.SelectMany(l => l.Occurances.Select(o => new { Date = o, Lesson = l }))
@@ -58,7 +76,7 @@ public class Calendar : EntityBase<Calendar>
 		var result = new List<IEnumerable<Lesson>>();
 		foreach (var week in groupedByWeek)
 		{
-			var lessonMatrixForWeek = GetLessonMatrixFromWeek(week, fallbackMatrix);
+			var lessonMatrixForWeek = GetLessonMatrixLessons(week, FallbackLessonMatrix);
 			result.Add(MergeLessonMatrix(lessonMatrixForWeek));
 		}
 
@@ -66,11 +84,11 @@ public class Calendar : EntityBase<Calendar>
 	}
 
 	/// <summary>
-	/// Creates a two dimensional matrix of lessons with resolved overlaps, if the original enumerable of lessons doesnt contain a lesson for the specified hour, it tries to set it to a default from the replacements matrix ([ dayIndex, hourIndex])
+	/// Creates a two dimensional matrix of lessons with resolved overlaps, if the original enumerable of lessons doesnt contain a lesson for the specified hour, it tries to set it to a default from the fallback matrix ([ dayIndex, hourIndex])
 	/// </summary>
 	/// <param name="lessons"></param>
 	/// <returns>[ dayIndex , hourIndex ]</returns>
-	private Lesson?[ , ] GetLessonMatrixFromWeek(IEnumerable<Lesson> lessons, Lesson?[ , ]? replacements = null)
+	private Lesson?[ , ] GetLessonMatrixLessons(IEnumerable<Lesson> lessons, Lesson?[ , ]? fallback = null)
 	{
 		var longestDay = lessons.Max(l => l.FromHour + l.Duration);
 		var lessonMatrix = new Lesson?[ 7, longestDay ];
@@ -87,7 +105,7 @@ public class Calendar : EntityBase<Calendar>
 						l.ToHour >= hour
 					)
 					.MaxBy(l => l.Occurances.Count)
-					?? replacements?.GetOrDefault(dayIndex, hour);
+					?? fallback?.GetOrDefault(dayIndex, hour);
 			}
 
 			// remove overlaps

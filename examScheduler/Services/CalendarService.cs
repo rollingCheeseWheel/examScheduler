@@ -8,8 +8,10 @@ namespace examScheduler.Services;
 
 public interface ICalendarService
 {
-	Task<bool> TryExtendCalendar(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
+	Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
 	//Task NormalizeCalendar(Guid calendarId, CancellationToken ct = default);
+
+	Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default);
 }
 
 public class CalendarService(AppDbContext context, IEventWorker eventWorker) : ICalendarService
@@ -17,12 +19,11 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 	private readonly AppDbContext _context = context;
 	private readonly IEventWorker _eventWorker = eventWorker;
 
-	public async Task<bool> TryExtendCalendar(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
+	public async Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
 	{
 		var calendar = await _context.Classrooms
-			.Select(c => c.Calendar)
-			.WhereNotNull()
-			.FindByIdAsync(calendarId, ct);
+			.JoinInnerOnId(_context.Calendars, c => c.CalendarId)
+			.FirstOrDefaultAsync(ct);
 		if (calendar is null)
 		{
 			return false;
@@ -121,14 +122,14 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 					Name = modelLesson.LessonName,
 					FromHour = Math.Clamp(modelLesson.FromHour - 1, 0, 23),
 					ToHour = Math.Clamp(modelLesson.ToHour - 1, 0, 23),
-					Occurances = [ modelLesson.Date ],
+					Occurances = [ modelLesson.Date.ToDateOnly() ],
 					Subject = trackedSubjects[ modelLesson.Subject.Name ],
 					Teachers = modelLesson.Teachers.Select(t => trackedTeachers[ t.Name ]).ToList()
 				};
 			}
 			else
 			{
-				existingLesson.Occurances.Add(modelLesson.Date);
+				existingLesson.Occurances.Add(modelLesson.Date.ToDateOnly());
 			}
 		}
 
@@ -136,5 +137,21 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 		_eventWorker.Publish(new CalendarUpdatedEvent(calendarId), 3);
 
 		return true;
+	}
+
+	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default)
+	{
+		var calendar = await _context.Classrooms
+			.AsNoTracking()
+			.JoinInnerOnId(_context.Calendars, c => c.CalendarId)
+			.FirstOrDefaultAsync(ct);
+		if (calendar is null)
+		{
+			return null;
+		}
+
+		var mondayDate = date.RoundDownToMonday();
+
+		return calendar.NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(new(mondayDate, mondayDate.RoundUpTo(DayOfWeek.Sunday))).SelectMany(x => x);
 	}
 }

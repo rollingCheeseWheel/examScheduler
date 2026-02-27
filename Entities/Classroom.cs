@@ -16,8 +16,8 @@ public class Classroom() : EntityBase<Classroom>
 	public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 
 	// Navigation Properties
-	[Required]
-	public Calendar Calendar { get; set; } = new();
+	//[Required]
+	//public Calendar Calendar { get; set; } = new();
 	[Required]
 	public Guid CalendarId { get; set; }
 	[Required]

@@ -12,8 +12,8 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 
 	[Required, DistinctBy<DayOfWeek>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];
-	[Required, Distinct<DateTimeOffset>, MaxLength(20)]
-	public required ICollection<DateTimeOffset> BlacklistedDays { get; set; } = [ ];
+	[Required, Distinct<DateOnly>, MaxLength(20)]
+	public required ICollection<DateOnly> BlacklistedDays { get; set; } = [ ];
 
 
 	[Timestamp]
@@ -46,5 +46,5 @@ public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 		MinParticipants == b.MinParticipants &&
 		MaxParticipants == b.MaxParticipants;
 	public override int GetHashCode() => HashCode.Combine(DayOfWeek, MinParticipants, MaxParticipants);
-	public override int CompareTo(ScheduleGeneratorSlot? b) => DayOfWeek.CompareTo(b?.DayOfWeek);
+	public override int CompareTo(ScheduleGeneratorSlot? b) => DayOfWeek.CompareTo(b?.DayOfWeek ?? (DayOfWeek)(-1));
 }

@@ -27,14 +27,40 @@ public static class DateTimeExtensions
 		return date.AddDays(-diff).Date;
 	}
 
+	public static DateOnly RoundDownToMonday(this DateOnly date) => date.ToDateTimeOffset().RoundDownToMonday().ToDateOnly();
+
 	public static DateTimeOffset RoundUpTo(this DateTimeOffset date, DayOfWeek dayOfWeek)
 	{
 		var daysToAdd = ( (int)dayOfWeek - (int)date.DayOfWeek + 7 ) % 7;
-		if (daysToAdd == 0)
+		if (daysToAdd is 0)
 		{
 			daysToAdd = 7; // always round *up* to the next occurrence
 		}
 
 		return date.AddDays(daysToAdd);
 	}
+
+	public static DateOnly RoundUpTo(this DateOnly date, DayOfWeek dayOfWeek)
+	{
+		var daysToAdd = ( (int)dayOfWeek - (int)date.DayOfWeek + 7 ) % 7;
+		if (daysToAdd is 0)
+		{
+			daysToAdd = 7;
+		}
+		return date.AddDays(daysToAdd);
+	}
+
+	public static long GetWeek(this DateTimeOffset date) => (long)( ( date.ToUniversalTime() - DateTimeOffset.MinValue ).TotalDays / 7 );
+
+	public static long GetWeek(this DateTime date) => (long)( ( date.ToUniversalTime() - DateTime.MinValue ).TotalDays / 7 );
+
+	public static long GetWeek(this DateOnly date) => date.ToDateTime().GetWeek();
+
+	public static DateOnly ToDateOnly(this DateTimeOffset date) => DateOnly.FromDateTime(date.DateTime);
+
+	public static DateOnly ToDateOnly(this DateTime date) => DateOnly.FromDateTime(date);
+
+	public static DateTimeOffset ToDateTimeOffset(this DateOnly date) => new DateTimeOffset(date.ToDateTime(), TimeSpan.Zero);
+
+	public static DateTime ToDateTime(this DateOnly date) => date.ToDateTime(TimeOnly.MinValue);
 }

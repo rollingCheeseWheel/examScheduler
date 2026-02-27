@@ -81,8 +81,15 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
+		var calendar = await _context.Calendars.FindByIdAsync(classroom.CalendarId, ct);
+		if (calendar is null)
+		{
+			return false;
+		}
+
 		var minCapacity = request.Generator.Slots.Sum(g => g.MinParticipants);
 		var maxCapacity = request.Generator.Slots.Sum(g => g.MaxParticipants);
+		// TODO even if the student count is lower than the min capacity it should probably still be considered valid
 		if (classroom.Students.Count < minCapacity ||
 			classroom.Students.Count > maxCapacity)
 		{
@@ -91,7 +98,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 		foreach (var generatorSlot in request.Generator.Slots.DistinctBy(s => s.DayOfWeek))
 		{
-			var exists = classroom.Calendar.Lessons
+			var exists = calendar.Lessons
 				.Where(l => l.Subject.Name == subject.Name)
 				.Where(l => l.DayOfWeek == generatorSlot.DayOfWeek)
 				.Any();
@@ -100,14 +107,6 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 				return false;
 			}
 		}
-
-		var actualLessonDates = await _context.Classrooms
-			.WhereId(classroom.Id)
-			.Select(c => c.Calendar)
-			.SelectMany(c => c.Lessons)
-			.Where(l => l.Subject.Name == subject.Name)
-			.SelectMany(l => l.Occurances)
-			.ToListAsync(ct);
 
 		var newScheduleId = Guid.CreateVersion7();
 		var newSchedule = new Schedule
@@ -118,7 +117,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			ScheduleGenerator = new()
 			{
 				GeneratorSlots = [ .. request.Generator.Slots.Select(x => x.ToEntity()) ],
-				BlacklistedDays = [ .. actualLessonDates.Intersect(request.Generator.BlacklistedDays) ]
+				BlacklistedDays = [ .. request.Generator.BlacklistedDays ]
 			},
 			SlotFillingBehaviour = request.SlotFillingBehaviour,
 			AutoLockIn = request.AutoLockIn,

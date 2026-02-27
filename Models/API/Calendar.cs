@@ -4,25 +4,10 @@ using Util.Validation;
 
 namespace Models.API;
 
-public class Calendar
-{
-	[Required]
-	public required Guid Id { get; set; }
-	[Required]
-	public required DateTimeOffset LastsUntil { get; set; }
-	[Required]
-	public required IEnumerable<Lesson> Fallback { get; set; }
-	[Required]
-	public required IEnumerable<IEnumerable<Lesson>> Actual { get; set; }
-
-}
-
 public class Lesson
 {
 	[Required]
 	public required Guid Id { get; set; }
-	[Required]
-	public required IEnumerable<DateTimeOffset> Occurances { get; set; }
 	[Required, DefinedEnum]
 	public required DayOfWeek DayOfWeek { get; set; }
 	[Required, MinValue(0)]

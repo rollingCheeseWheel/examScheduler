@@ -8,8 +8,6 @@ public static class ScheduleMappings
 	{
 		Id = entity.Id,
 		Description = entity.Description,
-		AutoLockIn = entity.AutoLockIn,
-		LockInOffset = entity.AutoLockInOffset,
 		StartDate = entity.StartDate,
 		EndDate = entity.EndDate,
 		Subject = entity.Subject.ToDTO(),
@@ -23,6 +21,7 @@ public static class ScheduleMappings
 	{
 		Id = entity.Id,
 		Date = entity.Date,
+		LockInDate = entity.LockInDate,
 		MinParticipants = entity.MinParticipants,
 		MaxParticipants = entity.MaxParticipants,
 		Participants = entity.Participants.Select(x => x.ToDTO()),

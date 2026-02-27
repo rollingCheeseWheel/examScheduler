@@ -28,9 +28,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Key]
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
-	public required DateTimeOffset StartDate { get; set; }
+	public required DateOnly StartDate { get; set; }
 	[NotMapped]
-	public DateTimeOffset EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
+	public DateOnly EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
 	[Required, DefinedEnum]
 	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = StartDate + AutoLockInOffset
@@ -163,12 +163,12 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 
 	public bool TryExtend(int studentCount, out IEnumerable<ExamSlot> createdSlots)
 	{
-		DateTimeOffset GetLockInDate(DateTimeOffset slotDate)
+		DateTimeOffset GetLockInDate(DateOnly slotDate)
 		{
 			return AutoLockIn switch
 			{
-				AutoLockIn.FixedDate => StartDate + AutoLockInOffset,
-				AutoLockIn.TimeBeforeExamination => slotDate - AutoLockInOffset,
+				AutoLockIn.FixedDate => new DateTimeOffset(StartDate.ToDateTime(TimeOnly.MinValue), AutoLockInOffset),
+				AutoLockIn.TimeBeforeExamination => new DateTimeOffset(slotDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) - AutoLockInOffset,
 				_ => DateTimeOffset.MinValue
 			};
 		}
@@ -425,5 +425,5 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		return combiner.CombinedHash;
 	}
 
-	public override int CompareTo(Schedule? other) => StartDate.CompareTo(other?.StartDate ?? DateTimeOffset.MinValue);
+	public override int CompareTo(Schedule? other) => StartDate.CompareTo(other?.StartDate ?? DateOnly.MinValue);
 }

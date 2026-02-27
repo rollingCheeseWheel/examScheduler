@@ -54,7 +54,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey(c => c.SchoolId);
 
 		modelBuilder.Entity<Classroom>()
-			.HasOne(c => c.Calendar)
+			.HasOne<Calendar>()
 			.WithOne()
 			.HasForeignKey<Classroom>(c => c.CalendarId);
 

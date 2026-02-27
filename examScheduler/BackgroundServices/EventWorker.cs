@@ -154,25 +154,26 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		var classroom = await context.Classrooms
+		var calendar = await context.Classrooms
 			.Where(c => c.Students.ContainsId(task.StudentProfileId))
+			.JoinInnerOnId(context.Calendars, c => c.CalendarId)
 			.FirstOrDefaultAsync(ct);
-		if (classroom is null || classroom.Calendar is null)
+		if (calendar is null)
 		{
 			return;
 		}
 
-		var digitalRegisterLessons = await client.GetCalendarAsync(classroom.Calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
+		var digitalRegisterLessons = await client.GetCalendarAsync(calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
 		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
 		{
 			return;
 		}
-		if (!await calendarService.TryExtendCalendar(classroom.Calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct))
+		if (!await calendarService.TryExtendCalendarAsync(calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct))
 		{
 			return;
 		}
 		await context.SaveChangesAsync(ct);
-		Publish(new CalendarUpdatedEvent(classroom.Calendar.Id));
+		Publish(new CalendarUpdatedEvent(calendar.Id));
 	}
 
 	[Event(typeof(LockScheduleTask))]
@@ -236,12 +237,12 @@ public class EventWorker : BackgroundService, IEventWorker
 		var scheduleLockInDates = await context.Classrooms
 			.AsNoTracking()
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.ExamSlots.Any(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow))
+			.Where(s => s.ExamSlots.Any(e => e.Date <= DateTimeOffset.UtcNow.ToDateOnly() && e.LockInDate >= DateTimeOffset.UtcNow))
 			.Select(s => new
 			{
 				s.Id,
 				LockInDates = s.ExamSlots
-					.Where(e => e.Date <= DateTimeOffset.UtcNow && e.LockInDate >= DateTimeOffset.UtcNow)
+					.Where(e => e.Date <= DateTimeOffset.UtcNow.ToDateOnly() && e.LockInDate >= DateTimeOffset.UtcNow)
 					.Select(e => e.LockInDate)
 					.ToList(),
 			})
