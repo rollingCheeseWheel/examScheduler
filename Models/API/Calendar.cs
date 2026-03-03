@@ -8,8 +8,8 @@ public class Lesson
 {
 	[Required]
 	public required Guid Id { get; set; }
-	[Required, DefinedEnum]
-	public required DayOfWeek DayOfWeek { get; set; }
+	[Required]
+	public required DateOnly Date { get; set; }
 	[Required, MinValue(0)]
 	public required int FromHour { get; set; }
 	[Required, GreaterThan<int>(nameof(FromHour))]
