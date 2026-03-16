@@ -22,7 +22,7 @@ public static class Extensions
 		where TService : class, IHostedService, TInterface
 	=> services
 			.AddSingleton<TInterface, TService>()
-			.AddHostedService(sp => (IHostedService)sp.GetRequiredService<TInterface>());
+			.AddHostedService(sp => (TService)sp.GetRequiredService<TInterface>());
 
 
 	public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
