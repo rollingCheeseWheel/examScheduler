@@ -60,8 +60,6 @@ public class ScheduleCreateRequest
 	public required AutoLockIn AutoLockIn { get; set; }
 	[Required]
 	public required DateOnly StartDate { get; set; }
-	[Required, GreaterThan<DateOnly>(nameof(StartDate))]
-	public required DateOnly EndDate { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
 	[Required]
