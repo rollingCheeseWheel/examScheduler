@@ -22,7 +22,7 @@ public class Schedule
 	[Required]
 	public required Subject Subject { get; set; }
 	[Required]
-	public required IEnumerable<Teacher> Teachers { get; set; }
+	public required IEnumerable<TeacherWithSubjects> Teachers { get; set; }
 	[Required]
 	public required IEnumerable<ExamSlot> ExamSlots { get; set; }
 	[Required]

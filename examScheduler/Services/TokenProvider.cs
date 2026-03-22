@@ -12,13 +12,13 @@ namespace examScheduler.Services;
 
 public interface ITokenProvider
 {
-	Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
+	Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
 	Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct);
 
 	//string? GetAccessToken(ICollection<Claim> claims);
 	//Task<RefreshTokenSession?> CreateRefreshTokenAsync(UserProfile user, CancellationToken _ct);
 
-	Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
+	Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
 
 	Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct);
 	Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user);
@@ -34,18 +34,14 @@ public class TokenProvider(
 
 	public async Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct = default) => await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
 
-	public async Task<TokenResponse?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
+	public async Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		var refreshToken = await CreateRefreshTokenAsync(user, ct);
 		if (refreshToken is null) { return null; }
 		var accessToken = GetAccessToken(claims);
 		return accessToken is null
 			? null
-			: new()
-			{
-				RefreshToken = refreshToken.TokenValue,
-				AccessToken = accessToken,
-			};
+			: new(refreshToken.TokenValue, accessToken);
 	}
 
 	public string? GetAccessToken(ICollection<Claim> claims)
@@ -62,7 +58,7 @@ public class TokenProvider(
 		return handler.CreateToken(tokenDescriptor);
 	}
 
-	public async Task<TokenResponse?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
+	public async Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
 	{
 		using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 		var existingValidSession = await HasValidRefreshTokenSessionAsync(user, refreshToken, ct);

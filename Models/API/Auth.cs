@@ -9,11 +9,3 @@ public class OAuthRequest
 	[Required]
 	public required string SchoolId { get; set; }
 }
-
-public class TokenResponse
-{
-	[Required]
-	public required string AccessToken { get; set; }
-	[Required]
-	public required string RefreshToken { get; set; }
-}

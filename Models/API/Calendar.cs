@@ -17,12 +17,18 @@ public class Lesson
 	[Required]
 	public required string LessonName { get; set; }
 	[Required]
-	public required IEnumerable<Teacher> Teachers { get; set; }
+	public required IEnumerable<TeacherOnly> Teachers { get; set; }
 	[Required]
 	public required Subject Subject { get; set; }
 }
 
-public class Teacher
+public class TeacherOnly
+{
+	[Required]
+	public required string Name { get; set; }
+}
+
+public class TeacherWithSubjects
 {
 	[Required]
 	public required string Name { get; set; }

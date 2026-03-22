@@ -12,5 +12,5 @@ public class Classroom
 	[Required, MinValue(0)]
 	public required int StudentCount { get; set; }
 	[Required]
-	public required IEnumerable<Teacher> Teachers { get; set; }
+	public required IEnumerable<TeacherWithSubjects> Teachers { get; set; }
 }

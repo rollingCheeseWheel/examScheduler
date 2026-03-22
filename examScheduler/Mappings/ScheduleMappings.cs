@@ -14,7 +14,7 @@ public static class ScheduleMappings
 		ExamSlots = entity.ExamSlots.Select(ToDTO),
 		AuditLogs = entity.AuditLogs.Select(x => x.ToDTO()),
 		SwapRequests = entity.SwapRequests.Select(x => x.ToDTO()),
-		Teachers = entity.Teachers.Select(x => x.ToDTO()),
+		Teachers = entity.Teachers.Select(x => x.ToTeacherWithSubjectsDTO()),
 	};
 
 	public static Models.API.ExamSlot ToDTO(this ExamSlot entity) => new()

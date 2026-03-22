@@ -22,6 +22,8 @@ public interface IAuthService
 	Task<Result<DateTimeOffset>> RefreshTokenAsync(string refreshToken, HttpContext httpContext, CancellationToken ct);
 }
 
+public record TokenPair(string AccessToken, string RefreshToken);
+
 public class AuthService(
 	AppDbContext context,
 	UserManager<Entities.UserProfile> userManager,
@@ -150,7 +152,7 @@ public class AuthService(
 		}
 	}
 
-	private void ConfigureCookies(ref HttpContext httpContext, TokenResponse? tokens)
+	private void ConfigureCookies(ref HttpContext httpContext, TokenPair? tokens)
 	{
 		httpContext.Response.Cookies.Delete(IAuthService.AccessTokenCookieName);
 		httpContext.Response.Cookies.Delete(IAuthService.RefreshTokenCookieName);
