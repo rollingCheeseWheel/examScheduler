@@ -117,8 +117,8 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 				GeneratorSlots = [ .. request.Generator.Slots.Select(x => x.ToEntity()) ],
 				BlacklistedDays = [ .. request.Generator.BlacklistedDays ]
 			},
-			SlotFillingBehaviour = request.SlotFillingBehaviour,
-			AutoLockIn = request.AutoLockIn,
+			//SlotFillingBehaviour = request.SlotFillingBehaviour,
+			//AutoLockIn = request.AutoLockIn,
 			AutoLockInOffset = request.LockInOffset,
 			StartDate = request.StartDate,
 			Teachers = [ .. classroom.Teachers.Where(t => t.Subjects.Contains(subject)) ],

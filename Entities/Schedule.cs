@@ -31,15 +31,15 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public required DateOnly StartDate { get; set; }
 	[NotMapped]
 	public DateOnly EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
-	[Required, DefinedEnum]
-	public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
+	//[Required, DefinedEnum]
+	//public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = StartDate + AutoLockInOffset
 	// AutoLockIn.TimeBeforeExamination = Examslot.Date - AutoLockInOffset 
 	[Required, PositiveTimeSpan]
 	public required TimeSpan AutoLockInOffset { get; set; } = TimeSpan.Zero; // offset into the past from the date of the examination
 	public string? Description { get; set; }
-	[Required, DefinedEnum]
-	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
+	//[Required, DefinedEnum]
+	//public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
 
 	[Required]
 	public required ScheduleGenerator ScheduleGenerator { get; set; }
@@ -161,12 +161,13 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	{
 		DateTimeOffset GetLockInDate(DateOnly slotDate)
 		{
-			return AutoLockIn switch
-			{
-				AutoLockIn.FixedDate => new DateTimeOffset(StartDate.ToDateTime(TimeOnly.MinValue), AutoLockInOffset),
-				AutoLockIn.TimeBeforeExamination => new DateTimeOffset(slotDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) - AutoLockInOffset,
-				_ => DateTimeOffset.MinValue
-			};
+			return new DateTimeOffset(slotDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) - AutoLockInOffset;
+			//return AutoLockIn switch
+			//{
+			//	AutoLockIn.FixedDate => new DateTimeOffset(StartDate.ToDateTime(TimeOnly.MinValue), AutoLockInOffset),
+			//	AutoLockIn.TimeBeforeExamination => new DateTimeOffset(slotDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) - AutoLockInOffset,
+			//	_ => DateTimeOffset.MinValue
+			//};
 		}
 
 		createdSlots = [ ];
@@ -397,7 +398,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public override bool EqualsCore(Schedule b) =>
 		StartDate == b.StartDate &&
 		EndDate == b.EndDate &&
-		AutoLockIn == b.AutoLockIn &&
+		//AutoLockIn == b.AutoLockIn &&
 		AutoLockInOffset == b.AutoLockInOffset &&
 		Description == b.Description &&
 		Subject == b.Subject &&
@@ -410,7 +411,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		var combiner = new HashCodeCombiner();
 		combiner.Add(StartDate);
 		combiner.Add(EndDate);
-		combiner.Add(AutoLockIn);
+		//combiner.Add(AutoLockIn);
 		combiner.Add(AutoLockInOffset);
 		combiner.Add(Description);
 		combiner.Add(Subject);

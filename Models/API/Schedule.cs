@@ -54,10 +54,10 @@ public class ScheduleCreateRequest
 	[Required]
 	public required string SubjectName { get; set; }
 	public string? Description { get; set; }
-	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<SlotFillingBehaviour>))]
-	public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
-	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
-	public required AutoLockIn AutoLockIn { get; set; }
+	//[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<SlotFillingBehaviour>))]
+	//public required SlotFillingBehaviour SlotFillingBehaviour { get; set; }
+	//[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
+	//public required AutoLockIn AutoLockIn { get; set; }
 	[Required]
 	public required DateOnly StartDate { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
