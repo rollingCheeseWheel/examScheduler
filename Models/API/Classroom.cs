@@ -11,6 +11,6 @@ public class Classroom
 	public required string Name { get; set; }
 	[Required, MinValue(0)]
 	public required int StudentCount { get; set; }
-	//[Required]
-	//public required Calendar Calendar { get; set; }
+	[Required]
+	public required IEnumerable<Teacher> Teachers { get; set; }
 }

@@ -26,7 +26,11 @@ public static class CalendarMappings
 		Teachers = entity.Teachers.Select(ToDTO)
 	};
 
-	public static Models.API.Teacher ToDTO(this Teacher entity) => new(entity.Name);
+	public static Models.API.Teacher ToDTO(this Teacher entity) => new()
+	{
+		Name = entity.Name,
+		Subjects = entity.Subjects.Select(ToDTO)
+	};
 
 	public static Models.API.Subject ToDTO(this Subject entity) => new(entity.Name);
 }

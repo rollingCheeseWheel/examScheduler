@@ -22,13 +22,12 @@ public class Lesson
 	public required Subject Subject { get; set; }
 }
 
-public class Teacher()
+public class Teacher
 {
 	[Required]
 	public required string Name { get; set; }
-
-	[SetsRequiredMembers]
-	public Teacher(string name) : this() => Name = name;
+	[Required]
+	public required IEnumerable<Subject> Subjects { get; set; }
 }
 
 public class Subject()
