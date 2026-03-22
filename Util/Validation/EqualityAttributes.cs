@@ -2,7 +2,7 @@
 
 namespace Util.Validation;
 
-public class GreaterThanAttribute<T>(string propertyName, bool allowNull = false) : ComparisonAttribute<T>(propertyName, allowNull)
+public class GreaterThanAttribute<T>(string propertyName, bool allowNull = true) : ComparisonAttribute<T>(propertyName, allowNull)
 {
 	public override bool Compare(Comparer<T> comparer, T? a, T? b) => comparer.Compare(a, b) > 0;
 }

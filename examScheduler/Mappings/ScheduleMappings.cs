@@ -22,7 +22,6 @@ public static class ScheduleMappings
 		Id = entity.Id,
 		Date = entity.Date,
 		LockInDate = entity.LockInDate,
-		MinParticipants = entity.MinParticipants,
 		MaxParticipants = entity.MaxParticipants,
 		Participants = entity.Participants.Select(x => x.ToDTO()),
 		LockState = entity.IsLocked ? Util.SlotLockState.Locked : entity.IsTeacherConfirmed ? Util.SlotLockState.Definite : Util.SlotLockState.Open,
@@ -31,7 +30,6 @@ public static class ScheduleMappings
 	public static ScheduleGeneratorSlot ToEntity(this Models.API.ScheduleGeneratorSlot dto) => new()
 	{
 		DayOfWeek = dto.DayOfWeek,
-		MinParticipants = dto.MinParticipants,
 		MaxParticipants = dto.MaxParticipants,
 	};
 }

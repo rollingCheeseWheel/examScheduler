@@ -60,10 +60,6 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	public int ParticipantCount => ExamSlots.Sum(s => s.Participants.Count);
 	[NotMapped]
 	public int MaxParticipants => ExamSlots.Sum(s => s.IsLocked ? s.Participants.Count : s.MaxParticipants);
-	[NotMapped]
-	public int MinParticipants => ExamSlots.Sum(s => s.IsLocked ? s.Participants.Count : s.MinParticipants);
-	[NotMapped]
-	public IEnumerable<DateTimeOffset> AutoLockinDates => ExamSlots.Select(e => e.LockInDate);
 
 
 	[Timestamp]
@@ -178,7 +174,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		var nextDate = EndDate;
 		foreach (var generatorSlot in ScheduleGenerator.GetLoopingEnumerable(200))
 		{
-			if (MinParticipants >= studentCount || MaxParticipants >= studentCount)
+			if (MaxParticipants >= studentCount)
 			{
 				break;
 			}
@@ -195,14 +191,13 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				IsGenerated = true,
 				Date = nextDate,
 				LockInDate = GetLockInDate(nextDate),
-				MinParticipants = generatorSlot.MinParticipants,
 				MaxParticipants = generatorSlot.MaxParticipants,
 			};
 			result.Add(newSlot);
 			ExamSlots.Add(newSlot);
 		}
 
-		if (MinParticipants >= studentCount || MaxParticipants >= studentCount)
+		if (MaxParticipants >= studentCount)
 		{
 			createdSlots = result;
 			return true;

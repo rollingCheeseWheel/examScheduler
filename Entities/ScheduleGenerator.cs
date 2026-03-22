@@ -32,9 +32,7 @@ public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 
 	[Required, DefinedEnum]
 	public required DayOfWeek DayOfWeek { get; set; }
-	[Required, MinValue(0)]
-	public required int MinParticipants { get; set; }
-	[Required, GreaterThan<int>(nameof(MinParticipants))]
+	[Required, MinValue(1)]
 	public required int MaxParticipants { get; set; }
 
 
@@ -43,8 +41,7 @@ public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 
 	public override bool EqualsCore(ScheduleGeneratorSlot b) =>
 		DayOfWeek == b.DayOfWeek &&
-		MinParticipants == b.MinParticipants &&
 		MaxParticipants == b.MaxParticipants;
-	public override int GetHashCode() => HashCode.Combine(DayOfWeek, MinParticipants, MaxParticipants);
-	public override int CompareTo(ScheduleGeneratorSlot? b) => DayOfWeek.CompareTo(b?.DayOfWeek ?? (DayOfWeek)(-1));
+	public override int GetHashCode() => HashCode.Combine(DayOfWeek, MaxParticipants);
+	public override int CompareTo(ScheduleGeneratorSlot? b) => DayOfWeek.CompareTo(b?.DayOfWeek ?? (DayOfWeek)( -1 ));
 }

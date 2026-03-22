@@ -29,9 +29,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 
 	[Required]
 	public bool IsGenerated { get; set; }
-	[Required, Range(0, int.MaxValue)]
-	public required int MinParticipants { get; set; }
-	[Required, Range(0, int.MaxValue), GreaterThan<int>(nameof(MinParticipants))]
+	[Required, MinValue(1)]
 	public required int MaxParticipants { get; set; }
 
 	[Required]
@@ -89,10 +87,9 @@ public class ExamSlot : EntityBase<ExamSlot>
 		ScheduleId == b.ScheduleId &&
 		Date == b.Date &&
 		Participants.ValueEquals(b.Participants) &&
-		MinParticipants == b.MinParticipants &&
 		MaxParticipants == b.MaxParticipants;
 
-	public override int GetHashCode() => HashCode.Combine(ScheduleId, Date, Participants.GetValueHashCode(), MinParticipants, MaxParticipants);
+	public override int GetHashCode() => HashCode.Combine(ScheduleId, Date, Participants.GetValueHashCode(), MaxParticipants);
 
 	public override int CompareTo(ExamSlot? other) => Date.CompareTo(other?.Date ?? default);
 }

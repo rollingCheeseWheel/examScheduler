@@ -87,11 +87,9 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
-		var minCapacity = request.Generator.Slots.Sum(g => g.MinParticipants);
 		var maxCapacity = request.Generator.Slots.Sum(g => g.MaxParticipants);
 		// TODO even if the student count is lower than the min capacity it should probably still be considered valid
-		if (classroom.Students.Count < minCapacity ||
-			classroom.Students.Count > maxCapacity)
+		if (classroom.Students.Count > maxCapacity)
 		{
 			return false;
 		}

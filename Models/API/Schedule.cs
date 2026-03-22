@@ -43,8 +43,6 @@ public class ExamSlot
 	public required IEnumerable<UserProfile> Participants { get; set; }
 	[Required]
 	public required int MaxParticipants { get; set; }
-	[Required]
-	public required int MinParticipants { get; set; }
 	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<SlotLockState>))]
 	public required SlotLockState LockState { get; set; }
 }
@@ -82,8 +80,6 @@ public class ScheduleGeneratorSlot
 {
 	[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<DayOfWeek>))]
 	public required DayOfWeek DayOfWeek { get; set; }
-	[Required, MinValue(0)]
-	public required int MinParticipants { get; set; }
-	[Required, GreaterThan<int>(nameof(MinParticipants))]
+	[Required, MinValue(1)]
 	public required int MaxParticipants { get; set; }
 }
