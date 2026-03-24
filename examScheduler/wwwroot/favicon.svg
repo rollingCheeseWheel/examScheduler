@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" baseProfile="tiny" version="1.2" viewBox="0 0 800 800">
+  <!-- Generator: Adobe Illustrator 30.2.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 1)  -->
+  <polygon points="400 179.5 22 287.5 400 395.5 778 287.5 400 179.5" fill="#1e78d6"/>
+  <rect x="246.8" y="238.9" width="306" height="340" rx="120" ry="120" fill="#fff" stroke="#1e78d6" stroke-miterlimit="10" stroke-width="21.6"/>
+  <circle cx="400" cy="467.5" r="153" fill="#fff" stroke="#1e78d6" stroke-miterlimit="7.2" stroke-width="21.6"/>
+  <line x1="616" y1="334.3" x2="616" y2="413.5" fill="none" stroke="#f58220" stroke-linecap="round" stroke-miterlimit="7.2" stroke-width="7.2"/>
+  <circle cx="616" cy="418.9" r="9" fill="#f58220"/>
+  <polygon points="616 418.9 599.8 471.1 632.2 471.1 616 418.9" fill="#f58220" stroke="#f58220" stroke-linejoin="round" stroke-width="1.8"/>
+  <path d="M328,404.5l72,63,75.6-75.6" fill="none" stroke="#1e78d6" stroke-linecap="round" stroke-linejoin="round" stroke-width="14.4"/>
+  <circle cx="400" cy="467.5" r="10.8" fill="#1e78d6"/>
+</svg>
