@@ -172,9 +172,6 @@ namespace examScheduler.Migrations
                     b.Property<int>("MaxParticipants")
                         .HasColumnType("integer");
 
-                    b.Property<int>("MinParticipants")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("ScheduleId")
                         .HasColumnType("uuid");
 
@@ -269,9 +266,6 @@ namespace examScheduler.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AutoLockIn")
-                        .HasColumnType("integer");
-
                     b.Property<TimeSpan>("AutoLockInOffset")
                         .HasColumnType("interval");
 
@@ -280,9 +274,6 @@ namespace examScheduler.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
-
-                    b.Property<int>("SlotFillingBehaviour")
-                        .HasColumnType("integer");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");

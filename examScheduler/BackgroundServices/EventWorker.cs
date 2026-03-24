@@ -234,15 +234,17 @@ public class EventWorker : BackgroundService, IEventWorker
 		using var scope = ScopeFactory.CreateScope();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+		var currentDateOnly = DateTimeOffset.UtcNow.ToDateOnly();
+
 		var scheduleLockInDates = await context.Classrooms
 			.AsNoTracking()
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.ExamSlots.Any(e => e.Date <= DateTimeOffset.UtcNow.ToDateOnly() && e.LockInDate >= DateTimeOffset.UtcNow))
+			.Where(s => s.ExamSlots.Any(e => e.Date <= currentDateOnly && e.LockInDate >= DateTimeOffset.UtcNow))
 			.Select(s => new
 			{
 				s.Id,
 				LockInDates = s.ExamSlots
-					.Where(e => e.Date <= DateTimeOffset.UtcNow.ToDateOnly() && e.LockInDate >= DateTimeOffset.UtcNow)
+					.Where(e => e.Date <= currentDateOnly && e.LockInDate >= DateTimeOffset.UtcNow)
 					.Select(e => e.LockInDate)
 					.ToList(),
 			})

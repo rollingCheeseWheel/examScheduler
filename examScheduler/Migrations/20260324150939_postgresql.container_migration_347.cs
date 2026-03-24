@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlhopefull_last : Migration
+    public partial class postgresqlcontainer_migration_347 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -284,7 +284,6 @@ namespace examScheduler.Migrations
                     LockInDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     HasBeenProcessed = table.Column<bool>(type: "boolean", nullable: false),
                     IsGenerated = table.Column<bool>(type: "boolean", nullable: false),
-                    MinParticipants = table.Column<int>(type: "integer", nullable: false),
                     MaxParticipants = table.Column<int>(type: "integer", nullable: false),
                     IsTeacherConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
@@ -300,10 +299,8 @@ namespace examScheduler.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     StartDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    AutoLockIn = table.Column<int>(type: "integer", nullable: false),
                     AutoLockInOffset = table.Column<TimeSpan>(type: "interval", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
-                    SlotFillingBehaviour = table.Column<int>(type: "integer", nullable: false),
                     SubjectName = table.Column<string>(type: "text", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     ClassroomId = table.Column<Guid>(type: "uuid", nullable: true)
