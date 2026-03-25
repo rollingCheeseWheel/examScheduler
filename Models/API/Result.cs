@@ -1,15 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Text.Json.Serialization;
 
 namespace Models.API;
 
 public record Result<T> : IActionResult
 {
-	public IEnumerable<object>? Errors { get; set; }
+	public string[ ]? Errors { get; set; }
 	public T? Data { get; set; }
+
+	[JsonIgnore]
 	public bool Success =>
-		( Errors is null || !Errors.Any() ) &&
+		( Errors is null || Errors.Length == 0 ) &&
 		(int)StatusCode >= 200 && (int)StatusCode < 300;
+	[JsonIgnore]
 	public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
 
 	public Result(HttpStatusCode statusCode) => StatusCode = statusCode;
@@ -35,7 +39,7 @@ public record Result<T> : IActionResult
 			StatusCode = errorCode;
 		}
 	}
-	public Result(HttpStatusCode errorCode, params object[ ] errors)
+	public Result(HttpStatusCode errorCode, params string[ ] errors)
 	{
 		Errors = errors;
 		StatusCode = errorCode;
