@@ -14,13 +14,13 @@ public interface IDigitalRegisterClientService
 	Task<ILightWeightDigitalRegisterClient?> TryCreateClientAsync(string schoolId, string authCode, CancellationToken ct = default);
 	IDigitalRegisterClient? TryGetClient(Guid clientId);
 
-	bool TryAddSchool(string schoolId, Uri digitalRegisterUri, string clientId, string secret);
-	bool HasSchool(string schoolId);
+	bool TryAddSchool(Entities.School school);
 }
 
-public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) : IDigitalRegisterClientService
+public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, ILogger<DigitalRegisterClient> logger) : IDigitalRegisterClientService
 {
 	private readonly IHttpClientFactory _clientFactory = httpClientFactory;
+	private readonly ILogger _logger = logger;
 	private readonly ConcurrentDictionary<string, DigitalRegisterSchool> _schools = new();
 	private readonly ConcurrentDictionary<Guid, LightWeightRegisterClient> _sessions = new();
 
@@ -28,8 +28,10 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) 
 	{
 		RemoveExpiredClients();
 
-		if (!_schools.TryGetValue(schoolId, out var school))
+		var normalizedKey = NormalizeKey(schoolId);
+		if (!_schools.TryGetValue(normalizedKey, out var school))
 		{
+			_logger.LogWarning("could not retrieve school {NormalizedSchoolId}", normalizedKey);
 			return null;
 		}
 
@@ -50,9 +52,20 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory) 
 		RemoveExpiredClients();
 		return _sessions.GetValueOrDefault(clientId);
 	}
-	public bool TryAddSchool(string schoolId, Uri digitalRegisterUri, string clientId, string secret) => _schools.TryAdd(schoolId, new(digitalRegisterUri, clientId, secret));
+	public bool TryAddSchool(Entities.School school)
+	{
+		if (!school.IsEnabled)
+		{
+			_logger.LogInformation("Skipping disabled school {@School}", school);
+			return false;
+		}
 
-	public bool HasSchool(string schoolId) => _schools.ContainsKey(schoolId);
+		var normalizedKey = NormalizeKey(school.SchoolId);
+
+		return _schools.TryAdd(normalizedKey, new(school.RegisterUri.GetSchemeAndAuthority(), school.ClientId, school.ClientId));
+	}
+
+	private static string NormalizeKey(string schoolId) => schoolId.Trim().ToLowerInvariant();
 
 	private void RemoveExpiredClients()
 	{

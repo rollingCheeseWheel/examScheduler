@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Entities;
 
@@ -12,7 +13,7 @@ public class School : IEquatable<School>, IComparable<School>
 	public required Uri RegisterUri { get; set; }
 	[Required]
 	public required string ClientId { get; set; }
-	[Required]
+	[Required, JsonIgnore]
 	public required string Secret { get; set; }
 	[Required]
 	public required bool IsEnabled { get; set; }

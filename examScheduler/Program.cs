@@ -42,6 +42,7 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 
 builder.Services.AddSignalR();
 
+builder.Services.AddTransient<HttpsEnforcingHandler>();
 builder.Services.AddHttpClient("secure")
 	.AddHttpMessageHandler<HttpsEnforcingHandler>();
 
@@ -50,10 +51,14 @@ builder.Services
 	.AddScoped<IAuthService, AuthService>()
 	.AddScoped<ICalendarService, CalendarService>()
 	.AddScoped<IClassroomService, ClassroomService>()
-	.AddScoped<IDigitalRegisterClientService, DigitalRegisterClientService>()
 	.AddScoped<IScheduleService, ScheduleService>()
 	.AddScoped<ISchoolsService, SchoolsService>()
 	.AddScoped<ITokenProvider, TokenProvider>();
+/*////*/
+
+/*// singletons //*/
+builder.Services
+	.AddSingleton<IDigitalRegisterClientService, DigitalRegisterClientService>();
 /*////*/
 
 /*// background workers //*/

@@ -221,9 +221,9 @@ public class EventWorker : BackgroundService, IEventWorker
 			.ToListAsync(ct);
 		foreach (var school in schools)
 		{
-			if (!clientService.TryAddSchool(school.SchoolId, school.RegisterUri, school.ClientId, school.Secret))
+			if (!clientService.TryAddSchool(school))
 			{
-				Logger.LogError("Unable to add school {School} to the {Service}", school.Stringify(), nameof(IDigitalRegisterClientService));
+				Logger.LogWarning("Unable to add school {School} to {Service}", school.Name, nameof(IDigitalRegisterClientService));
 			}
 		}
 	}
