@@ -133,6 +133,23 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+if (app.Environment.IsProduction())
+{
+	app.UseExceptionHandler(options =>
+	{
+		options.Run(async context =>
+		{
+			context.Response.StatusCode = 500;
+			context.Response.ContentType = "application/json";
+
+			await context.Response.WriteAsJsonAsync<Models.API.Result<object>>(
+				new(System.Net.HttpStatusCode.InternalServerError, 
+					"Internal Server Error")
+			);
+		});
+	});
+}
+
 //app.UseResponseCompression();
 
 app.MapDefaultEndpoints();
