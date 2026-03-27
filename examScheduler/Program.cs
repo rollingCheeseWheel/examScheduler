@@ -162,7 +162,7 @@ if (app.Environment.IsDevelopment())
 			SchoolId = "some-school",
 			ClientId = "asdfölijasdlfkjhask",
 			Secret = "alsdkhjfgxcvhyölhdfjlhasgu",
-			IsEnabled = false,
+			IsEnabled = true,
 		},
 		new() {
 			Name = "some other school",
@@ -174,12 +174,12 @@ if (app.Environment.IsDevelopment())
 		}
 	];
 
-	var existingSchools = await db.Schools.ToListAsync(app.Lifetime.ApplicationStopping);
+	var existingSchools = await db.Schools.AsNoTracking().ToListAsync(app.Lifetime.ApplicationStopping);
 	if (!schools.ValueEquals(existingSchools))
 	{
 		await db.Schools.ExecuteDeleteAsync(app.Lifetime.ApplicationStopping);
-		await db.Schools.AddRangeAsync(schools);
-		db.SaveChanges();
+		await db.Schools.AddRangeAsync(schools, app.Lifetime.ApplicationStopped);
+		await db.SaveChangesAsync(app.Lifetime.ApplicationStopping);
 	}
 }
 

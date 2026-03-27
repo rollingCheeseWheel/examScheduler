@@ -21,9 +21,9 @@ public class School : IEquatable<School>, IComparable<School>
 	[Timestamp]
 	public uint Version { get; set; }
 
-	public bool Equals(School? other) => SchoolId == other?.SchoolId;
+	public bool Equals(School? other) => SchoolId == other?.SchoolId && IsEnabled == other.IsEnabled;
 	public override bool Equals(object? obj) => obj is School cast && Equals(cast);
-	public override int GetHashCode() => HashCode.Combine(SchoolId);
+	public override int GetHashCode() => HashCode.Combine(SchoolId, IsEnabled);
 	public int CompareTo(School? b) => Name.CompareTo(b?.Name);
 
 	public static bool operator ==(School? a, School? b) => ReferenceEquals(a, b) || ( a is not null && b is not null && a.Equals(b) );
