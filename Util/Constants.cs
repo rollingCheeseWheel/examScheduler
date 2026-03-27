@@ -9,7 +9,6 @@ public static class Constants
 	{
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
 		PropertyNameCaseInsensitive = true,
-		AllowTrailingCommas = true,
-		ReferenceHandler = ReferenceHandler.Preserve
+		AllowTrailingCommas = true
 	};
 }

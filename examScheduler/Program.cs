@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Polly;
+using Polly.Extensions.Http;
 using System.Text;
 using System.Text.Json;
 using Util;
@@ -42,10 +44,6 @@ builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
 
 builder.Services.AddSignalR();
 
-builder.Services.AddTransient<HttpsEnforcingHandler>();
-builder.Services.AddHttpClient("secure")
-	.AddHttpMessageHandler<HttpsEnforcingHandler>();
-
 /*// services //*/
 builder.Services
 	.AddScoped<IAuthService, AuthService>()
@@ -58,8 +56,12 @@ builder.Services
 
 /*// singletons //*/
 builder.Services
-	.AddSingleton<IDigitalRegisterClientService, DigitalRegisterClientService>();
+	.AddSingleton<IDigitalRegisterClientService, DigitalRegisterClientService>()
+	.AddSingleton<HttpsEnforcingHandler>();
 /*////*/
+builder.Services.AddHttpClient("secure")
+	.AddHttpMessageHandler<HttpsEnforcingHandler>()
+	.AddPolicyHandler(GetRetryPolicy());
 
 /*// background workers //*/
 builder.Services
@@ -205,3 +207,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.Run();
+
+static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+{
+	return HttpPolicyExtensions
+		.HandleTransientHttpError()
+		.WaitAndRetryAsync(3, retryAttempt =>
+			TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+}

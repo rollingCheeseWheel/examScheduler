@@ -15,6 +15,7 @@ public interface IDigitalRegisterClientService
 	IDigitalRegisterClient? TryGetClient(Guid clientId);
 
 	bool TryAddSchool(Entities.School school);
+	IEnumerable<string> GetRegisteredSchoolIds();
 }
 
 public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, ILogger<DigitalRegisterClient> logger) : IDigitalRegisterClientService
@@ -31,7 +32,6 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 		var normalizedKey = NormalizeKey(schoolId);
 		if (!_schools.TryGetValue(normalizedKey, out var school))
 		{
-			_logger.LogWarning("could not retrieve school {NormalizedSchoolId}", normalizedKey);
 			return null;
 		}
 
@@ -40,7 +40,8 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 		var client = new LightWeightRegisterClient(
 			httpClient,
 			new(authCode, AuthStatus.None, DateTimeOffset.MinValue),
-			school
+			school,
+			_logger
 		);
 		return !await client.AuthenticateAsync(ct)
 			? null
@@ -63,6 +64,11 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 		var normalizedKey = NormalizeKey(school.SchoolId);
 
 		return _schools.TryAdd(normalizedKey, new(school.RegisterUri.GetSchemeAndAuthority(), school.ClientId, school.ClientId));
+	}
+
+	public IEnumerable<string> GetRegisteredSchoolIds()
+	{
+		return _schools.Keys;
 	}
 
 	private static string NormalizeKey(string schoolId) => schoolId.Trim().ToLowerInvariant();
@@ -96,12 +102,18 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 	private readonly DigitalRegisterSchool _school;
 	private readonly Lock _lock = new();
 	private readonly SemaphoreSlim _authSemaphore = new(1);
+	private readonly ILogger? _logger;
 
 	internal LightWeightRegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school)
 	{
 		_httpClient = configuredHttpClient;
 		_session = session;
 		_school = school;
+	}
+
+	internal LightWeightRegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school, ILogger logger) : this(configuredHttpClient, session, school)
+	{
+		_logger = logger;
 	}
 
 	public AuthStatus AuthStatus => _session.AuthStatus;
@@ -164,8 +176,6 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			iterdate = iterdate.AddDays(7);
 		}
 
-		Console.WriteLine(dates.Stringify());
-
 		var tasks = new List<Task<IEnumerable<Lesson>>>();
 		foreach (var date in dates)
 		{
@@ -177,8 +187,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 		return results
 			.Where(t => t is not null)
 			.SelectMany(t => t!)
-			.DistinctBy(d => d.Date)
-			.ToList();
+			.DistinctBy(d => d.Date);
 	}
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
@@ -289,16 +298,21 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			{
 				return default;
 			}
+
+			var content = await response.ReadContentAsStringAsync(ct);
+			if (!response.IsSuccessStatusCode)
+			{
+				throw new Exception($"Response unsuccessful ({response.StatusCode}): {content}");
+			}
 			else
 			{
-				var content = await response.ReadContentAsStringAsync(ct);
 				var deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
 				return deserialized is not null && deserialized.TryValidate() ? deserialized : default;
 			}
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine(ex.Message);
+			_logger?.LogWarning(ex, "Exception caught");
 			return default;
 		}
 	}
@@ -307,9 +321,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 	{
 		try
 		{
-			_lock.Enter();
 			var request = new HttpRequestMessage(HttpMethod.Post, path.Get(_school.RegisterURL));
-			_lock.Exit();
 
 			if (authRequest)
 			{
@@ -328,6 +340,8 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 				Encoding.UTF8,
 				"application/json"
 			);
+
+			_logger?.LogDebug("Auth payload: {@request}", request);
 
 			var response = await SendAsync(request, ct);
 			return response;
@@ -352,8 +366,9 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			{
 				return JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
 			}
-			catch
+			catch (Exception ex)
 			{
+				_logger?.LogWarning(ex, "Exception caught");
 				return default;
 			}
 		}
@@ -366,9 +381,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			return null;
 		}
 
-		_lock.Enter();
 		var uri = path.Get(_school.RegisterURL);
-		_lock.Exit();
 		if (uriArgs is not null)
 		{
 			uri = new(QueryHelpers.AddQueryString(uri.AbsoluteUri, uriArgs));
