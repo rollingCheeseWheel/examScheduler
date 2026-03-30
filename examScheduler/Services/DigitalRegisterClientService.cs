@@ -63,7 +63,7 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 
 		var normalizedKey = NormalizeKey(school.SchoolId);
 
-		return _schools.TryAdd(normalizedKey, new(school.RegisterUri.GetSchemeAndAuthority(), school.ClientId, school.ClientId));
+		return _schools.TryAdd(normalizedKey, new(school.RegisterUri.GetSchemeAndAuthority(), school.ClientId, school.Secret));
 	}
 
 	public IEnumerable<string> GetRegisteredSchoolIds()
@@ -239,8 +239,8 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 							SessionExpiration = authResponse.ExpirationDate,
 							AuthStatus = AuthStatus.Authenticated
 						};
-						UserId = authResponse.UserId;
 					}
+					UserId = authResponse.UserId;
 					return true;
 				}
 			}

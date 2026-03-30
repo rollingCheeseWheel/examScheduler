@@ -32,6 +32,14 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			SchoolId = school.SchoolId,
 		};
 
+		var calendar = new Calendar
+		{
+			LastsUntil = DateTimeOffset.UtcNow.AddYears(1),
+			Lessons = [ ]
+		};
+
+		newClassroom.CalendarId = calendar.Id;
+		_context.Add(calendar);
 		await _context.Classrooms.AddAsync(newClassroom, ct);
 		await _context.SaveChangesAsync(ct);
 		return newClassroom;

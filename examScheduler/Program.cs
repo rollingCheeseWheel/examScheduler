@@ -169,8 +169,8 @@ if (app.Environment.IsDevelopment())
 			Name = "Test WFO Bruneck Innichen",
 			RegisterUri = new("https://wfo-test-bruneck.digitalesregister.it/"),
 			SchoolId = "wfo-test-bruneck",
-			ClientId = "QYffPSN5bcsrZ9yL",
-			Secret = app.Configuration["QYffPSN5bcsrZ9yL"]!,
+			ClientId = "vHMQataCe5HKAzDr",
+			Secret = app.Configuration["vHMQataCe5HKAzDr"]!,
 			IsEnabled = true
 		},
 		new() {
