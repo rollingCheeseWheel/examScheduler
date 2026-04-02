@@ -341,7 +341,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 				"application/json"
 			);
 
-			_logger?.LogDebug("Auth payload: {@request}", request);
+			_logger?.LogDebug("Auth payload: {@data}", data);
 
 			var response = await SendAsync(request, ct);
 			return response;

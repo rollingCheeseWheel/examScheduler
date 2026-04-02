@@ -56,9 +56,10 @@ builder.Services
 
 /*// singletons //*/
 builder.Services
-	.AddSingleton<IDigitalRegisterClientService, DigitalRegisterClientService>()
-	.AddSingleton<HttpsEnforcingHandler>();
+	.AddSingleton<IDigitalRegisterClientService, DigitalRegisterClientService>();
 /*////*/
+
+builder.Services.AddTransient<HttpsEnforcingHandler>();
 builder.Services.AddHttpClient("secure")
 	.AddHttpMessageHandler<HttpsEnforcingHandler>()
 	.AddPolicyHandler(GetRetryPolicy());

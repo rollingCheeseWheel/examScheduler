@@ -11,7 +11,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 	private readonly IAuthService _authService = authService;
 
 	[HttpPost]
-	public async Task<Result<UserProfile>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, HttpContext, ct);
+	public async Task<Result<AuthResponse>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, HttpContext, ct);
 
 	[Route("refresh")]
 	[HttpPost]

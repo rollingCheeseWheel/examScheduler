@@ -7,21 +7,18 @@ using Models.API;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Transactions;
+using Util.Extensions;
 
 namespace examScheduler.Services;
 
 public interface ITokenProvider
 {
 	Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
+	Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
 	Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct);
 
-	//string? GetAccessToken(ICollection<Claim> claims);
-	//Task<RefreshTokenSession?> CreateRefreshTokenAsync(UserProfile user, CancellationToken _ct);
-
-	Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
-
 	Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct);
-	Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user);
+	Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user, CancellationToken ct);
 }
 
 public class TokenProvider(
@@ -36,6 +33,7 @@ public class TokenProvider(
 
 	public async Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
 	{
+		await RemoveExpiredSessionsForUserAsync(ct);
 		var refreshToken = await CreateRefreshTokenAsync(user, ct);
 		if (refreshToken is null) { return null; }
 		var accessToken = GetAccessToken(claims);
@@ -60,8 +58,9 @@ public class TokenProvider(
 
 	public async Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
 	{
+		await RemoveExpiredSessionsForUserAsync(ct);
 		using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-		var existingValidSession = await HasValidRefreshTokenSessionAsync(user, refreshToken, ct);
+		var existingValidSession = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken && s.UserProfileId == user.Id, ct);
 		if (existingValidSession is null) { return null; }
 		await DeleteRefreshTokenAsync(refreshToken, ct);
 		return await GetTokenPairAsync(claims, user, ct);
@@ -69,7 +68,7 @@ public class TokenProvider(
 
 	public async Task<RefreshTokenSession?> CreateRefreshTokenAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
-		if (await GetSessionsForUserIQueryable(user).CountAsync(ct) >= _options.MaxTokensPerUser)
+		if (await _context.RefreshSessions.Where(s => s.UserProfileId == user.Id).CountAsync(ct) >= _options.MaxTokensPerUser)
 		{
 			return null;
 		}
@@ -86,24 +85,27 @@ public class TokenProvider(
 		}
 	}
 
-	public async Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user)
+	public async Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
-		var tokens = await GetSessionsForUserAsync(user);
-		if (tokens is null) { return; }
-		_context.RemoveRange(tokens);
+		await _context.RefreshSessions
+			.Where(s => s.UserProfileId == user.Id)
+			.ExecuteDeleteAsync(ct);
 	}
 
 	public async Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
 	{
-		var entity = await _context.RefreshSessions.FirstOrDefaultAsync(t => t.TokenValue == refreshToken, ct);
-		if (entity is null) { return; }
-		_context.RefreshSessions.Remove(entity);
+		await _context.RefreshSessions
+			.Where(s => s.TokenValue == refreshToken)
+			.ExecuteDeleteAsync(ct);
 	}
-	private async Task<RefreshTokenSession?> HasValidRefreshTokenSessionAsync(Entities.UserProfile user, string refreshTokenValue, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).FirstOrDefaultAsync(t => t.TokenValue == refreshTokenValue && t.ExpirationDate > DateTimeOffset.UtcNow, ct);
 
-	private async Task<ICollection<RefreshTokenSession>> GetSessionsForUserAsync(Entities.UserProfile user, CancellationToken ct = default) => await GetSessionsForUserIQueryable(user).ToListAsync(ct);
-
-	private IQueryable<RefreshTokenSession> GetSessionsForUserIQueryable(Entities.UserProfile user) => _context.RefreshSessions.Where(s => s.UserProfileId == user.Id);
+	private async Task RemoveExpiredSessionsForUserAsync(CancellationToken ct = default)
+	{
+		await _context.RefreshSessions
+			.Where(s => s.ExpirationDate <= DateTimeOffset.UtcNow)
+			.ExecuteDeleteAsync(ct);
+		await _context.SaveChangesAsync(ct);
+	}
 }
 
 public class JwtOptions : TokenValidationParameters

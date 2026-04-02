@@ -42,17 +42,13 @@ public interface IScheduleClient
 [Authorize]
 public class ScheduleHub(
 	IScheduleService scheduleService,
-	IEventWorker eventWorker,
 	IClassroomService classroomService
 ) : Hub<IScheduleClient>, IScheduleHub
 {
 	private readonly IScheduleService _scheduleService = scheduleService;
-	private readonly IEventWorker _eventWorker = eventWorker;
 	private readonly IClassroomService _classroomService = classroomService;
 
-	private Guid? _guid = default;
-
-	private CancellationToken _ct => Context.ConnectionAborted;
+	private Guid? _guid;
 
 	public override async Task OnConnectedAsync()
 	{
@@ -71,12 +67,12 @@ public class ScheduleHub(
 		}
 		_guid = userId;
 
-		var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(userId, _ct);
-		var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(userId, _ct);
+		var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(userId, Context.ConnectionAborted);
+		var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(userId, Context.ConnectionAborted);
 
 		foreach (var schedule in schedules)
 		{
-			await this.AddToScheduleGroupAsync(schedule.Id, _ct);
+			await this.AddToScheduleGroupAsync(schedule.Id, Context.ConnectionAborted);
 		}
 
 		foreach (var classroom in classrooms)
@@ -98,7 +94,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryEnlistStudentAsync(slotId, _guid.Value, _ct);
+		var result = await _scheduleService.TryEnlistStudentAsync(slotId, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
@@ -110,7 +106,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid.Value, examSlotId, _ct);
+		var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid.Value, examSlotId, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
@@ -122,7 +118,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid.Value, _ct);
+		var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
@@ -134,7 +130,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid.Value, _ct);
+		var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
@@ -146,7 +142,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, _ct);
+		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
@@ -158,7 +154,7 @@ public class ScheduleHub(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var result = await _scheduleService.TryDeleteSchedule(scheduleId, _guid.Value, _ct);
+		var result = await _scheduleService.TryDeleteSchedule(scheduleId, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
 	}
 
