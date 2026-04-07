@@ -140,7 +140,7 @@ public class AuthService(
 		}
 
 		var claims = await GetUserClaimsAsync(user, ct);
-		var tokens = await _jwtProvider.GetTokenPairAsync(claims, user, ct);
+		var tokens = await _jwtProvider.CreateTokenPairAsync(claims, user, ct);
 		if (tokens is null)
 		{
 			_logger.LogWarning("Failed to generate tokens for user {Username}", user.Name);

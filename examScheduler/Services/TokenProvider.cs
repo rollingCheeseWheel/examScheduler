@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Models.API;
+using System.Reflection;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Transactions;
@@ -13,36 +14,96 @@ namespace examScheduler.Services;
 
 public interface ITokenProvider
 {
-	Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
+	Task<TokenPair?> CreateTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct);
 	Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct);
-	Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct);
 
-	Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct);
-	Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user, CancellationToken ct);
+	Task<bool> IsValidAccessTokenAsync(string accessToken, CancellationToken ct = default);
+	Task<bool> IsValidRefreshTokenAsync(string refreshToken, Guid? userId = null, CancellationToken ct = default);
+
+	Task RemoveStaleSessionsAsync(CancellationToken ct = default);
 }
 
 public class TokenProvider(
 	JwtOptions options,
-	AppDbContext context
+	AppDbContext context,
+	ILogger<TokenProvider> logger
 ) : ITokenProvider
 {
 	private readonly JwtOptions _options = options;
 	private readonly AppDbContext _context = context;
+	private readonly ILogger _logger = logger;
 
-	public async Task<TokenValidationResult?> TryValidateTokenAsync(Entities.UserProfile user, string token, CancellationToken ct = default) => await new JsonWebTokenHandler().ValidateTokenAsync(token, _options).WaitAsync(ct);
-
-	public async Task<TokenPair?> GetTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
+	public async Task<bool> IsValidAccessTokenAsync(string accessToken, CancellationToken ct = default)
 	{
-		await RemoveExpiredSessionsForUserAsync(ct);
-		var refreshToken = await CreateRefreshTokenAsync(user, ct);
-		if (refreshToken is null) { return null; }
-		var accessToken = GetAccessToken(claims);
-		return accessToken is null
-			? null
-			: new(refreshToken.TokenValue, accessToken);
+		var jwtHandler = new JsonWebTokenHandler();
+		var res = await jwtHandler.ValidateTokenAsync(accessToken, _options);
+		return res.IsValid;
 	}
 
-	public string? GetAccessToken(ICollection<Claim> claims)
+	public async Task<bool> IsValidRefreshTokenAsync(string refreshToken, Guid? userId = null, CancellationToken ct = default)
+	{
+		if (userId.HasValue)
+		{
+			return await _context.RefreshSessions.AnyAsync(s =>
+				s.TokenValue == refreshToken &&
+				s.ExpirationDate >= DateTimeOffset.UtcNow &&
+				s.UserProfileId == userId.Value
+			, ct);
+		}
+		else
+		{
+			return await _context.RefreshSessions.AnyAsync(s =>
+				s.TokenValue == refreshToken &&
+				s.ExpirationDate >= DateTimeOffset.UtcNow
+			, ct);
+		}
+	}
+
+	public async Task<TokenPair?> CreateTokenPairAsync(ICollection<Claim> claims, Entities.UserProfile user, CancellationToken ct = default)
+	{
+		await RemoveStaleSessionsAsync(ct);
+		var refreshToken = await CreateRefreshTokenAsync(user, ct);
+		if (refreshToken is null)
+		{
+			_logger.LogInformation("failed to generate refresh token");
+			return null;
+		}
+		var accessToken = GetAccessToken(claims);
+		if (accessToken is null)
+		{
+			_logger.LogInformation("failed to generate access token");
+			return null;
+		}
+		else
+		{
+			_logger.LogInformation("successfully generated access and refresh token");
+			await _context.SaveChangesAsync(ct);
+			return new(accessToken, refreshToken.TokenValue);
+		}
+	}
+
+	public async Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
+	{
+		var existingValidSession = await _context.RefreshSessions.FirstOrDefaultAsync(s =>
+			s.TokenValue == refreshToken &&
+			s.UserProfileId == user.Id &&
+			s.ExpirationDate == DateTimeOffset.UtcNow
+		, ct);
+		if (existingValidSession is null)
+		{
+			_logger.LogInformation("user does not have a refresh session");
+			return null;
+		}
+		await DeleteRefreshTokenAsync(refreshToken, ct);
+		var tokenPair = await CreateTokenPairAsync(claims, user, ct);
+		if (tokenPair is not null)
+		{
+			_logger.LogInformation("successfully refreshed token");
+		}
+		return tokenPair;
+	}
+
+	private string? GetAccessToken(ICollection<Claim> claims)
 	{
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
@@ -56,17 +117,7 @@ public class TokenProvider(
 		return handler.CreateToken(tokenDescriptor);
 	}
 
-	public async Task<TokenPair?> RefreshTokenPairAsync(ICollection<Claim> claims, string refreshToken, Entities.UserProfile user, CancellationToken ct = default)
-	{
-		await RemoveExpiredSessionsForUserAsync(ct);
-		using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-		var existingValidSession = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken && s.UserProfileId == user.Id, ct);
-		if (existingValidSession is null) { return null; }
-		await DeleteRefreshTokenAsync(refreshToken, ct);
-		return await GetTokenPairAsync(claims, user, ct);
-	}
-
-	public async Task<RefreshTokenSession?> CreateRefreshTokenAsync(Entities.UserProfile user, CancellationToken ct = default)
+	private async Task<RefreshTokenSession?> CreateRefreshTokenAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
 		if (await _context.RefreshSessions.Where(s => s.UserProfileId == user.Id).CountAsync(ct) >= _options.MaxTokensPerUser)
 		{
@@ -80,31 +131,24 @@ public class TokenProvider(
 				UserProfileId = user.Id,
 				TokenValue = Convert.ToBase64String(RandomNumberGenerator.GetBytes(_options.RefreshTokenBitStrength / 8))
 			};
-			_context.RefreshSessions.Add(refreshToken);
+			await _context.RefreshSessions.AddAsync(refreshToken, ct);
 			return refreshToken;
 		}
 	}
 
-	public async Task DeleteAllRefreshTokensForUserAsync(Entities.UserProfile user, CancellationToken ct = default)
-	{
-		await _context.RefreshSessions
-			.Where(s => s.UserProfileId == user.Id)
-			.ExecuteDeleteAsync(ct);
-	}
-
-	public async Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+	private async Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
 	{
 		await _context.RefreshSessions
 			.Where(s => s.TokenValue == refreshToken)
 			.ExecuteDeleteAsync(ct);
 	}
 
-	private async Task RemoveExpiredSessionsForUserAsync(CancellationToken ct = default)
+	public async Task RemoveStaleSessionsAsync(CancellationToken ct = default)
 	{
-		await _context.RefreshSessions
+		var removedSessionsCount = await _context.RefreshSessions
 			.Where(s => s.ExpirationDate <= DateTimeOffset.UtcNow)
 			.ExecuteDeleteAsync(ct);
-		await _context.SaveChangesAsync(ct);
+		_logger.LogInformation("Removed {Count} stale sessions", removedSessionsCount);
 	}
 }
 

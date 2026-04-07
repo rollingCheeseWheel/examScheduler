@@ -52,9 +52,9 @@ public static class LinqExtensions
 
 	public static IEnumerable<TResult> DistinctMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector) where TResult : IEquatable<TResult> => source.SelectMany(selector).Distinct();
 
-	public static IQueryable<TSource> WhereId<TSource>(this IQueryable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id).Take(1);
+	public static IQueryable<TSource> WhereId<TSource>(this IQueryable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id);
 
-	public static IEnumerable<TSource> WhereId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id).Take(1);
+	public static IEnumerable<TSource> WhereId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Where(x => x.Id == id);
 
 	public static IQueryable<TSource> WhereId<TSource, TItem>(this IQueryable<TSource> source, Expression<Func<TSource, TItem>> selector, Guid id) where TItem : IGuidEntity
 	{
@@ -67,10 +67,10 @@ public static class LinqExtensions
 
 		var predicate = Expression.Lambda<Func<TSource, bool>>(body, parameter);
 
-		return source.Where(predicate).Take(1);
+		return source.Where(predicate);
 	}
 
-	public static IEnumerable<TSource> WhereId<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, TItem> selector, Guid id) where TItem : IGuidEntity => source.Where(x => selector(x).Id == id).Take(1);
+	public static IEnumerable<TSource> WhereId<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, TItem> selector, Guid id) where TItem : IGuidEntity => source.Where(x => selector(x).Id == id);
 
 	public static IQueryable<TSource> WhereIds<TSource>(this IQueryable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
 

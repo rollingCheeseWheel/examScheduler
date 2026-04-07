@@ -32,16 +32,25 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 	public async Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
-		var user = await _context.Users
+		var studentSchedules = await _context.StudentProfiles
 			.AsNoTracking()
 			.WhereId(userId)
-			.Select(u => new
-			{
-				u.TeacherProfile,
-				u.StudentProfile
-			})
-			.FirstOrDefaultAsync(ct);
-		return user?.StudentProfile?.Classroom.Schedules ?? user?.TeacherProfile?.Classrooms.SelectMany(c => c.Schedules) ?? [ ];
+			.Select(sp => sp.Classroom)
+			.SelectMany(c => c.Schedules)
+			.ToListAsync(ct);
+
+		if (studentSchedules.Count != 0)
+		{
+			return studentSchedules;
+		}
+
+		var teacherSchedules = await _context.TeacherProfiles
+			.AsNoTracking()
+			.WhereId(userId)
+			.SelectMany(tp => tp.Classrooms)
+			.SelectMany(c => c.Schedules)
+			.ToListAsync(ct);
+		return teacherSchedules;
 	}
 
 	public async Task<IEnumerable<Guid>> GetScheduleIdsForStudentAsync_AsNoTracking(Guid userId, CancellationToken ct = default) => await _context.Users
