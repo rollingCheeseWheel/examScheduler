@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Util;
 using Util.Converters;
@@ -18,7 +19,7 @@ public class AuditLog
 	public required Guid OriginId { get; set; }
 	[Required]
 	public required string OriginName { get; set; }
-	[DefinedEnum(true), JsonConverter(typeof(EnumConverter<AuditLogActor>))]
+	[DefinedEnum(true), JsonConverter(typeof(NullableEnumConverter<AuditLogTarget>))]
 	public AuditLogTarget? TargetType { get; set; }
 	public Guid? TargetId { get; set; }
 	public string? TargetName { get; set; }

@@ -20,4 +20,6 @@ public static class IEnumerableExtensions
 
 		return HashCode.Combine(sum, sumSquares, count);
 	}
+
+	public static IEnumerable<TSource> WhereNotNull<TSource>(this IEnumerable<TSource?> source) where TSource : class => source.Where(x => x != null).Cast<TSource>();
 }

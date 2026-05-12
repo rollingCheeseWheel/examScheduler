@@ -54,8 +54,8 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
 		var user = await _context.Users.AsNoTracking().FindByIdAsync(userId, ct);
-		return user?.TeacherProfile is not null
+		return ( user?.TeacherProfile is not null
 			? user.TeacherProfile.Classrooms
-			: (IEnumerable<Classroom>)( user?.StudentProfile is not null ? [ user.StudentProfile.Classroom ] : [ ] );
+			: (IEnumerable<Classroom>)( user?.StudentProfile is not null ? [ user.StudentProfile.Classroom ] : [ ] ) ).WhereNotNull();
 	}
 }
