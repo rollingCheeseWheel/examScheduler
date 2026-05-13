@@ -12,6 +12,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
 	private readonly IAuthService _authService = authService;
 
+	[Route("login")]
 	[HttpPost]
 	public async Task<Result<DateTimeOffset>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, HttpContext, ct);
 
