@@ -18,8 +18,10 @@ public interface IAuthService
 	const string AccessTokenCookieName = "access_token";
 	const string RefreshTokenCookieName = "refresh_token";
 
-	Task<Result<AuthResponse>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
+	Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
 	Task<Result<DateTimeOffset>> RefreshTokenAsync(string refreshToken, HttpContext httpContext, CancellationToken ct);
+
+	Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default);
 }
 
 public record TokenPair(string AccessToken, string RefreshToken);
@@ -48,7 +50,15 @@ public class AuthService(
 	private readonly IDigitalRegisterClientService _digitalRegisterClientService = digitalRegisterClientService;
 	private readonly IEventWorker _eventWorker = eventWorker;
 
-	public async Task<Result<AuthResponse>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
+	public async Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default)
+	{
+		return ( await _context.Users
+			.AsNoTracking()
+			.WhereId(userId)
+			.FirstOrDefaultAsync(ct) )?.ToDTO();
+	}
+
+	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
 	{
 		using var logginScope = _logger.BeginScope(new { request.SchoolId });
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
@@ -73,7 +83,7 @@ public class AuthService(
 
 		var existingUser = await _userManager.Users
 			.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
-		Result<AuthResponse>? response;
+		Result<DateTimeOffset>? response;
 		if (existingUser is not null)
 		{
 			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
@@ -132,7 +142,7 @@ public class AuthService(
 		}
 	}
 
-	private async Task<Result<AuthResponse>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
 		if (user.TeacherProfile is not null && user.TeacherProfile.Teacher is not null)
 		{
@@ -150,11 +160,12 @@ public class AuthService(
 		{
 			_logger.LogInformation("Successfully generated tokens for user {Username}", user.Name);
 			ConfigureCookies(ref httpContext, tokens);
-			return new(new AuthResponse
-			{
-				User = user.ToDTO(),
-				Expiration = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes)
-			});
+			return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes));
+			//return new(new AuthResponse
+			//{
+			//	User = user.ToDTO(),
+			//	Expiration = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes)
+			//});
 		}
 	}
 
@@ -200,14 +211,14 @@ public class AuthService(
 		return claims;
 	}
 
-	private async Task<Result<AuthResponse>> RegisterAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
+	private async Task<Result<DateTimeOffset>> RegisterAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
 		UserRoles.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
 		UserRoles.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
 		_ => new(HttpStatusCode.BadRequest)
 	};
 
-	private async Task<Result<AuthResponse>> RegisterStudentAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> RegisterStudentAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
@@ -269,7 +280,7 @@ public class AuthService(
 		}
 	}
 
-	private async Task<Result<AuthResponse>> RegisterTeacherAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> RegisterTeacherAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
