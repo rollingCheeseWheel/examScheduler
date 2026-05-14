@@ -5,14 +5,12 @@ public class TimestampedQueue<T>
 	private readonly PriorityQueue<(DateTimeOffset Timestamp, T Item), DateTimeOffset> _queue = new();
 	private readonly SemaphoreSlim _signal = new(0);
 	private readonly object _lock = new();
-	private CancellationTokenSource _queueAddedCts = new();
 
 	public void Enqueue(DateTimeOffset timestampUtc, T item)
 	{
 		lock (_lock)
 		{
 			_queue.Enqueue((timestampUtc, item), timestampUtc);
-			CancelAndResetToken();
 		}
 
 		_signal.Release();
@@ -40,13 +38,13 @@ public class TimestampedQueue<T>
 				}
 			}
 
-			using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _queueAddedCts.Token);
+			using var converted = new WaitHandleCancellation(_signal.AvailableWaitHandle);
 			var delay = _queue.Peek().Timestamp - DateTime.UtcNow;
 			if (delay > TimeSpan.Zero)
 			{
 				try
 				{
-					await Task.Delay(delay, linkedTokenSource.Token).ConfigureAwait(false);
+					await Task.Delay(delay, converted.Token).ConfigureAwait(false);
 				}
 				catch
 				{
@@ -54,12 +52,5 @@ public class TimestampedQueue<T>
 				}
 			}
 		}
-	}
-
-	private void CancelAndResetToken()
-	{
-		_queueAddedCts.Cancel();
-		_queueAddedCts.Dispose();
-		_queueAddedCts = new();
 	}
 }
