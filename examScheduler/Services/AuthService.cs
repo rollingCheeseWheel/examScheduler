@@ -121,19 +121,6 @@ public class AuthService(
 		return new(DateTimeOffset.UtcNow.AddHours(1));
 	}
 
-	private async Task<ICollection<Claim>> GetUserClaimsAsync(Entities.UserProfile user, CancellationToken ct = default)
-	{
-		var roles = await _userManager.GetRolesAsync(user).WaitAsync(ct);
-
-		List<Claim> claims = [
-			new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-			new(ClaimTypes.GroupSid, user.SchoolId.ToString()),
-			new(ClaimTypes.Name, user.Name),
-			..roles.Select(r => new Claim(ClaimTypes.Role, r))
-		];
-		return claims;
-	}
-
 	private async Task<Result<DateTimeOffset>> RegisterAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
 		UserRoles.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),

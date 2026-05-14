@@ -145,12 +145,14 @@ public class EventWorker : BackgroundService, IEventWorker
 		var client = clientService.TryGetClient(task.RegisterClientId);
 		if (client is null)
 		{
+			Logger.LogWarning("register client with id {id} not found", task.RegisterClientId);
 			return;
 		}
 
 		var student = await context.StudentProfiles.FindByIdAsync(task.StudentProfileId, ct);
 		if (student is null)
 		{
+			Logger.LogWarning("student with id {id} not found", task.StudentProfileId);
 			return;
 		}
 
@@ -276,7 +278,11 @@ public class EventWorker : BackgroundService, IEventWorker
 	public void Publish(IEvent @event) => Publish(@event, TimeSpan.Zero);
 	public void Publish(IEvent @event, int offsetSeconds) => Publish(@event, TimeSpan.FromSeconds(offsetSeconds));
 	public void Publish(IEvent @event, TimeSpan offset) => Publish(@event, DateTimeOffset.UtcNow + offset);
-	public void Publish(IEvent @event, DateTimeOffset deferUntil) => _events.Enqueue(deferUntil, @event);
+	public void Publish(IEvent @event, DateTimeOffset deferUntil)
+	{
+		//Logger.LogInformation("enqueued event {type}, due at {time}", @event.GetType().Name, deferUntil);
+		_events.Enqueue(deferUntil, @event);
+	}
 
 	protected sealed override async Task ExecuteAsync(CancellationToken ct)
 	{
@@ -291,6 +297,7 @@ public class EventWorker : BackgroundService, IEventWorker
 				Logger.LogInformation("No event listeners subscribed to {Type}", type.Name);
 				continue;
 			}
+			Logger.LogInformation("Processing event of type {Type}", type.Name);
 
 			foreach (var eventHandler in eventHandlers)
 			{
