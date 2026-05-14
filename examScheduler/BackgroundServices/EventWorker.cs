@@ -1,4 +1,5 @@
-﻿using Entities;
+﻿
+using Entities;
 using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Mappings;
@@ -26,7 +27,6 @@ public sealed record ExtendCalendarTask(Guid RegisterClientId, Guid StudentProfi
 public sealed record LockScheduleTask(Guid ScheduleId) : IEvent;
 
 
-
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class EventAttribute(Type eventType) : Attribute
 {
@@ -46,7 +46,6 @@ public interface IEventWorker
 
 public class EventWorker : BackgroundService, IEventWorker
 {
-
 	[Event(typeof(ScheduleUpdatedEvent))]
 	public async Task ScheduleUpdated(ScheduleUpdatedEvent @event, CancellationToken ct)
 	{
@@ -61,6 +60,7 @@ public class EventWorker : BackgroundService, IEventWorker
 
 		if (schedule is null)
 		{
+			Logger.LogWarning("unable to get schedule ({id})", @event.ScheduleId);
 			return;
 		}
 
@@ -86,6 +86,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		var classroom = await context.Classrooms.FindByIdAsync(@event.ClassroomId, ct);
 		if (classroom is null)
 		{
+			Logger.LogWarning("unable to get classroom ({id})", @event.ClassroomId);
 			return;
 		}
 
@@ -128,6 +129,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			.FirstOrDefaultAsync(ct);
 		if (classroom is null)
 		{
+			Logger.LogWarning("unable to find classroom for calendar ({id})", @event.CalendarId);
 			return;
 		}
 
@@ -157,21 +159,25 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 
 		var calendar = await context.Classrooms
-			.Where(c => c.Students.ContainsId(task.StudentProfileId))
+			.Where(c => c.Students.Any(s => s.Id == task.StudentProfileId))
 			.JoinInnerOnId(context.Calendars, c => c.CalendarId)
 			.FirstOrDefaultAsync(ct);
 		if (calendar is null)
 		{
+			Logger.LogWarning("calendar not found");
 			return;
 		}
 
-		var digitalRegisterLessons = await client.GetCalendarAsync(calendar.LastsUntil, DateTimeOffset.UtcNow.AddMonths(1), ct);
+		Logger.LogInformation("getting lessons for timespan: {start} to {end}", DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1));
+		var digitalRegisterLessons = await client.GetCalendarAsync(DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1), ct);
 		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
 		{
+			Logger.LogWarning("unable to get lessons: {start} to {end}", DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1));
 			return;
 		}
 		if (!await calendarService.TryExtendCalendarAsync(calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct))
 		{
+			Logger.LogWarning("failed to extend calendar ({id})", calendar.Id);
 			return;
 		}
 		await context.SaveChangesAsync(ct);
@@ -189,21 +195,24 @@ public class EventWorker : BackgroundService, IEventWorker
 			.FindByIdAsync(task.ScheduleId, ct);
 		if (schedule is null)
 		{
+			Logger.LogWarning("schedule doesnt exist ({id})", task.ScheduleId);
 			return;
 		}
 
 		var students = await context.Classrooms
-			.Where(c => c.Schedules.ContainsId(task.ScheduleId))
+			.Where(c => c.Schedules.Any(s => s.Id == task.ScheduleId))
 			.Select(c => c.Students)
 			.FirstOrDefaultAsync(ct);
 		if (students is null || students.Count == 0)
 		{
+			Logger.LogDebug("student count is 0 ({id})", task.ScheduleId);
 			return;
 		}
 
 		var isSuccess = schedule.TryFillSlots(students);
 		if (!isSuccess)
 		{
+			Logger.LogWarning("failed to fill slots ({id})", task.ScheduleId);
 			return;
 		}
 		await context.SaveChangesAsync(ct);
@@ -281,7 +290,7 @@ public class EventWorker : BackgroundService, IEventWorker
 	public void Publish(IEvent @event, DateTimeOffset deferUntil)
 	{
 		//Logger.LogInformation("enqueued event {type}, due at {time}", @event.GetType().Name, deferUntil);
-		_events.Enqueue(deferUntil, @event);
+		_events.Enqueue(@event, deferUntil);
 	}
 
 	protected sealed override async Task ExecuteAsync(CancellationToken ct)
@@ -292,22 +301,24 @@ public class EventWorker : BackgroundService, IEventWorker
 			var @event = await _events.DequeueAsync(ct);
 
 			var type = @event.GetType();
-			if (!_handlers.TryGetValue(type, out var eventHandlers))
+			using (Logger.BeginScope("{event}", type.Name))
 			{
-				Logger.LogInformation("No event listeners subscribed to {Type}", type.Name);
-				continue;
-			}
-			Logger.LogInformation("Processing event of type {Type}", type.Name);
-
-			foreach (var eventHandler in eventHandlers)
-			{
-				try
+				if (!_handlers.TryGetValue(type, out var eventHandlers))
 				{
-					await eventHandler.Handler(this, @event, ct);
+					Logger.LogInformation("No event listeners subscribed to {Type}", type.Name);
+					continue;
 				}
-				catch (Exception ex)
+
+				foreach (var eventHandler in eventHandlers)
 				{
-					Logger.LogError("Exception caught: {Message}", ex.InnerException?.Message ?? ex.Message);
+					try
+					{
+						await eventHandler.Handler(this, @event, ct);
+					}
+					catch (Exception ex)
+					{
+						Logger.LogError("Exception caught: {Message}", ex.InnerException?.Message ?? ex.Message);
+					}
 				}
 			}
 		}

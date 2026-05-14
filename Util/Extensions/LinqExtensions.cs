@@ -86,8 +86,6 @@ public static class LinqExtensions
 		return entities.Count == ids.Count ? entities : [ ];
 	}
 
-	public static bool ContainsId<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.Select(x => x.Id).Contains(id);
-
 	public static IQueryable<TSource> WhereNotNull<TSource>(this IQueryable<TSource?> source) => source.Where(x => x != null).Cast<TSource>();
 
 	public static IQueryable<TSource> WhereNotNull<TSource, TKey>(

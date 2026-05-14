@@ -33,16 +33,24 @@ if (keyvaultConnectionString is not null)
 }
 
 // Add services
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName) + ";Include Error Detail=true"));
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+	options.UseNpgsql(
+		builder.Configuration.GetConnectionString(ResourceNames.DBName) + ";Include Error Detail=true",
+		o =>
+		{
+			o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+		}
+	);
+});
 
 builder.Services
 	.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
-	.AddDefaultTokenProviders(); // TODO: shouldnt be needed because of oauth
+	.AddDefaultTokenProviders();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-	options.Cookie.Name = "auth";
 	options.Cookie.HttpOnly = true;
 	options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 	options.Cookie.SameSite = SameSiteMode.Lax;
@@ -84,8 +92,7 @@ builder.Services
 
 builder.Services.AddTransient<HttpsEnforcingHandler>();
 builder.Services.AddHttpClient("secure")
-	.AddHttpMessageHandler<HttpsEnforcingHandler>()
-	.AddPolicyHandler(GetRetryPolicy());
+	.AddHttpMessageHandler<HttpsEnforcingHandler>();
 
 /*// background workers //*/
 builder.Services
@@ -203,11 +210,3 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.Run();
-
-static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-{
-	return HttpPolicyExtensions
-		.HandleTransientHttpError()
-		.WaitAndRetryAsync(3, retryAttempt =>
-			TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-}

@@ -2,15 +2,17 @@
 
 public class TimestampedQueue<T>
 {
-	private readonly PriorityQueue<(DateTimeOffset Timestamp, T Item), DateTimeOffset> _queue = new();
+	private readonly PriorityQueue<T, DateTimeOffset> _queue = new();
 	private readonly SemaphoreSlim _signal = new(0);
-	private readonly object _lock = new();
+	private readonly Lock _lock = new();
 
-	public void Enqueue(DateTimeOffset timestampUtc, T item)
+	public void Enqueue(T item, double deferSeconds) => Enqueue(item, TimeSpan.FromSeconds(deferSeconds));
+	public void Enqueue(T item, TimeSpan defer) => Enqueue(item, DateTimeOffset.UtcNow + defer);
+	public void Enqueue(T item, DateTimeOffset deferUntil)
 	{
-		lock (_lock)
+		using (_lock.EnterScope())
 		{
-			_queue.Enqueue((timestampUtc, item), timestampUtc);
+			_queue.Enqueue(item, deferUntil);
 		}
 
 		_signal.Release();
@@ -20,36 +22,34 @@ public class TimestampedQueue<T>
 	{
 		while (true)
 		{
-			await _signal.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-			lock (_lock)
+			_lock.Enter();
+			if (_queue.TryPeek(out var item, out var timestamp))
 			{
-				if (_queue.Count == 0)
-				{
-					continue;
-				}
-
-				var (timestamp, item) = _queue.Peek();
-
-				if (timestamp <= DateTime.UtcNow)
+				if (timestamp <= DateTimeOffset.UtcNow)
 				{
 					_queue.Dequeue();
+					_lock.Exit();
 					return item;
 				}
+				_lock.Exit();
+
+				var delay = timestamp - DateTimeOffset.UtcNow;
+				if (delay > TimeSpan.Zero)
+				{
+					try
+					{
+						await _signal.WaitAsync(delay, cancellationToken);
+					}
+					catch (OperationCanceledException)
+					{
+						throw;
+					}
+				}
 			}
-
-			using var converted = new WaitHandleCancellation(_signal.AvailableWaitHandle);
-			var delay = _queue.Peek().Timestamp - DateTime.UtcNow;
-			if (delay > TimeSpan.Zero)
+			else
 			{
-				try
-				{
-					await Task.Delay(delay, converted.Token).ConfigureAwait(false);
-				}
-				catch
-				{
-
-				}
+				_lock.Exit();
+				await _signal.WaitAsync(cancellationToken);
 			}
 		}
 	}

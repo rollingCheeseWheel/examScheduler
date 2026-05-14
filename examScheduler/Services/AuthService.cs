@@ -1,13 +1,13 @@
 ﻿using examScheduler.BackgroundServices;
 using examScheduler.Data;
 using examScheduler.Mappings;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
 using Models.DigitalesRegister;
 using registerClient;
 using System.Net;
-using System.Security.Claims;
 using Util;
 using Util.Extensions;
 
@@ -18,7 +18,7 @@ public interface IAuthService
 	const string AccessTokenCookieName = "access_token";
 	const string RefreshTokenCookieName = "refresh_token";
 
-	Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
+	Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, CancellationToken ct);
 
 	Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default);
 }
@@ -53,7 +53,7 @@ public class AuthService(
 			.FirstOrDefaultAsync(ct) )?.ToDTO();
 	}
 
-	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct = default)
+	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{
 		using var logginScope = _logger.BeginScope(new { request.SchoolId });
 		using var transcation = await _context.Database.BeginTransactionAsync(ct);
@@ -82,12 +82,12 @@ public class AuthService(
 		if (existingUser is not null)
 		{
 			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
-			response = await LoginAsync(existingUser, httpContext, ct);
+			response = await LoginAsync(existingUser, ct);
 		}
 		else
 		{
 			_logger.LogInformation("Registering new user");
-			response = await RegisterAsync(registerClient, school, httpContext, ct);
+			response = await RegisterAsync(registerClient, school, ct);
 		}
 
 		await _context.SaveChangesAsync(ct);
@@ -110,25 +110,25 @@ public class AuthService(
 		return response;
 	}
 
-	private async Task<Result<DateTimeOffset>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> LoginAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
 		if (user.TeacherProfile is not null && user.TeacherProfile.Teacher is not null)
 		{
 			await ConnectTeacherWithCalendarTeacherAsync(user.Id, ct);
 		}
 
-		await _signInManager.SignInAsync(user, false);
+		await _signInManager.SignInAsync(user, true);
 		return new(DateTimeOffset.UtcNow.AddHours(1));
 	}
 
-	private async Task<Result<DateTimeOffset>> RegisterAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
+	private async Task<Result<DateTimeOffset>> RegisterAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, CancellationToken ct = default) => await registerClient.GetRoleAsync(ct) switch
 	{
-		UserRoles.Student => await RegisterStudentAsync(registerClient, school, httpContext, ct),
-		UserRoles.Teacher => await RegisterTeacherAsync(registerClient, school, httpContext, ct),
+		UserRoles.Student => await RegisterStudentAsync(registerClient, school, ct),
+		UserRoles.Teacher => await RegisterTeacherAsync(registerClient, school, ct),
 		_ => new(HttpStatusCode.BadRequest)
 	};
 
-	private async Task<Result<DateTimeOffset>> RegisterStudentAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> RegisterStudentAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
@@ -186,11 +186,11 @@ public class AuthService(
 		{
 			_eventWorker.Publish(new ClassroomStudentCountChangedEvent(classroom.Id), 10);
 			_logger.LogInformation("Successfully registered user {Name}, logging them in", userProfile.Name);
-			return await LoginAsync(userProfile, httpContext, ct);
+			return await LoginAsync(userProfile, ct);
 		}
 	}
 
-	private async Task<Result<DateTimeOffset>> RegisterTeacherAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, HttpContext httpContext, CancellationToken ct = default)
+	private async Task<Result<DateTimeOffset>> RegisterTeacherAsync(ILightWeightDigitalRegisterClient registerClient, Entities.School school, CancellationToken ct = default)
 	{
 		var registerUserProfile = await registerClient.GetUserProfileAsync(ct);
 		if (registerUserProfile is null)
@@ -240,7 +240,7 @@ public class AuthService(
 			return new(HttpStatusCode.InternalServerError);
 		}
 
-		return await LoginAsync(userProfile, httpContext, ct);
+		return await LoginAsync(userProfile, ct);
 	}
 
 	private static Entities.UserProfile? CreateUserProfile(RegisterUserProfile registerUserProfile, Entities.School school)

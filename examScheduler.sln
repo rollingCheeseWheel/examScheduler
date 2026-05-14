@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36511.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11801.241 oobstable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "examScheduler", "examScheduler\examScheduler.csproj", "{1CA7F25F-F9A6-A396-9058-6A651C03FD6A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "examScheduler.AppHost", "examScheduler.AppHost\examScheduler.AppHost.csproj", "{3401DC51-7243-40A9-8CEA-B9847B51689E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "examScheduler.ServiceDefaults", "examScheduler.ServiceDefaults\examScheduler.ServiceDefaults.csproj", "{5C3644A9-578A-A750-2F9C-79371FC23F21}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{76783CC6-C4B2-43CF-B915-7FDB6351DC7A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "registerClient", "RegisterClient\registerClient.csproj", "{7297D2BB-8A38-4DE1-AE45-87C272B3AA74}"
 EndProject
@@ -20,6 +18,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entities", "Entities\Entities.csproj", "{B9D912CD-2F2A-430C-A702-FB961E751349}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataValidation", "DataValidation\DataValidation.csproj", "{68730948-93C9-4AAB-A8FC-5769290600EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,10 +39,6 @@ Global
 		{5C3644A9-578A-A750-2F9C-79371FC23F21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C3644A9-578A-A750-2F9C-79371FC23F21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C3644A9-578A-A750-2F9C-79371FC23F21}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76783CC6-C4B2-43CF-B915-7FDB6351DC7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76783CC6-C4B2-43CF-B915-7FDB6351DC7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76783CC6-C4B2-43CF-B915-7FDB6351DC7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76783CC6-C4B2-43CF-B915-7FDB6351DC7A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7297D2BB-8A38-4DE1-AE45-87C272B3AA74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7297D2BB-8A38-4DE1-AE45-87C272B3AA74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7297D2BB-8A38-4DE1-AE45-87C272B3AA74}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -63,6 +59,10 @@ Global
 		{68730948-93C9-4AAB-A8FC-5769290600EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68730948-93C9-4AAB-A8FC-5769290600EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68730948-93C9-4AAB-A8FC-5769290600EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

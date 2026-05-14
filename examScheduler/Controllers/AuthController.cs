@@ -1,4 +1,5 @@
 ﻿using examScheduler.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.API;
@@ -15,7 +16,15 @@ public class AuthController(IAuthService authService) : ControllerBase
 
 	[Route("login")]
 	[HttpPost]
-	public async Task<Result<DateTimeOffset>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, HttpContext, ct);
+	public async Task<Result<DateTimeOffset>> Login([FromBody] OAuthRequest request, CancellationToken ct) => await _authService.AuthenticateAsync(request, ct);
+
+	[Route("logout")]
+	[HttpGet]
+	public async Task<IActionResult> Logout(CancellationToken ct)
+	{
+		await HttpContext.SignOutAsync();
+		return Ok();
+	}
 
 	[Authorize]
 	[Route("me")]

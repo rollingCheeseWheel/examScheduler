@@ -57,7 +57,7 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 	{
 		if (!school.IsEnabled)
 		{
-			_logger.LogInformation("Skipping disabled school {@School}", school);
+			_logger.LogInformation("Skipping disabled school {Name}", school.Name);
 			return false;
 		}
 
@@ -176,18 +176,17 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			iterdate = iterdate.AddDays(7);
 		}
 
-		var tasks = new List<Task<IEnumerable<Lesson>>>();
+		var result = new List<Lesson>();
 		foreach (var date in dates)
 		{
-			tasks.Add(Task.Run(async () => await GetCalendarWeekAsync(date, ct)));
+			var lessons = await GetCalendarWeekAsync(date, ct);
+			if (lessons is not null)
+			{
+				result.AddRange(lessons);
+			}
 		}
 
-		var results = await Task.WhenAll(tasks);
-
-		return results
-			.Where(t => t is not null)
-			.SelectMany(t => t!)
-			.DistinctBy(d => d.Date);
+		return result.DistinctBy(l => l.Date);
 	}
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
@@ -340,8 +339,6 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 				Encoding.UTF8,
 				"application/json"
 			);
-
-			_logger?.LogDebug("Auth payload: {@data}", data);
 
 			var response = await SendAsync(request, ct);
 			return response;

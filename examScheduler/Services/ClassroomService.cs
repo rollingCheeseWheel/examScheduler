@@ -32,11 +32,7 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			SchoolId = school.SchoolId,
 		};
 
-		var calendar = new Calendar
-		{
-			LastsUntil = DateTimeOffset.UtcNow.AddYears(1),
-			Lessons = [ ]
-		};
+		var calendar = new Calendar();
 
 		newClassroom.CalendarId = calendar.Id;
 		_context.Add(calendar);
@@ -53,9 +49,22 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
-		var user = await _context.Users.AsNoTracking().FindByIdAsync(userId, ct);
-		return ( user?.TeacherProfile is not null
-			? user.TeacherProfile.Classrooms
-			: (IEnumerable<Classroom>)( user?.StudentProfile is not null ? [ user.StudentProfile.Classroom ] : [ ] ) ).WhereNotNull();
+		var studentClassrooms = await _context.StudentProfiles
+			.AsNoTracking()
+			.WhereId(userId)
+			.Select(sp => sp.Classroom)
+			.ToListAsync(ct);
+
+		if (studentClassrooms.Count != 0)
+		{
+			return studentClassrooms;
+		}
+
+		var teacherSchedules = await _context.TeacherProfiles
+			.AsNoTracking()
+			.WhereId(userId)
+			.SelectMany(tp => tp.Classrooms)
+			.ToListAsync(ct);
+		return teacherSchedules;
 	}
 }

@@ -78,7 +78,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		var studentsInSameSchedule = students
 			.All(s => ExamSlots
 				.SelectMany(e => e.Participants)
-				.ContainsId(s.Id)
+				.Any(p => p.Id == s.Id)
 			);
 		if (!studentsInSameSchedule)
 		{
@@ -261,13 +261,13 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		{
 			return false;
 		}
-		var acceptingStudentSlot = ExamSlots.FirstOrDefault(s => s.Participants.ContainsId(acceptingStudentId));
+		var acceptingStudentSlot = ExamSlots.FirstOrDefault(s => s.Participants.Any(p => p.Id == acceptingStudentId));
 		if (acceptingStudentSlot is null || acceptingStudentSlot.Id != swapRequest.RequestedSlotId)
 		{
 			return false;
 		}
 
-		var requestingStudentSlot = ExamSlots.FirstOrDefault(s => s.Participants.ContainsId(swapRequest.RequestingStudentId));
+		var requestingStudentSlot = ExamSlots.FirstOrDefault(s => s.Participants.Any(p => p.Id == swapRequest.RequestingStudentId));
 		if (requestingStudentSlot is null || requestingStudentSlot.Id == acceptingStudentSlot.Id)
 		{
 			return false;

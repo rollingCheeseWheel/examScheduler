@@ -167,7 +167,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
-		if (!schedule.Teachers.ContainsId(teacher.Teacher.Id))
+		if (!schedule.Teachers.Any(t => t.Id == teacher.Teacher.Id))
 		{
 			return false;
 		}
@@ -187,7 +187,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.ExamSlots.ContainsId(examSlotId))
+			.Where(s => s.ExamSlots.Any(s => s.Id == examSlotId))
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
@@ -235,7 +235,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.ExamSlots.ContainsId(slotId))
+			.Where(s => s.ExamSlots.Any(s => s.Id == slotId))
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
@@ -289,7 +289,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 	{
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.SwapRequests.ContainsId(swapRequestId))
+			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
 			.FirstOrDefaultAsync(ct);
 
 		if (schedule is null)
@@ -312,7 +312,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 	{
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
-			.Where(s => s.SwapRequests.ContainsId(swapRequestId))
+			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
