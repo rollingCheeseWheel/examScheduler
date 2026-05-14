@@ -19,36 +19,31 @@ public interface IAuthService
 	const string RefreshTokenCookieName = "refresh_token";
 
 	Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, HttpContext httpContext, CancellationToken ct);
-	Task<Result<DateTimeOffset>> RefreshTokenAsync(string refreshToken, HttpContext httpContext, CancellationToken ct);
 
 	Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default);
 }
-
-public record TokenPair(string AccessToken, string RefreshToken);
 
 public class AuthService(
 	AppDbContext context,
 	UserManager<Entities.UserProfile> userManager,
 	RoleManager<IdentityRole<Guid>> roleManager,
 	IClassroomService classroomService,
-	ITokenProvider jwtProvider,
-	JwtOptions jwtOptions,
 	ILogger<AuthService> logger,
 	ISchoolsService schoolsService,
 	IDigitalRegisterClientService digitalRegisterClientService,
-	IEventWorker eventWorker
+	IEventWorker eventWorker,
+	SignInManager<Entities.UserProfile> signInManager
 ) : IAuthService
 {
 	private readonly AppDbContext _context = context;
 	private readonly UserManager<Entities.UserProfile> _userManager = userManager;
 	private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
 	private readonly IClassroomService _classroomService = classroomService;
-	private readonly ITokenProvider _jwtProvider = jwtProvider;
-	private readonly JwtOptions _jwtOptions = jwtOptions;
 	private readonly ILogger _logger = logger;
 	private readonly ISchoolsService _schoolsService = schoolsService;
 	private readonly IDigitalRegisterClientService _digitalRegisterClientService = digitalRegisterClientService;
 	private readonly IEventWorker _eventWorker = eventWorker;
+	private readonly SignInManager<Entities.UserProfile> _signInManager = signInManager;
 
 	public async Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default)
 	{
@@ -115,33 +110,6 @@ public class AuthService(
 		return response;
 	}
 
-	public async Task<Result<DateTimeOffset>> RefreshTokenAsync(string refreshToken, HttpContext httpContext, CancellationToken ct = default)
-	{
-		var token = await _context.RefreshSessions.FirstOrDefaultAsync(s => s.TokenValue == refreshToken, ct);
-		if (token is null)
-		{
-			return new(HttpStatusCode.NotFound);
-		}
-		var user = await _context.Users.FindByIdAsync(token.UserProfileId, ct);
-		if (user is null)
-		{
-			return new(HttpStatusCode.NotFound);
-		}
-		var claims = await GetUserClaimsAsync(user, ct);
-		var tokens = await _jwtProvider.RefreshTokenPairAsync(claims, refreshToken, user, ct);
-		if (tokens is null)
-		{
-			_logger.LogWarning("Failed to refresh tokens for user {Username}", user.Name);
-			return new(HttpStatusCode.Unauthorized);
-		}
-		else
-		{
-			_logger.LogInformation("Successfully refreshed tokens for user {Username}", user.Name);
-			ConfigureCookies(ref httpContext, tokens);
-			return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes));
-		}
-	}
-
 	private async Task<Result<DateTimeOffset>> LoginAsync(Entities.UserProfile user, HttpContext httpContext, CancellationToken ct = default)
 	{
 		if (user.TeacherProfile is not null && user.TeacherProfile.Teacher is not null)
@@ -149,53 +117,8 @@ public class AuthService(
 			await ConnectTeacherWithCalendarTeacherAsync(user.Id, ct);
 		}
 
-		var claims = await GetUserClaimsAsync(user, ct);
-		var tokens = await _jwtProvider.CreateTokenPairAsync(claims, user, ct);
-		if (tokens is null)
-		{
-			_logger.LogWarning("Failed to generate tokens for user {Username}", user.Name);
-			return new(HttpStatusCode.Unauthorized);
-		}
-		else
-		{
-			_logger.LogInformation("Successfully generated tokens for user {Username}", user.Name);
-			ConfigureCookies(ref httpContext, tokens);
-			return new(DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes));
-			//return new(new AuthResponse
-			//{
-			//	User = user.ToDTO(),
-			//	Expiration = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes)
-			//});
-		}
-	}
-
-	private void ConfigureCookies(ref HttpContext httpContext, TokenPair? tokens)
-	{
-		httpContext.Response.Cookies.Delete(IAuthService.AccessTokenCookieName);
-		httpContext.Response.Cookies.Delete(IAuthService.RefreshTokenCookieName);
-
-		if (tokens is null)
-		{
-			return;
-		}
-
-		httpContext.Response.Cookies.Append(IAuthService.AccessTokenCookieName, tokens.AccessToken, new()
-		{
-			HttpOnly = true,
-			Secure = true,
-			Path = "/",
-			Expires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.TokenExpirationInMinutes),
-			SameSite = SameSiteMode.Strict,
-		});
-
-		httpContext.Response.Cookies.Append(IAuthService.RefreshTokenCookieName, tokens.RefreshToken, new()
-		{
-			HttpOnly = true,
-			Secure = true,
-			Path = "/api/auth/extend",
-			Expires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationInMinutes),
-			SameSite = SameSiteMode.Strict,
-		});
+		await _signInManager.SignInAsync(user, false);
+		return new(DateTimeOffset.UtcNow.AddHours(1));
 	}
 
 	private async Task<ICollection<Claim>> GetUserClaimsAsync(Entities.UserProfile user, CancellationToken ct = default)

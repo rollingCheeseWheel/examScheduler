@@ -4,13 +4,10 @@ using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Misc;
 using examScheduler.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
-using System.Text;
 using System.Text.Json;
 using Util;
 using Util.Extensions;
@@ -38,9 +35,36 @@ if (keyvaultConnectionString is not null)
 // Add services
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString(ResourceNames.DBName) + ";Include Error Detail=true"));
 
-builder.Services.AddIdentity<UserProfile, IdentityRole<Guid>>()
+builder.Services
+	.AddIdentity<UserProfile, IdentityRole<Guid>>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders(); // TODO: shouldnt be needed because of oauth
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.Cookie.Name = "auth";
+	options.Cookie.HttpOnly = true;
+	options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+	options.Cookie.SameSite = SameSiteMode.Lax;
+	options.Cookie.Path = "/";
+
+	options.ExpireTimeSpan = TimeSpan.FromHours(1);
+	options.SlidingExpiration = true;
+
+	options.Events.OnRedirectToLogin = ctx =>
+	{
+		ctx.Response.StatusCode = 401;
+		return Task.CompletedTask;
+	};
+
+	options.Events.OnRedirectToAccessDenied = ctx =>
+	{
+		ctx.Response.StatusCode = 403;
+		return Task.CompletedTask;
+	};
+});
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddSignalR();
 
@@ -50,8 +74,7 @@ builder.Services
 	.AddScoped<ICalendarService, CalendarService>()
 	.AddScoped<IClassroomService, ClassroomService>()
 	.AddScoped<IScheduleService, ScheduleService>()
-	.AddScoped<ISchoolsService, SchoolsService>()
-	.AddScoped<ITokenProvider, TokenProvider>();
+	.AddScoped<ISchoolsService, SchoolsService>();
 /*////*/
 
 /*// singletons //*/
@@ -68,47 +91,6 @@ builder.Services.AddHttpClient("secure")
 builder.Services
 	.AddHostedService<IEventWorker, EventWorker>();
 /*////*/
-
-var tokenValidationParameters = new JwtOptions
-{
-	RefreshTokenBitStrength = 256,
-	TokenExpirationInMinutes = 10,
-	RefreshTokenExpirationInMinutes = 30,
-	MaxTokensPerUser = 3,
-
-	ValidateLifetime = true,
-	ClockSkew = TimeSpan.FromSeconds(30),
-
-	ValidateIssuerSigningKey = true,
-	IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[ "JWT:key" ] ?? Guid.CreateVersion7().ToString("N"))),
-
-	ValidateIssuer = true,
-	ValidIssuer = "examscheduler.app",
-
-	ValidateAudience = true,
-	ValidAudience = "examscheduler.app",
-};
-
-builder.Services.AddSingleton(tokenValidationParameters);
-
-builder.Services
-	.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-	.AddJwtBearer(options =>
-{
-	options.TokenValidationParameters = tokenValidationParameters;
-
-	options.Events = new()
-	{
-		OnMessageReceived = (ctx) =>
-		{
-			ctx.Request.Cookies.TryGetValue(IAuthService.AccessTokenCookieName, out var cookie);
-			ctx.Token = cookie;
-			return Task.CompletedTask;
-		}
-	};
-});
-
-builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
 	.AddJsonOptions(options =>
@@ -142,14 +124,12 @@ if (app.Environment.IsProduction())
 			context.Response.ContentType = "application/json";
 
 			await context.Response.WriteAsJsonAsync<Models.API.Result<object>>(
-				new(System.Net.HttpStatusCode.InternalServerError, 
+				new(System.Net.HttpStatusCode.InternalServerError,
 					"Internal Server Error")
 			);
 		});
 	});
 }
-
-//app.UseResponseCompression();
 
 app.MapDefaultEndpoints();
 
