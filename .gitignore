@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /examScheduler/wwwroot/assets
+/test/test.csproj
+/test

@@ -181,7 +181,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 		await context.SaveChangesAsync(ct);
-		Publish(new CalendarUpdatedEvent(calendar.Id));
+		Logger.LogInformation("successfully extended calendar");
 	}
 
 	[Event(typeof(LockScheduleTask))]

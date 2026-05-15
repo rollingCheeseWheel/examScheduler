@@ -28,6 +28,7 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 		{
 			return false;
 		}
+		_context.Attach(calendar);
 
 		// trackedSubjects[subjectName]
 		// Get or create subjects, ensure they're being tracked
@@ -126,6 +127,7 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 					Subject = trackedSubjects[ modelLesson.Subject.Name ],
 					Teachers = modelLesson.Teachers.Select(t => trackedTeachers[ t.Name ]).ToList()
 				};
+				calendar.Lessons.Add(newLesson);
 			}
 			else
 			{

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.5.11801.241 oobstable
+VisualStudioVersion = 18.5.11801.241
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "examScheduler", "examScheduler\examScheduler.csproj", "{1CA7F25F-F9A6-A396-9058-6A651C03FD6A}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataValidation", "DataValidation\DataValidation.csproj", "{68730948-93C9-4AAB-A8FC-5769290600EB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{53EA8B63-5377-4838-A91F-DDAB39672025}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44A85D28-5AFE-40EF-B1BB-CBDDE7040625}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53EA8B63-5377-4838-A91F-DDAB39672025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53EA8B63-5377-4838-A91F-DDAB39672025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53EA8B63-5377-4838-A91F-DDAB39672025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53EA8B63-5377-4838-A91F-DDAB39672025}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

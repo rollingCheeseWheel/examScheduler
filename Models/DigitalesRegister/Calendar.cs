@@ -49,14 +49,14 @@ public class Lesson : IEquatable<Lesson>
 	[Required, JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
 
-	public Lesson() { }
+	//public Lesson() { }
 
-	[JsonConstructor]
-	public Lesson(int hour, int toHour)
-	{
-		FromHour = Math.Clamp(hour, 1, 24);
-		ToHour = Math.Clamp(toHour, FromHour, 24);
-	}
+	//[JsonConstructor]
+	//public Lesson(int hour, int toHour)
+	//{
+	//	FromHour = Math.Clamp(hour, 1, 24);
+	//	ToHour = Math.Clamp(toHour, FromHour, 24);
+	//}
 
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{
