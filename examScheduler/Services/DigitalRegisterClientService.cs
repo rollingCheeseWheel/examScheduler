@@ -18,7 +18,7 @@ public interface IDigitalRegisterClientService
 	IEnumerable<string> GetRegisteredSchoolIds();
 }
 
-public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, ILogger<DigitalRegisterClient> logger) : IDigitalRegisterClientService
+public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, ILogger<DigitalRegisterClientService> logger) : IDigitalRegisterClientService
 {
 	private readonly IHttpClientFactory _clientFactory = httpClientFactory;
 	private readonly ILogger _logger = logger;
@@ -43,9 +43,21 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 			school,
 			_logger
 		);
-		return !await client.AuthenticateAsync(ct)
-			? null
-			: !_sessions.TryAdd(client.Id, client) ? null : (ILightWeightDigitalRegisterClient)client;
+		if (!await client.AuthenticateAsync(ct))
+		{
+			return null;
+		}
+		else
+		{
+			if (!_sessions.TryAdd(client.Id, client))
+			{
+				return null;
+			}
+			else
+			{
+				return client;
+			}
+		}
 	}
 
 	public IDigitalRegisterClient? TryGetClient(Guid clientId)
@@ -125,12 +137,14 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 
 	public async Task<UserRoles?> GetRoleAsync(CancellationToken ct = default)
 	{
+		using var scope = _logger?.BeginScope(Id);
 		UserProfile ??= await GetUserProfileAsync(ct);
 		return IDigitalRegisterClient.GetRole(UserProfile);
 	}
 
 	public async Task<RegisterUserProfile?> GetUserProfileAsync(CancellationToken ct = default)
 	{
+		using var scope = _logger?.BeginScope(Id);
 		var tempProfile = await GetAsync<RegisterUserProfile>(RegisterPathAPI.UserProfile, ct: ct);
 		using (_lock.EnterScope())
 		{
@@ -139,19 +153,32 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 		return UserProfile;
 	}
 
-	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
+	public async Task<IEnumerable<RegisterClass>?> GetClassesAsync(CancellationToken ct = default)
+	{
+		using var scope = _logger?.BeginScope(Id);
+		return await GetAsync<ICollection<RegisterClass>>(RegisterPathAPI.Classes, ct: ct);
+	}
 
-	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default) => await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	public async Task<IEnumerable<RegisterSubject>?> GetSubjectsAsync(CancellationToken ct = default)
+	{
+		using var scope = _logger?.BeginScope(Id);
+		return await GetAsync<ICollection<RegisterSubject>>(RegisterPathAPI.Subjects, ct);
+	}
 
 	public async Task<IEnumerable<Lesson>> GetCalendarWeekAsync(DateTimeOffset date, CancellationToken ct = default)
 	{
+		using var scope = _logger?.BeginScope(Id);
 		var args = new Dictionary<string, string?> { { "startDate", date.RoundDownToMonday().ToRegisterFormat() } };
+
+		_logger?.LogDebug("args: {@args}", args);
 
 		var response = await GetAsync(RegisterPathAPI.LessonWeek, args, ct);
 		if (response is null)
 		{
+			_logger?.LogDebug("response is null");
 			return [ ];
 		}
+		_logger?.LogDebug("url: {url}, status: {status}, body: {body}", response.RequestMessage?.RequestUri, response.StatusCode, await response.ReadContentAsStringAsync(ct));
 
 		try
 		{
@@ -166,6 +193,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 	// TODO there is a bug where the same data gets outputted multiple times
 	public async Task<IEnumerable<Lesson>> GetCalendarAsync(DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken ct = default)
 	{
+		using var scope = _logger?.BeginScope(Id);
 		if (!await AuthenticateAsync(ct)) { return [ ]; }
 
 		var iterdate = startDate;
@@ -191,6 +219,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
 	{
+		using var scope = _logger?.BeginScope(Id);
 		await _authSemaphore.WaitAsync(ct);
 
 		_lock.Enter();
@@ -375,6 +404,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 	{
 		if (!await AuthenticateAsync(ct))
 		{
+			_logger?.LogDebug("failed to authenticate");
 			return null;
 		}
 
@@ -494,7 +524,6 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 
 	#region Disposable
 	private bool _disposed = false;
-	~LightWeightRegisterClient() => Dispose(true);
 	public void Dispose()
 	{
 		Dispose(true);
