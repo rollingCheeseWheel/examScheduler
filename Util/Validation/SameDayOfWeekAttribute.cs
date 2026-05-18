@@ -2,11 +2,18 @@
 
 namespace Util.Validation;
 
-public class SameDayOfWeekAttribute : AssertTypeAttribute<IEnumerable<DateTimeOffset>>
+public class SameDayOfWeekAttribute : AssertTypeAttribute<IEnumerable<DateOnly>>
 {
-	public override ValidationResult? IsValid(IEnumerable<DateTimeOffset> value, ValidationContext validationContext)
+	public override ValidationResult? IsValid(IEnumerable<DateOnly> value, ValidationContext validationContext)
 	{
-		var first = value.FirstOrDefault();
-		return value.All(d => d.DayOfWeek == first.DayOfWeek) ? ValidationResult.Success : new("Not all entries have the same day of week");
+		var dates = value.ToList();
+
+		if (dates.Count <= 1)
+		{
+			return ValidationResult.Success;
+		}
+
+		var first = dates[0].DayOfWeek;
+		return value.All(d => d.DayOfWeek == first) ? ValidationResult.Success : new("Not all entries have the same day of week");
 	}
 }

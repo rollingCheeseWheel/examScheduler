@@ -22,7 +22,7 @@ public class Lesson : EntityBase<Lesson>
 	[NotMapped]
 	public DayOfWeek? DayOfWeek => FirstOccurance?.DayOfWeek;
 	[NotMapped]
-	public DateOnly? FirstOccurance => Occurances.Order().FirstOrDefault();
+	public DateOnly? FirstOccurance => Occurances.Count == 0 ? null : Occurances.Order().FirstOrDefault();
 	[Required, SameDayOfWeek]
 	public required ICollection<DateOnly> Occurances { get; set; } = [ ];
 	[Required]
@@ -45,11 +45,10 @@ public class Lesson : EntityBase<Lesson>
 	public bool ShallowEqual(Lesson? other) => other is not null
 		&& DayOfWeek == other.DayOfWeek
 		&& Subject == other.Subject
-		&& Teachers.ValueEquals(other.Teachers)
+		&& Teachers.ValueEquals(other.Teachers, t => t.Id)
 		&& Occurances.ValueEquals(other.Occurances);
 
 	public override bool EqualsCore(Lesson b) =>
-		FirstOccurance == b.FirstOccurance &&
 		Occurances.ValueEquals(b.Occurances) &&
 		FromHour == b.FromHour &&
 		Duration == b.Duration &&

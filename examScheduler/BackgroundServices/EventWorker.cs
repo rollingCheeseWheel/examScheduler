@@ -317,7 +317,7 @@ public class EventWorker : BackgroundService, IEventWorker
 					}
 					catch (Exception ex)
 					{
-						Logger.LogError("Exception caught: {Message}", ex.InnerException?.Message ?? ex.Message);
+						Logger.LogError(ex, "Exception caught in {event}", type.Name);
 					}
 				}
 			}

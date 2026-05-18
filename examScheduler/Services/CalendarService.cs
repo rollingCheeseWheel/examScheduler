@@ -8,114 +8,173 @@ namespace examScheduler.Services;
 
 public interface ICalendarService
 {
-	Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
-	//Task NormalizeCalendar(Guid calendarId, CancellationToken ct = default);
+	Task<bool> TryExtendCalendarAsync(
+		Guid calendarId,
+		string schoolId,
+		IEnumerable<Models.DigitalesRegister.Lesson> lessons,
+		CancellationToken ct = default);
 
-	Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default);
+	Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(
+		Guid classroomId,
+		DateTimeOffset date,
+		CancellationToken ct = default);
 }
 
-public class CalendarService(AppDbContext context, IEventWorker eventWorker) : ICalendarService
+public sealed class CalendarService(
+	AppDbContext context,
+	IEventWorker eventWorker) : ICalendarService
 {
 	private readonly AppDbContext _context = context;
 	private readonly IEventWorker _eventWorker = eventWorker;
 
-	public async Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
+	public async Task<bool> TryExtendCalendarAsync(
+		Guid calendarId,
+		string schoolId,
+		IEnumerable<Models.DigitalesRegister.Lesson> modelLessons,
+		CancellationToken ct = default)
 	{
-		var calendar = await _context.Classrooms
-			.JoinInnerOnId(_context.Calendars, c => c.CalendarId)
-			.FirstOrDefaultAsync(ct);
+		var lessons = modelLessons.ToList();
+
+		var calendar = await _context.Calendars
+			.Include(c => c.Lessons)
+				.ThenInclude(l => l.Subject)
+			.Include(c => c.Lessons)
+				.ThenInclude(l => l.Teachers)
+					.ThenInclude(t => t.Subjects)
+			.FirstOrDefaultAsync(c => c.Id == calendarId, ct);
+
 		if (calendar is null)
 		{
 			return false;
 		}
-		_context.Attach(calendar);
 
-		// trackedSubjects[subjectName]
-		// Get or create subjects, ensure they're being tracked
+		// SUBJECTS
+
 		var trackedSubjects = calendar.Lessons
-			.Select(x => x.Subject)
+			.Select(l => l.Subject)
+			.Where(s => s is not null)
+			.DistinctBy(s => s.Name)
+			.ToDictionary(s => s.Name);
+
+		var subjectNames = lessons
+			.Select(l => l.Subject.Name)
 			.Distinct()
-			.ToDictionary(x => x.Name);
-		var subjectNames = modelLessons.Select(l => l.Subject.Name).Distinct();
+			.ToList();
 
-		var missingSubjectKeys = subjectNames.Except(trackedSubjects.Keys).ToList();
-		var fetchedSubjects = await _context.Subjects
-			.Where(s => missingSubjectKeys.Contains(s.Name))
-			.ToListAsync(ct);
-		foreach (var s in fetchedSubjects)
+		var missingSubjectNames = subjectNames
+			.Except(trackedSubjects.Keys)
+			.ToList();
+
+		if (missingSubjectNames.Count > 0)
 		{
-			trackedSubjects[ s.Name ] = s;
-		}
-		var subjectKeysToCreate = missingSubjectKeys.Except(fetchedSubjects.Select(s => s.Name));
-		var createdSubjects = subjectKeysToCreate
-			.Select(n => new Subject(n)).ToList();
-		_context.Subjects.AddRange(createdSubjects);
-		foreach (var s in createdSubjects)
-		{
-			trackedSubjects[ s.Name ] = s;
+			var existingSubjects = await _context.Subjects
+				.Where(s => missingSubjectNames.Contains(s.Name))
+				.ToListAsync(ct);
+
+			foreach (var subject in existingSubjects)
+			{
+				trackedSubjects[ subject.Name ] = subject;
+			}
+
+			var existingNames = existingSubjects
+				.Select(s => s.Name)
+				.ToHashSet();
+
+			var newSubjects = missingSubjectNames
+				.Where(n => !existingNames.Contains(n))
+				.Select(n => new Subject(n))
+				.ToList();
+
+			_context.Subjects.AddRange(newSubjects);
+
+			foreach (var subject in newSubjects)
+			{
+				trackedSubjects[ subject.Name ] = subject;
+			}
 		}
 
-		// trackedTeachers[teacherName]
-		// Get or create teachers, ensure they're being tracked
+		// TEACHERS
+
 		var trackedTeachers = calendar.Lessons
 			.SelectMany(l => l.Teachers)
-			.Distinct()
+			.DistinctBy(t => t.Name)
 			.ToDictionary(t => t.Name);
-		var teacherNames = modelLessons
-			.SelectMany(l => l.Teachers)
-			.Select(t => t.Name)
-			.Distinct();
 
-		var missingTeacherKeys = teacherNames.Except(trackedTeachers.Keys).ToList();
-		var fetchedTeachers = await _context.Teachers
-			.Where(t => t.SchoolId == schoolId)
-			.Where(t => missingTeacherKeys.Contains(t.Name))
-			.ToListAsync(ct);
-		foreach (var t in fetchedTeachers)
-		{
-			trackedTeachers[ t.Name ] = t;
-		}
-		var teacherNamesToCreate = missingTeacherKeys.Except(fetchedTeachers.Select(t => t.Name)).ToList();
-		var createdTeachers = modelLessons
+		var teacherNames = lessons
 			.SelectMany(l => l.Teachers)
-			.Where(t => teacherNames.Contains(t.Name))
-			.GroupBy(t => t.Name)
-			.Select(g =>
-			{
-				var t = g.First();
-				return new Teacher
-				{
-					Name = string.Join(" ", t.FirstName, t.LastName),
-					SchoolId = schoolId
-				};
-			})
+			.Select(t => string.Join(" ", t.FirstName, t.LastName))
+			.Distinct()
 			.ToList();
-		_context.Teachers.AddRange(createdTeachers);
-		foreach (var t in createdTeachers)
+
+		var missingTeacherNames = teacherNames
+			.Except(trackedTeachers.Keys)
+			.ToList();
+
+		if (missingTeacherNames.Count > 0)
 		{
-			trackedTeachers[ t.Name ] = t;
+			var existingTeachers = await _context.Teachers
+				.Include(t => t.Subjects)
+				.Where(t => t.SchoolId == schoolId)
+				.Where(t => missingTeacherNames.Contains(t.Name))
+				.ToListAsync(ct);
+
+			foreach (var teacher in existingTeachers)
+			{
+				trackedTeachers[ teacher.Name ] = teacher;
+			}
+
+			var existingNames = existingTeachers
+				.Select(t => t.Name)
+				.ToHashSet();
+
+			var newTeachers = missingTeacherNames
+				.Where(n => !existingNames.Contains(n))
+				.Select(n => new Teacher
+				{
+					Name = n,
+					SchoolId = schoolId
+				})
+				.ToList();
+
+			_context.Teachers.AddRange(newTeachers);
+
+			foreach (var teacher in newTeachers)
+			{
+				trackedTeachers[ teacher.Name ] = teacher;
+			}
 		}
 
-		// Assign subjects to teachers
-		foreach (var modelLesson in modelLessons)
+		// ASSIGN SUBJECTS
+
+		foreach (var modelLesson in lessons)
 		{
 			var subject = trackedSubjects[ modelLesson.Subject.Name ];
+
 			foreach (var modelTeacher in modelLesson.Teachers)
 			{
-				var teacher = trackedTeachers[ modelTeacher.Name ];
-				if (!teacher.Subjects.Contains(subject))
+				var teacherName = string.Join(
+					" ",
+					modelTeacher.FirstName,
+					modelTeacher.LastName);
+
+				var teacher = trackedTeachers[ teacherName ];
+
+				if (teacher.Subjects.All(s => s.Name != subject.Name))
 				{
 					teacher.Subjects.Add(subject);
 				}
 			}
 		}
 
-		// create new lessons or update occurances
-		foreach (var modelLesson in modelLessons)
+		// LESSONS
+
+		foreach (var modelLesson in lessons)
 		{
 			var existingLesson = calendar.Lessons
-				.Where(l => l.EqualsModel(modelLesson))
-				.FirstOrDefault();
+				.FirstOrDefault(l => l.EqualsModel(modelLesson));
+
+			var occurrence = modelLesson.Date.ToDateOnly();
+
 			if (existingLesson is null)
 			{
 				var newLesson = new Lesson
@@ -123,37 +182,67 @@ public class CalendarService(AppDbContext context, IEventWorker eventWorker) : I
 					Name = modelLesson.LessonName,
 					FromHour = Math.Clamp(modelLesson.FromHour - 1, 0, 23),
 					ToHour = Math.Clamp(modelLesson.ToHour - 1, 0, 23),
-					Occurances = [ modelLesson.Date.ToDateOnly() ],
+					Occurances = [ occurrence ],
 					Subject = trackedSubjects[ modelLesson.Subject.Name ],
-					Teachers = modelLesson.Teachers.Select(t => trackedTeachers[ t.Name ]).ToList()
+					Teachers = modelLesson.Teachers
+						.Select(t =>
+						{
+							var teacherName = string.Join(
+								" ",
+								t.FirstName,
+								t.LastName);
+
+							return trackedTeachers[ teacherName ];
+						})
+						.ToList()
 				};
+
 				calendar.Lessons.Add(newLesson);
 			}
 			else
 			{
-				existingLesson.Occurances.Add(modelLesson.Date.ToDateOnly());
+				if (!existingLesson.Occurances.Contains(occurrence))
+				{
+					existingLesson.Occurances.Add(occurrence);
+				}
 			}
 		}
 
 		await _context.SaveChangesAsync(ct);
-		_eventWorker.Publish(new CalendarUpdatedEvent(calendarId), 3);
+
+		_eventWorker.Publish(
+			new CalendarUpdatedEvent(calendarId),
+			3);
 
 		return true;
 	}
 
-	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default)
+	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(
+		Guid classroomId,
+		DateTimeOffset date,
+		CancellationToken ct = default)
 	{
-		var calendar = await _context.Classrooms
-			.AsNoTracking()
-			.JoinInnerOnId(_context.Calendars, c => c.CalendarId)
-			.FirstOrDefaultAsync(ct);
-		if (calendar is null)
+		var classroom = await _context.Classrooms
+			.Include(c => c.Calendar)
+				.ThenInclude(c => c.Lessons)
+					.ThenInclude(l => l.Subject)
+			.Include(c => c.Calendar)
+				.ThenInclude(c => c.Lessons)
+					.ThenInclude(l => l.Teachers)
+			.FirstOrDefaultAsync(c => c.Id == classroomId, ct);
+
+		if (classroom?.Calendar is null)
 		{
 			return null;
 		}
 
-		var mondayDate = date.RoundDownToMonday();
+		var monday = date.RoundDownToMonday();
 
-		return calendar.NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(new(mondayDate, mondayDate.RoundUpTo(DayOfWeek.Sunday))).SelectMany(x => x);
+		return classroom.Calendar
+			.NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(
+				new(
+					monday,
+					monday.RoundUpTo(DayOfWeek.Sunday)))
+			.SelectMany(x => x);
 	}
 }

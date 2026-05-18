@@ -14,6 +14,9 @@ public class Calendar : EntityBase<Calendar>
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
 
+	public Guid ClassroomId { get; set; }
+	public Classroom Classroom { get; set; } = null!;
+
 	[NotMapped]
 	private Lesson?[ , ]? _fallbackLessonMatrix;
 	[NotMapped]

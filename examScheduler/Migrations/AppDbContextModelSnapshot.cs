@@ -91,6 +91,9 @@ namespace examScheduler.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("ClassroomId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("LastsUntil")
                         .HasColumnType("timestamp with time zone");
 
@@ -743,8 +746,8 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Classroom", b =>
                 {
-                    b.HasOne("Entities.Calendar", null)
-                        .WithOne()
+                    b.HasOne("Entities.Calendar", "Calendar")
+                        .WithOne("Classroom")
                         .HasForeignKey("Entities.Classroom", "CalendarId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -758,6 +761,8 @@ namespace examScheduler.Migrations
                     b.HasOne("Entities.TeacherProfile", null)
                         .WithMany("Classrooms")
                         .HasForeignKey("TeacherProfileId");
+
+                    b.Navigation("Calendar");
                 });
 
             modelBuilder.Entity("Entities.ExamSlot", b =>
@@ -964,6 +969,9 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Calendar", b =>
                 {
+                    b.Navigation("Classroom")
+                        .IsRequired();
+
                     b.Navigation("Lessons");
                 });
 

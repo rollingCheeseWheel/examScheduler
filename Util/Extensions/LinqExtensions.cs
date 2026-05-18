@@ -15,7 +15,7 @@ public static class LinqExtensions
 		where TSource : IComparable<TSource> => ValueEquals(first, second, x => x);
 
 	public static bool ValueEquals<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> selector)
-		where TKey : IComparable<TKey> => first.OrderBy(selector).SequenceEqual(second.OrderBy(selector));
+		where TKey : IComparable<TKey> => first.Select(selector).Order().SequenceEqual(second.Select(selector).Order());
 
 	public static IEnumerable<TSource> Except<TSource, TKey>(this IEnumerable<TSource> source, IEnumerable<TSource> target, Func<TSource, TKey> selector) where TKey : IEquatable<TKey>
 	{
