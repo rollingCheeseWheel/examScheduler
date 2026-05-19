@@ -274,7 +274,9 @@ public class AuthService(
 
 	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, CancellationToken ct = default)
 	{
-		var teacherProfile = await _context.TeacherProfiles.FindByIdAsync(teacherId, ct);
+		var teacherProfile = await _context.TeacherProfiles
+			.Include(tp => tp.UserProfile)
+			.FindByIdAsync(teacherId, ct);
 		if (teacherProfile is null || teacherProfile.Teacher is not null)
 		{
 			return;
@@ -291,6 +293,7 @@ public class AuthService(
 		}
 
 		teacherProfile.Teacher = teacher;
+		teacher.TeacherProfile = teacherProfile;
 		await _context.SaveChangesAsync(ct);
 	}
 

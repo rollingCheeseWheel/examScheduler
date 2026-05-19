@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260519210244_postgresql.container_migration_850")]
-    partial class postgresqlcontainer_migration_850
+    [Migration("20260519212536_postgresql.container_migration_207")]
+    partial class postgresqlcontainer_migration_207
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -92,9 +92,6 @@ namespace examScheduler.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClassroomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("LastsUntil")
@@ -462,10 +459,6 @@ namespace examScheduler.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
-
-                    b.PrimitiveCollection<Guid[]>("ClassroomIds")
-                        .IsRequired()
-                        .HasColumnType("uuid[]");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()

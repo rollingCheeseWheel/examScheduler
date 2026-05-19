@@ -91,9 +91,6 @@ namespace examScheduler.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ClassroomId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("LastsUntil")
                         .HasColumnType("timestamp with time zone");
 
@@ -459,10 +456,6 @@ namespace examScheduler.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
-
-                    b.PrimitiveCollection<Guid[]>("ClassroomIds")
-                        .IsRequired()
-                        .HasColumnType("uuid[]");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()

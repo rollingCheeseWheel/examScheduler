@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_850 : Migration
+    public partial class postgresqlcontainer_migration_207 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,6 @@ namespace examScheduler.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     LastsUntil = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
@@ -113,7 +112,6 @@ namespace examScheduler.Migrations
                     RegiserId = table.Column<long>(type: "bigint", nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    ClassroomIds = table.Column<Guid[]>(type: "uuid[]", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
