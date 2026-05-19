@@ -129,7 +129,7 @@ public class DigitalRegisterClient : IDigitalRegisterClient, IDisposable
 
 		foreach (var dateProp in rootElement.EnumerateObject()) // date
 		{
-			if (!dateProp.Name.RegisterTryParse(out var DateTimeOffset))
+			if (!dateProp.Name.TryParseRegisterDate(out var DateTimeOffset))
 			{
 				continue;
 			}

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_458 : Migration
+    public partial class postgresqlcontainer_migration_697 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -148,7 +148,7 @@ namespace examScheduler.Migrations
                     FromHour = table.Column<int>(type: "integer", nullable: false),
                     ToHour = table.Column<int>(type: "integer", nullable: false),
                     Occurances = table.Column<DateOnly[]>(type: "date[]", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
+                    LessonName = table.Column<string>(type: "text", nullable: false),
                     SubjectName = table.Column<string>(type: "text", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     CalendarId = table.Column<Guid>(type: "uuid", nullable: true)

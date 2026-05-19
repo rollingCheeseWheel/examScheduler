@@ -42,6 +42,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 			o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
 		}
 	);
+
+	//options.EnableSensitiveDataLogging();
+	//options.EnableDetailedErrors();
+	//options.LogTo(Console.WriteLine, LogLevel.Information);
 });
 
 builder.Services

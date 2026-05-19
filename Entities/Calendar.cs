@@ -58,7 +58,7 @@ public class Calendar : EntityBase<Calendar>
 			.Select(l => new Lesson
 			{
 				Id = l.Id,
-				Name = l.Name,
+				LessonName = l.LessonName,
 				Subject = l.Subject,
 				FromHour = l.FromHour,
 				ToHour = l.ToHour,
@@ -129,7 +129,7 @@ public class Calendar : EntityBase<Calendar>
 					{
 						FromHour = fromHour,
 						ToHour = lesson.ToHour,
-						Name = lesson.Name,
+						LessonName = lesson.LessonName,
 						Occurances = lesson.Occurances,
 						Subject = lesson.Subject,
 						Teachers = lesson.Teachers,
@@ -169,7 +169,7 @@ public class Calendar : EntityBase<Calendar>
 					{
 						FromHour = cursor.FromHour,
 						ToHour = lesson.ToHour,
-						Name = cursor.Name,
+						LessonName = cursor.LessonName,
 						Occurances = cursor.Occurances,
 						Subject = cursor.Subject,
 						Teachers = cursor.Teachers,

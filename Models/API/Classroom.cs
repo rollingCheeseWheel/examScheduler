@@ -9,8 +9,6 @@ public class Classroom
 	public required Guid Id { get; set; }
 	[Required]
 	public required string Name { get; set; }
-	[Required, MinValue(0)]
-	public required int StudentCount { get; set; }
 	[Required]
 	public required IEnumerable<TeacherWithSubjects> Teachers { get; set; }
 }

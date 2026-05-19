@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260518204148_postgresql.container_migration_458")]
-    partial class postgresqlcontainer_migration_458
+    [Migration("20260519194333_postgresql.container_migration_697")]
+    partial class postgresqlcontainer_migration_697
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -206,7 +206,7 @@ namespace examScheduler.Migrations
                     b.Property<int>("FromHour")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("LessonName")
                         .IsRequired()
                         .HasColumnType("text");
 

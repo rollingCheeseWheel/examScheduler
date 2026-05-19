@@ -144,6 +144,8 @@ public class EventWorker : BackgroundService, IEventWorker
 		var clientService = scope.ServiceProvider.GetRequiredService<IDigitalRegisterClientService>();
 		var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
 
+		using var transaction = await context.Database.BeginTransactionAsync(ct);
+
 		var client = clientService.TryGetClient(task.RegisterClientId);
 		if (client is null)
 		{
@@ -181,6 +183,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 		await context.SaveChangesAsync(ct);
+		await transaction.CommitAsync(ct);
 		Logger.LogInformation("successfully extended calendar");
 	}
 
@@ -289,7 +292,7 @@ public class EventWorker : BackgroundService, IEventWorker
 	public void Publish(IEvent @event, TimeSpan offset) => Publish(@event, DateTimeOffset.UtcNow + offset);
 	public void Publish(IEvent @event, DateTimeOffset deferUntil)
 	{
-		//Logger.LogInformation("enqueued event {type}, due at {time}", @event.GetType().Name, deferUntil);
+		//Logger.LogInformation("enqueued event {type}, due at {time}", @event.GetType().LessonName, deferUntil);
 		_events.Enqueue(@event, deferUntil);
 	}
 

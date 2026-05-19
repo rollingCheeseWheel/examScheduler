@@ -12,7 +12,7 @@ public class Lesson
 	public required DateOnly Date { get; set; }
 	[Required, MinValue(0)]
 	public required int FromHour { get; set; }
-	[Required, GreaterThan<int>(nameof(FromHour))]
+	[Required, GreaterThanOrEqual<int>(nameof(FromHour))]
 	public required int ToHour { get; set; }
 	[Required]
 	public required string LessonName { get; set; }

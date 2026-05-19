@@ -10,7 +10,7 @@ public static class DateTimeExtensions
 
 	public static DateTimeOffset RegisterParse(this string dateTime) => DateTimeOffset.ParseExact(dateTime, RegisterDateTimeFormat, null);
 
-	public static bool RegisterTryParse(this string dateTime, out DateTimeOffset result)
+	public static bool TryParseRegisterDate(this string dateTime, out DateTimeOffset result)
 	{
 		if (DateTimeOffset.TryParseExact(dateTime, RegisterDateTimeFormat, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowTrailingWhite, out var temp))
 		{

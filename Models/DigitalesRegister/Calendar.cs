@@ -34,7 +34,7 @@ public class Lesson : IEquatable<Lesson>
 	/// </summary>
 	[Required, Range(1, 24), JsonPropertyName("hour")]
 	public required int FromHour { get; set; }
-	/// <inheritdoc cref="Lesson.FromHour"/>
+	/// <inheritdoc cref="FromHour"/>
 	[Required, Range(1, 24)]
 	public required int ToHour { get; set; }
 	[Required, JsonPropertyName("classId")]
@@ -48,15 +48,6 @@ public class Lesson : IEquatable<Lesson>
 
 	[Required, JsonConverter(typeof(IntToBoolConverter))]
 	public required bool LinkToPreviousHour { get; set; }
-
-	//public Lesson() { }
-
-	//[JsonConstructor]
-	//public Lesson(int hour, int toHour)
-	//{
-	//	FromHour = Math.Clamp(hour, 1, 24);
-	//	ToHour = Math.Clamp(toHour, FromHour, 24);
-	//}
 
 	public static bool operator ==(Lesson? a, Lesson? b)
 	{
@@ -107,13 +98,11 @@ public class Teacher
 
 	public static bool operator ==(Teacher? a, Teacher? b)
 	{
-		return ReferenceEquals(a, b) || ( a is not null && b is not null && a.FirstName == b.FirstName
-			&& a.LastName == b.LastName
-			&& a.Id == b.Id );
+		return ReferenceEquals(a, b) || ( a is not null && b is not null && a.Id == b.Id && a.Name == b.Name );
 	}
 
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Teacher other && this == other;
 
-	public override int GetHashCode() => HashCode.Combine(Id, FirstName, LastName);
+	public override int GetHashCode() => HashCode.Combine(Id, Name);
 }

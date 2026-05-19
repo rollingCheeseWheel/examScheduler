@@ -81,19 +81,19 @@ public class AuthService(
 		Result<DateTimeOffset>? response;
 		if (existingUser is not null)
 		{
-			_logger.LogInformation("User {UserName} found, logging them in", existingUser.Name);
+			_logger.LogDebug("User {UserName} found, logging them in", existingUser.Name);
 			response = await LoginAsync(existingUser, ct);
 		}
 		else
 		{
-			_logger.LogInformation("Registering new user");
+			_logger.LogDebug("Registering new user");
 			response = await RegisterAsync(registerClient, school, ct);
 		}
 
 		await _context.SaveChangesAsync(ct);
 		if (response.Success)
 		{
-			_logger.LogInformation("Successfully logged in");
+			_logger.LogDebug("Successfully logged in");
 			await transcation.CommitAsync(ct);
 
 			var justCreatedUser = await _userManager.Users.FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RegiserId == userProfile.Id, ct);
@@ -104,7 +104,6 @@ public class AuthService(
 		}
 		else
 		{
-			_logger.LogWarning("Login unsuccessful ({Code}): {@Errors}", response.StatusCode, response.Errors);
 			await transcation.RollbackAsync(ct);
 		}
 		return response;
@@ -185,7 +184,7 @@ public class AuthService(
 		else
 		{
 			_eventWorker.Publish(new ClassroomStudentCountChangedEvent(classroom.Id), 10);
-			_logger.LogInformation("Successfully registered user {Name}, logging them in", userProfile.Name);
+			_logger.LogDebug("Successfully registered user {Name}, logging them in", userProfile.Name);
 			return await LoginAsync(userProfile, ct);
 		}
 	}
@@ -292,6 +291,8 @@ public class AuthService(
 		}
 
 		teacherProfile.Teacher = teacher;
+		teacher.TeacherProfileId = teacherProfile.Id;
+		await _context.SaveChangesAsync(ct);
 	}
 
 	private async Task TryPublishCalendarExtendTaskAsync(Guid registerClientId, Entities.UserProfile user, CancellationToken ct = default)

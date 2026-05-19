@@ -203,7 +203,7 @@ namespace examScheduler.Migrations
                     b.Property<int>("FromHour")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("LessonName")
                         .IsRequired()
                         .HasColumnType("text");
 

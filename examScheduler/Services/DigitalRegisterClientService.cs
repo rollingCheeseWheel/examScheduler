@@ -214,7 +214,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 			}
 		}
 
-		return result.DistinctBy(l => l.Date);
+		return result.Distinct();
 	}
 
 	public async Task<bool> AuthenticateAsync(CancellationToken ct = default)
@@ -457,14 +457,14 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 		}
 	}
 
-	private static List<Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
+	private List<Lesson>? ParseCalendarDays(JsonDocument jsonDoc)
 	{
 		List<Lesson> result = [ ];
 		var rootElement = jsonDoc.RootElement;
 
 		foreach (var dateProp in rootElement.EnumerateObject()) // date
 		{
-			if (!dateProp.Name.RegisterTryParse(out var DateTimeOffset))
+			if (!dateProp.Name.TryParseRegisterDate(out var DateTimeOffset))
 			{
 				continue;
 			}
@@ -488,9 +488,10 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 				}
 			}
 
+			// compact
 			List<Lesson> compactedLessons = [ ];
 			Lesson? currentLesson = null;
-			foreach (var lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ToList())
+			foreach (var lesson in rawLessons.OrderBy(l => l.FromHour).ThenBy(l => l.ToHour).ThenBy(l => l.Subject.Name).ToList())
 			{
 				if (currentLesson is null || !lesson.LinkToPreviousHour)
 				{
@@ -504,7 +505,6 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 						FromHour = currentLesson.FromHour,
 						ToHour = lesson.ToHour,
 						LinkToPreviousHour = currentLesson.LinkToPreviousHour,
-
 						Date = currentLesson.Date,
 						Id = currentLesson.Id,
 						LessonId = currentLesson.LessonId,
