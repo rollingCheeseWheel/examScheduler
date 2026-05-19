@@ -42,11 +42,13 @@ public interface IScheduleClient
 [Authorize]
 public class ScheduleHub(
 	IScheduleService scheduleService,
-	IClassroomService classroomService
+	IClassroomService classroomService,
+	ILogger<ScheduleHub> logger
 ) : Hub<IScheduleClient>, IScheduleHub
 {
 	private readonly IScheduleService _scheduleService = scheduleService;
 	private readonly IClassroomService _classroomService = classroomService;
+	private readonly ILogger _logger = logger;
 
 	private Guid? _guid;
 
@@ -141,6 +143,8 @@ public class ScheduleHub(
 		{
 			return new(HttpStatusCode.Unauthorized);
 		}
+
+		_logger.LogInformation("schedule create request {@request}", request);
 
 		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);
