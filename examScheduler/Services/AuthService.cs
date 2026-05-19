@@ -1,7 +1,6 @@
 ﻿using examScheduler.BackgroundServices;
 using examScheduler.Data;
 using examScheduler.Mappings;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Models.API;
@@ -111,10 +110,7 @@ public class AuthService(
 
 	private async Task<Result<DateTimeOffset>> LoginAsync(Entities.UserProfile user, CancellationToken ct = default)
 	{
-		if (user.TeacherProfile is not null && user.TeacherProfile.Teacher is not null)
-		{
-			await ConnectTeacherWithCalendarTeacherAsync(user.Id, ct);
-		}
+		await ConnectTeacherWithCalendarTeacherAsync(user.TeacherProfile, ct);
 
 		await _signInManager.SignInAsync(user, true);
 		return new(DateTimeOffset.UtcNow.AddHours(1));
@@ -272,19 +268,16 @@ public class AuthService(
 		return roleName;
 	}
 
-	private async Task ConnectTeacherWithCalendarTeacherAsync(Guid teacherId, CancellationToken ct = default)
+	private async Task ConnectTeacherWithCalendarTeacherAsync(Entities.TeacherProfile? profile, CancellationToken ct = default)
 	{
-		var teacherProfile = await _context.TeacherProfiles
-			.Include(tp => tp.UserProfile)
-			.FindByIdAsync(teacherId, ct);
-		if (teacherProfile is null || teacherProfile.Teacher is not null)
+		if (profile is null || profile.Teacher is not null)
 		{
 			return;
 		}
 
 		var teacher = await _context.Teachers
-			.Where(t => t.SchoolId == teacherProfile.UserProfile.SchoolId)
-			.Where(t => t.Name == teacherProfile.UserProfile.Name)
+			.Where(t => t.SchoolId == profile.UserProfile.SchoolId)
+			.Where(t => t.Name == profile.UserProfile.Name)
 			.FirstOrDefaultAsync(ct);
 
 		if (teacher is null)
@@ -292,8 +285,8 @@ public class AuthService(
 			return;
 		}
 
-		teacherProfile.Teacher = teacher;
-		teacher.TeacherProfile = teacherProfile;
+		profile.Teacher = teacher;
+		teacher.TeacherProfile = profile;
 		await _context.SaveChangesAsync(ct);
 	}
 
