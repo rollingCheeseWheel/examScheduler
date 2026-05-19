@@ -21,9 +21,6 @@ public class UserProfile
 	[Required]
 	public required string Name { get; set; }
 
-	[Required]
-	public ICollection<Guid> ClassroomIds { get; set; } = [ ];
-
 	public StudentProfile? StudentProfile { get; set; }
 	public TeacherProfile? TeacherProfile { get; set; }
 

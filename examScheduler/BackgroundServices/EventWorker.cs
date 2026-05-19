@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
+using Util;
 using Util.DataStructures;
 using Util.Extensions;
 
@@ -171,10 +172,10 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 
 		Logger.LogInformation("getting lessons for timespan: {start} to {end}", DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1));
-		var digitalRegisterLessons = await client.GetCalendarAsync(DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1), ct);
+		var digitalRegisterLessons = await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateUtils.Min(calendar.LastsUntil.AddMonths(1), DateTimeOffset.UtcNow), ct);
 		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
 		{
-			Logger.LogWarning("unable to get lessons: {start} to {end}", DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1));
+			Logger.LogWarning("unable to get lessons: {start} to {end}", DateTimeOffset.UtcNow, DateUtils.Min(calendar.LastsUntil.AddMonths(1), DateTimeOffset.UtcNow));
 			return;
 		}
 		if (!await calendarService.TryExtendCalendarAsync(calendar.Id, student.UserProfile.SchoolId, digitalRegisterLessons, ct))

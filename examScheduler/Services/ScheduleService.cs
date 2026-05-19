@@ -47,7 +47,9 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		var teacherSchedules = await _context.TeacherProfiles
 			.AsNoTracking()
 			.WhereId(userId)
-			.SelectMany(tp => tp.Classrooms)
+			.Select(tp => tp.Teacher)
+			.WhereNotNull()
+			.SelectMany(t => t.Classrooms)
 			.SelectMany(c => c.Schedules)
 			.ToListAsync(ct);
 		return teacherSchedules;
@@ -78,14 +80,14 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			return false;
 		}
 
-		var teacherProfile = await _context.Users
-			.Select(u => u.TeacherProfile)
-			.WhereNotNull()
-			.FindByIdAsync(teacherId, ct);
-		if (teacherProfile is null || teacherProfile.Teacher is null) { return false; }
+		var teacher = await _context.Teachers
+			.Include(t => t.Classrooms)
+			.Where(t => t.TeacherProfile != null && t.TeacherProfile.Id == teacherId)
+			.FirstOrDefaultAsync(ct);
+		if (teacher is null ) { return false; }
 
 		var classroom = await _context.Classrooms.FindByIdAsync(request.ClassroomId, ct);
-		if (classroom is null || !teacherProfile.Classrooms.Contains(classroom))
+		if (classroom is null || !teacher.Classrooms.Contains(classroom))
 		{
 			return false;
 		}

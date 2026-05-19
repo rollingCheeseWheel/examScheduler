@@ -19,7 +19,7 @@ public class Classroom() : EntityBase<Classroom>
 	[Required]
 	public Guid CalendarId { get; set; }
 	[Required]
-	public Calendar Calendar { get; set; } = new();
+	public required Calendar Calendar { get; set; }
 	[Required]
 	public ICollection<StudentProfile> Students { get; set; } = [ ];
 	[Required]

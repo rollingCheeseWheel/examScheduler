@@ -291,7 +291,6 @@ public class AuthService(
 		}
 
 		teacherProfile.Teacher = teacher;
-		teacher.TeacherProfileId = teacherProfile.Id;
 		await _context.SaveChangesAsync(ct);
 	}
 

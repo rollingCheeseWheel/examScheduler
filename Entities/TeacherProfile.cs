@@ -9,8 +9,6 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
 	public required UserProfile UserProfile { get; set; }
-	[Required]
-	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 
 	public Teacher? Teacher { get; set; }
 	public Guid? TeacherId { get; private set; }
@@ -18,10 +16,9 @@ public class TeacherProfile : EntityBase<TeacherProfile>
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	public override bool EqualsCore(TeacherProfile b) => UserProfile.Equals(b.UserProfile) &&
-		Classrooms.ValueEquals(b.Classrooms);
+	public override bool EqualsCore(TeacherProfile b) => UserProfile.Equals(b.UserProfile);
 
-	public override int GetHashCode() => HashCode.Combine(UserProfile, Classrooms.GetValueHashCode());
+	public override int GetHashCode() => HashCode.Combine(UserProfile);
 
 	public override int CompareTo(TeacherProfile? other) => UserProfile.CompareTo(other?.UserProfile);
 }

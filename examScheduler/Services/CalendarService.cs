@@ -1,6 +1,7 @@
 ﻿using Entities;
 using examScheduler.BackgroundServices;
 using examScheduler.Data;
+using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
 using Util.Extensions;
 
@@ -26,6 +27,16 @@ public sealed class CalendarService(
 	public async Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> modelLessons, CancellationToken ct = default)
 	{
 		var lessons = modelLessons.ToList();
+
+		var classroom = await _context.Classrooms
+			.Where(c => c.CalendarId == calendarId)
+			.FirstOrDefaultAsync(ct);
+
+		if (classroom is null)
+		{
+			_logger.LogError("classroom not found");
+			return false;
+		}
 
 		var calendar = await _context.Calendars
 			.Include(c => c.Lessons)
@@ -151,8 +162,16 @@ public sealed class CalendarService(
 			}
 		}
 
-		// LESSONS
+		// assign teachers to classrooms
+		foreach (var (_, teacher) in trackedTeachers)
+		{
+			if (!classroom.Teachers.Contains(teacher))
+			{
+				classroom.Teachers.Add(teacher);
+			}
+		}
 
+		// LESSONS
 		foreach (var modelLesson in lessons)
 		{
 			var existingLesson = calendar.Lessons

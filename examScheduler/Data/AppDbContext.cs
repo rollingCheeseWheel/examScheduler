@@ -65,7 +65,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Teachers)
-			.WithMany();
+			.WithMany(t => t.Classrooms);
 
 		modelBuilder.Entity<Classroom>()
 			.Navigation(c => c.Teachers)
@@ -197,8 +197,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#region TeacherProfile
 		modelBuilder.Entity<TeacherProfile>()
 			.HasOne(tp => tp.Teacher)
-			.WithOne()
-			.HasForeignKey<TeacherProfile>(tp => tp.TeacherId);
+			.WithOne(t => t.TeacherProfile);
 
 		modelBuilder.Entity<TeacherProfile>()
 			.Navigation(tp => tp.Teacher)

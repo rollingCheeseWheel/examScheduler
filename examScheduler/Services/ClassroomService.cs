@@ -30,13 +30,11 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			Name = userProfile.StudentData.MainClass.Name,
 			RegisterId = [ userProfile.StudentData.MainClass.Id ],
 			SchoolId = school.SchoolId,
+			Calendar = new(),
 		};
 
-		var calendar = new Calendar();
-
-		newClassroom.CalendarId = calendar.Id;
-		calendar.ClassroomId = newClassroom.Id;
-		await _context.AddAsync(calendar, ct);
+		newClassroom.CalendarId = newClassroom.Calendar.Id;
+		newClassroom.Calendar.Classroom = newClassroom;
 		await _context.Classrooms.AddAsync(newClassroom, ct);
 		await _context.SaveChangesAsync(ct);
 		return newClassroom;
@@ -61,11 +59,12 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 			return studentClassrooms;
 		}
 
-		var teacherSchedules = await _context.TeacherProfiles
+		var teacherClassrooms = await _context.Teachers
 			.AsNoTracking()
-			.WhereId(userId)
-			.SelectMany(tp => tp.Classrooms)
+			.Include(t => t.Classrooms)
+			.Where(t => t.TeacherProfile != null && t.TeacherProfile.Id == userId)
+			.SelectMany(t => t.Classrooms)
 			.ToListAsync(ct);
-		return teacherSchedules;
+		return teacherClassrooms;
 	}
 }

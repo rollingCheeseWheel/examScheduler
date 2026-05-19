@@ -12,9 +12,12 @@ public class Teacher : EntityBase<Teacher>
 	[Required]
 	public required string SchoolId { get; set; }
 
-	public Guid? TeacherProfileId { get; set; }
+	public TeacherProfile? TeacherProfile { get; set; }
+
 	[Required]
 	public ICollection<Subject> Subjects { get; set; } = [ ];
+	[Required]
+	public ICollection<Classroom> Classrooms { get; set; } = [ ];
 
 	[Timestamp]
 	public override uint Version { get; set; }
@@ -22,9 +25,10 @@ public class Teacher : EntityBase<Teacher>
 	public override bool EqualsCore(Teacher b) => Name == b.Name &&
 		SchoolId == b.SchoolId &&
 		Subjects.ValueEquals(b.Subjects) &&
-		TeacherProfileId == b.TeacherProfileId;
+		TeacherProfile == b.TeacherProfile &&
+		Classrooms.ValueEquals(b.Classrooms);
 
-	public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.GetValueHashCode(), TeacherProfileId);
+	public override int GetHashCode() => HashCode.Combine(Name, SchoolId, Subjects.GetValueHashCode(), TeacherProfile, Classrooms.GetValueHashCode());
 
 	public override int CompareTo(Teacher? b) => Name.CompareTo(b?.Name);
 }
