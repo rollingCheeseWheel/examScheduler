@@ -23,10 +23,15 @@ public interface IScheduleService
 	Task<bool> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid acceptingStudentId, CancellationToken ct = default);
 }
 
-public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : IScheduleService
+public class ScheduleService(
+	AppDbContext context,
+	IEventWorker eventWorker,
+	ILogger<ScheduleService> logger
+) : IScheduleService
 {
 	private readonly AppDbContext _context = context;
 	private readonly IEventWorker _eventWorker = eventWorker;
+	private readonly ILogger _logger = logger;
 
 	public async Task<Schedule?> GetScheduleAsync(Guid id, CancellationToken ct = default) => await _context.Classrooms.SelectMany(c => c.Schedules).FindByIdAsync(id, ct);
 
@@ -71,12 +76,14 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			.Any(g => g.Count() > 1);
 		if (hasOverLappingSlots)
 		{
+			_logger.LogWarning("has overlapping slots");
 			return false;
 		}
 
 		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
 		if (subject is null)
 		{
+			_logger.LogWarning("subject not found");
 			return false;
 		}
 
@@ -84,17 +91,25 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 			.Include(t => t.Classrooms)
 			.Where(t => t.TeacherProfile != null && t.TeacherProfile.Id == teacherId)
 			.FirstOrDefaultAsync(ct);
-		if (teacher is null ) { return false; }
-
-		var classroom = await _context.Classrooms.FindByIdAsync(request.ClassroomId, ct);
-		if (classroom is null || !teacher.Classrooms.Contains(classroom))
+		if (teacher is null)
 		{
+			_logger.LogWarning("teacher trying to create schedule not found");
 			return false;
 		}
 
-		var calendar = await _context.Calendars.FindByIdAsync(classroom.CalendarId, ct);
+		var classroom = await _context.Classrooms
+			.Include(c => c.Calendar)
+			.FindByIdAsync(request.ClassroomId, ct);
+		if (classroom is null || !teacher.Classrooms.Contains(classroom))
+		{
+			_logger.LogWarning("classroom not found or teacher not part of classroom");
+			return false;
+		}
+
+		var calendar = classroom.Calendar;
 		if (calendar is null)
 		{
+			_logger.LogWarning("calendar not found");
 			return false;
 		}
 
@@ -102,9 +117,11 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		// TODO even if the student count is lower than the min capacity it should probably still be considered valid
 		if (classroom.Students.Count > maxCapacity)
 		{
+			_logger.LogWarning("student count is larger than capacity");
 			return false;
 		}
 
+		// check if generatorslots match the calendar
 		foreach (var generatorSlot in request.Generator.Slots.DistinctBy(s => s.DayOfWeek))
 		{
 			var exists = calendar.Lessons
@@ -113,6 +130,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 				.Any();
 			if (!exists)
 			{
+				_logger.LogWarning("generatorslots dont match the calendar");
 				return false;
 			}
 		}
@@ -139,6 +157,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		var isExtendSuccess = newSchedule.TryExtend(classroom.Students.Count, out var newSlots);
 		if (!isExtendSuccess)
 		{
+			_logger.LogWarning("failed to extend calendar");
 			return false;
 		}
 
@@ -150,6 +169,7 @@ public class ScheduleService(AppDbContext context, IEventWorker eventWorker) : I
 		{
 			_eventWorker.Publish(new LockScheduleTask(newScheduleId), slot.LockInDate);
 		}
+		_logger.LogWarning("successfully created schedule");
 		return true;
 	}
 

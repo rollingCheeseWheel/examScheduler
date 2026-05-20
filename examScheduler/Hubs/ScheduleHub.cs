@@ -139,12 +139,12 @@ public class ScheduleHub(
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
 	public async Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request)
 	{
+		_logger.LogInformation("schedule create request {@request}", request.Stringify());
+
 		if (!_guid.HasValue)
 		{
 			return new(HttpStatusCode.Unauthorized);
 		}
-
-		_logger.LogInformation("schedule create request {@request}", request);
 
 		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, Context.ConnectionAborted);
 		return new(result, HttpStatusCode.BadRequest, result);

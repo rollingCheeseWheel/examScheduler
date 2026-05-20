@@ -1,20 +1,25 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Util.Converters;
 
 public class TimeSpanToDateTimeOffsetConverter : JsonConverter<TimeSpan>
 {
-	public override TimeSpan ReadJson(JsonReader reader, Type objectType, TimeSpan existingValue, bool hasExistingValue, JsonSerializer serializer)
+	public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
-		if (reader.TokenType is not JsonToken.Date and not JsonToken.String)
+		if (reader.TokenType is not JsonTokenType.String)
 		{
-			throw new JsonException("Token is not a Date string or Date");
+			throw new JsonException("Token is not a string representation of a date.");
 		}
 
-		var dto = reader.TokenType == JsonToken.Date
-			? (DateTimeOffset)reader.Value!
-			: DateTimeOffset.Parse((string)reader.Value!);
+		string? value = reader.GetString();
+		if (string.IsNullOrEmpty(value) || !DateTimeOffset.TryParse(value, out var dto))
+		{
+			throw new JsonException("Unable to parse DateTimeOffset from string.");
+		}
+
 		return dto - DateTimeOffset.UnixEpoch;
 	}
-	public override void WriteJson(JsonWriter writer, TimeSpan value, JsonSerializer serializer) => writer.WriteValue(( DateTimeOffset.UnixEpoch + value ).ToString("O"));
+
+	public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options) => writer.WriteStringValue(( DateTimeOffset.UnixEpoch + value ).ToString("O"));
 }

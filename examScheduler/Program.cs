@@ -78,7 +78,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+	{
+		options.EnableDetailedErrors = true;
+	}
+);
 
 /*// services //*/
 builder.Services
