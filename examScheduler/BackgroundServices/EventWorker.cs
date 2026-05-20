@@ -171,7 +171,6 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		Logger.LogInformation("getting lessons for timespan: {start} to {end}", DateTimeOffset.UtcNow, calendar.LastsUntil.AddMonths(1));
 		var digitalRegisterLessons = await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateUtils.Min(calendar.LastsUntil.AddMonths(1), DateTimeOffset.UtcNow), ct);
 		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
 		{
@@ -185,7 +184,6 @@ public class EventWorker : BackgroundService, IEventWorker
 		}
 		await context.SaveChangesAsync(ct);
 		await transaction.CommitAsync(ct);
-		Logger.LogInformation("successfully extended calendar");
 	}
 
 	[Event(typeof(LockScheduleTask))]
@@ -239,7 +237,6 @@ public class EventWorker : BackgroundService, IEventWorker
 			clientService.TryAddSchool(school);
 		}
 		var registeredSchools = clientService.GetRegisteredSchoolIds();
-		Logger.LogInformation("Registered schools ({Count}): {@JoinedIds}", registeredSchools.Count(), registeredSchools);
 	}
 
 	[Event(typeof(ApplicationStartedEvent))]
@@ -293,13 +290,11 @@ public class EventWorker : BackgroundService, IEventWorker
 	public void Publish(IEvent @event, TimeSpan offset) => Publish(@event, DateTimeOffset.UtcNow + offset);
 	public void Publish(IEvent @event, DateTimeOffset deferUntil)
 	{
-		//Logger.LogInformation("enqueued event {type}, due at {time}", @event.GetType().LessonName, deferUntil);
 		_events.Enqueue(@event, deferUntil);
 	}
 
 	protected sealed override async Task ExecuteAsync(CancellationToken ct)
 	{
-		Logger.LogInformation("{Name} started", nameof(EventWorker));
 		while (!ct.IsCancellationRequested)
 		{
 			var @event = await _events.DequeueAsync(ct);
@@ -309,7 +304,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			{
 				if (!_handlers.TryGetValue(type, out var eventHandlers))
 				{
-					Logger.LogInformation("No event listeners subscribed to {Type}", type.Name);
+					Logger.LogWarning("No event listeners subscribed to {Type}", type.Name);
 					continue;
 				}
 

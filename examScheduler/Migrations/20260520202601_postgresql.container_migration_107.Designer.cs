@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260519212536_postgresql.container_migration_207")]
-    partial class postgresqlcontainer_migration_207
+    [Migration("20260520202601_postgresql.container_migration_107")]
+    partial class postgresqlcontainer_migration_107
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -267,7 +267,7 @@ namespace examScheduler.Migrations
                     b.Property<TimeSpan>("AutoLockInOffset")
                         .HasColumnType("interval");
 
-                    b.Property<Guid?>("ClassroomId")
+                    b.Property<Guid>("ClassroomId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -407,9 +407,6 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("ScheduleId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("SchoolId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -421,8 +418,6 @@ namespace examScheduler.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ScheduleId");
 
                     b.HasIndex("SchoolId");
 
@@ -695,6 +690,21 @@ namespace examScheduler.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ScheduleTeacher", b =>
+                {
+                    b.Property<Guid>("ScheduleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TeachersId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ScheduleId", "TeachersId");
+
+                    b.HasIndex("TeachersId");
+
+                    b.ToTable("ScheduleTeacher");
+                });
+
             modelBuilder.Entity("SubjectTeacher", b =>
                 {
                     b.Property<string>("SubjectsName")
@@ -777,7 +787,9 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.Classroom", null)
                         .WithMany("Schedules")
-                        .HasForeignKey("ClassroomId");
+                        .HasForeignKey("ClassroomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Entities.Subject", "Subject")
                         .WithMany()
@@ -818,10 +830,6 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
-                    b.HasOne("Entities.Schedule", null)
-                        .WithMany("Teachers")
-                        .HasForeignKey("ScheduleId");
-
                     b.HasOne("Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
@@ -936,6 +944,21 @@ namespace examScheduler.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ScheduleTeacher", b =>
+                {
+                    b.HasOne("Entities.Schedule", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Entities.Teacher", null)
+                        .WithMany()
+                        .HasForeignKey("TeachersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SubjectTeacher", b =>
                 {
                     b.HasOne("Entities.Subject", null)
@@ -973,8 +996,6 @@ namespace examScheduler.Migrations
                     b.Navigation("ExamSlots");
 
                     b.Navigation("SwapRequests");
-
-                    b.Navigation("Teachers");
                 });
 
             modelBuilder.Entity("Entities.Teacher", b =>

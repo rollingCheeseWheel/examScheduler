@@ -37,9 +37,11 @@ public class ScheduleService(
 
 	public async Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
-		var studentSchedules = await _context.StudentProfiles
+		var studentSchedules = await _context.Users
 			.AsNoTracking()
 			.WhereId(userId)
+			.Select(u => u.StudentProfile)
+			.WhereNotNull()
 			.Select(sp => sp.Classroom)
 			.SelectMany(c => c.Schedules)
 			.ToListAsync(ct);
@@ -49,9 +51,11 @@ public class ScheduleService(
 			return studentSchedules;
 		}
 
-		var teacherSchedules = await _context.TeacherProfiles
+		var teacherSchedules = await _context.Users
 			.AsNoTracking()
 			.WhereId(userId)
+			.Select(u => u.TeacherProfile)
+			.WhereNotNull()
 			.Select(tp => tp.Teacher)
 			.WhereNotNull()
 			.SelectMany(t => t.Classrooms)
@@ -76,14 +80,12 @@ public class ScheduleService(
 			.Any(g => g.Count() > 1);
 		if (hasOverLappingSlots)
 		{
-			_logger.LogWarning("has overlapping slots");
 			return false;
 		}
 
 		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
 		if (subject is null)
 		{
-			_logger.LogWarning("subject not found");
 			return false;
 		}
 
@@ -93,7 +95,6 @@ public class ScheduleService(
 			.FirstOrDefaultAsync(ct);
 		if (teacher is null)
 		{
-			_logger.LogWarning("teacher trying to create schedule not found");
 			return false;
 		}
 
@@ -102,14 +103,12 @@ public class ScheduleService(
 			.FindByIdAsync(request.ClassroomId, ct);
 		if (classroom is null || !teacher.Classrooms.Contains(classroom))
 		{
-			_logger.LogWarning("classroom not found or teacher not part of classroom");
 			return false;
 		}
 
 		var calendar = classroom.Calendar;
 		if (calendar is null)
 		{
-			_logger.LogWarning("calendar not found");
 			return false;
 		}
 
@@ -117,7 +116,6 @@ public class ScheduleService(
 		// TODO even if the student count is lower than the min capacity it should probably still be considered valid
 		if (classroom.Students.Count > maxCapacity)
 		{
-			_logger.LogWarning("student count is larger than capacity");
 			return false;
 		}
 
@@ -130,7 +128,6 @@ public class ScheduleService(
 				.Any();
 			if (!exists)
 			{
-				_logger.LogWarning("generatorslots dont match the calendar");
 				return false;
 			}
 		}
@@ -143,24 +140,29 @@ public class ScheduleService(
 			Description = request.Description,
 			ScheduleGenerator = new()
 			{
-				GeneratorSlots = [ .. request.Generator.Slots.Select(x => x.ToEntity()) ],
-				BlacklistedDays = [ .. request.Generator.BlacklistedDays ]
+				GeneratorSlots = request.Generator.Slots.Select(x => x.ToEntity()).ToList(),
+				BlacklistedDays = request.Generator.BlacklistedDays.ToList()
 			},
 			//SlotFillingBehaviour = request.SlotFillingBehaviour,
 			//AutoLockIn = request.AutoLockIn,
 			AutoLockInOffset = request.LockInOffset,
 			StartDate = request.StartDate,
-			Teachers = [ .. classroom.Teachers.Where(t => t.Subjects.Contains(subject)) ],
+			Teachers = classroom.Teachers.Where(t => t.Subjects.Contains(subject)).ToList(),
 			ExamSlots = [ ]
 		};
 
-		var isExtendSuccess = newSchedule.TryExtend(classroom.Students.Count, out var newSlots);
+		var classroomStudentCount = await _context.Classrooms
+			.WhereId(classroom.Id)
+			.SelectMany(c => c.Students)
+			.CountAsync(ct);
+
+		var isExtendSuccess = newSchedule.TryExtend(classroomStudentCount, out var newSlots);
 		if (!isExtendSuccess)
 		{
-			_logger.LogWarning("failed to extend calendar");
 			return false;
 		}
 
+		_context.Add(newSchedule);
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
 
@@ -169,14 +171,18 @@ public class ScheduleService(
 		{
 			_eventWorker.Publish(new LockScheduleTask(newScheduleId), slot.LockInDate);
 		}
-		_logger.LogWarning("successfully created schedule");
 		return true;
 	}
 
 	public async Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default)
 	{
-		var teacher = await _context.TeacherProfiles.FindByIdAsync(actingTeacherId, ct);
-		if (teacher is null || teacher.Teacher is null)
+		var teacher = await _context.Users
+			.WhereId(actingTeacherId)
+			.Select(u => u.TeacherProfile)
+			.WhereNotNull()
+			.Select(tp => tp.Teacher)
+			.FirstOrDefaultAsync(ct);
+		if (teacher is null)
 		{
 			return false;
 		}
@@ -189,7 +195,7 @@ public class ScheduleService(
 			return false;
 		}
 
-		if (!schedule.Teachers.Any(t => t.Id == teacher.Teacher.Id))
+		if (!schedule.Teachers.Any(t => t.Id == teacher.Id))
 		{
 			return false;
 		}
@@ -254,17 +260,23 @@ public class ScheduleService(
 		{
 			return false;
 		}
+		_context.Attach(student);
 
-		var schedule = await _context.Classrooms
-			.SelectMany(c => c.Schedules)
+		var schedule = await _context.Schedules
 			.Where(s => s.ExamSlots.Any(s => s.Id == slotId))
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
 			return false;
 		}
+		_context.Attach(schedule);
 
-		var isSuccess = schedule.TryEnlistStudent(slotId, student);
+		if (student.ClassroomId != schedule.ClassroomId)
+		{
+			return false;
+		}
+
+		var isSuccess = schedule.TryEnlistStudent(slotId, student); 
 		if (!isSuccess)
 		{
 			return false;
@@ -281,6 +293,7 @@ public class ScheduleService(
 		{
 			return false;
 		}
+		_context.Attach(schedule);
 
 		var requestingStudent = await _context.Users
 			.Select(u => u.StudentProfile)
@@ -290,6 +303,7 @@ public class ScheduleService(
 		{
 			return false;
 		}
+		_context.Attach(requestingStudent);
 
 		var newSwapRequest = new SwapRequest
 		{
@@ -299,6 +313,7 @@ public class ScheduleService(
 			RequestedSlotId = requestedSlotId,
 		};
 
+		_context.Add(newSwapRequest);
 		var isSuccess = schedule.TryAddSwapRequest(newSwapRequest);
 		schedule.ResolveImplicitSwaps();
 
@@ -313,11 +328,11 @@ public class ScheduleService(
 			.SelectMany(c => c.Schedules)
 			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
 			.FirstOrDefaultAsync(ct);
-
 		if (schedule is null)
 		{
 			return false;
 		}
+		_context.Attach(schedule);
 
 		var isSuccess = schedule.TryDeleteSwapRequest(swapRequestId);
 		if (!isSuccess)
@@ -340,6 +355,7 @@ public class ScheduleService(
 		{
 			return false;
 		}
+		_context.Attach(schedule);
 
 		var swappingResult = schedule.TryAcceptSwapRequest(swapRequestId, actingStudentId);
 		if (!swappingResult)

@@ -69,7 +69,6 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 	{
 		if (!school.IsEnabled)
 		{
-			_logger.LogInformation("Skipping disabled school {Name}", school.Name);
 			return false;
 		}
 

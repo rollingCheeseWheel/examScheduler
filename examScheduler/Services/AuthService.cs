@@ -294,7 +294,6 @@ public class AuthService(
 	{
 		if (user.Role is not UserRoles.Student || user.StudentProfile is null)
 		{
-			_logger.LogInformation("User is not a student");
 			return;
 		}
 

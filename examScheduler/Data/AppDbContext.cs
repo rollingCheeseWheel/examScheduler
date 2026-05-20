@@ -64,6 +64,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.HasForeignKey(s => s.ClassroomId);
 
 		modelBuilder.Entity<Classroom>()
+			.HasMany(c => c.Schedules)
+			.WithOne()
+			.HasForeignKey(s => s.ClassroomId);
+
+		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Teachers)
 			.WithMany(t => t.Classrooms);
 
@@ -129,10 +134,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne();
 
 		modelBuilder.Entity<Schedule>()
+			.HasMany(s => s.Teachers)
+			.WithMany();
+
+		modelBuilder.Entity<Schedule>()
+			.HasMany(s => s.SwapRequests)
+			.WithOne();
+
+		modelBuilder.Entity<Schedule>()
 			.Navigation(s => s.ExamSlots)
 			.AutoInclude();
 		modelBuilder.Entity<Schedule>()
 			.Navigation(s => s.AuditLogs)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.Teachers)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.Subject)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.SwapRequests)
 			.AutoInclude();
 		#endregion
 

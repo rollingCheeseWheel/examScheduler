@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520185921_postgresql.container_migration_112")]
+    partial class postgresqlcontainer_migration_112
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -264,7 +267,7 @@ namespace examScheduler.Migrations
                     b.Property<TimeSpan>("AutoLockInOffset")
                         .HasColumnType("interval");
 
-                    b.Property<Guid>("ClassroomId")
+                    b.Property<Guid?>("ClassroomId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -784,9 +787,7 @@ namespace examScheduler.Migrations
                 {
                     b.HasOne("Entities.Classroom", null)
                         .WithMany("Schedules")
-                        .HasForeignKey("ClassroomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ClassroomId");
 
                     b.HasOne("Entities.Subject", "Subject")
                         .WithMany()

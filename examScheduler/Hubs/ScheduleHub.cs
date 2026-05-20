@@ -4,6 +4,7 @@ using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Models.API;
+using OpenTelemetry.Exporter;
 using System.Net;
 using System.Security.Claims;
 using Util;
@@ -50,127 +51,161 @@ public class ScheduleHub(
 	private readonly IClassroomService _classroomService = classroomService;
 	private readonly ILogger _logger = logger;
 
-	private Guid? _guid;
+	private Guid UserId { get; set; }
 
+	[Authorize]
 	public override async Task OnConnectedAsync()
 	{
-		var claimsPrincipal = Context.User;
-		var stringedUserId = claimsPrincipal?.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (claimsPrincipal is null ||
-			claimsPrincipal.Identity?.IsAuthenticated is null ||
-			!claimsPrincipal.Identity.IsAuthenticated)
+		try
 		{
-			return;
-		}
+			if (Context.User?.Identity?.IsAuthenticated is null || !Context.User.Identity.IsAuthenticated)
+			{
+				return;
+			}
 
-		if (!Guid.TryParse(stringedUserId, out var userId))
+			TryUpdateUserId();
+			if (UserId == default)
+			{
+				return;
+			}
+
+			var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(UserId, Context.ConnectionAborted);
+			var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(UserId, Context.ConnectionAborted);
+
+			foreach (var schedule in schedules)
+			{
+				await this.AddToScheduleGroupAsync(schedule.Id, Context.ConnectionAborted);
+			}
+
+			foreach (var classroom in classrooms)
+			{
+				await this.AddToClassroomGroupAsync(classroom.Id);
+			}
+
+			await Clients.Caller.ReceiveInitialSchedules(schedules.Select(x => x.ToDTO()));
+			await Clients.Caller.ReceiveInitialClassrooms(classrooms.Select(x => x.ToDTO()));
+
+			await base.OnConnectedAsync();
+
+		}
+		catch (OperationCanceledException)
 		{
-			return;
+
 		}
-		_guid = userId;
-
-		var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(userId, Context.ConnectionAborted);
-		var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(userId, Context.ConnectionAborted);
-
-		foreach (var schedule in schedules)
-		{
-			await this.AddToScheduleGroupAsync(schedule.Id, Context.ConnectionAborted);
-		}
-
-		foreach (var classroom in classrooms)
-		{
-			await this.AddToClassroomGroupAsync(classroom.Id);
-		}
-
-		await Clients.Caller.ReceiveInitialSchedules(schedules.Select(x => x.ToDTO()));
-		await Clients.Caller.ReceiveInitialClassrooms(classrooms.Select(x => x.ToDTO()));
-
-		await base.OnConnectedAsync();
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> RegisterForSlot(Guid slotId)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryEnlistStudentAsync(slotId, UserId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryEnlistStudentAsync(slotId, _guid.Value, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid examSlotId)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, UserId, examSlotId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, _guid.Value, examSlotId, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, UserId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, _guid.Value, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
 	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, UserId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, _guid.Value, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
 	public async Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request)
 	{
-		_logger.LogInformation("schedule create request {@request}", request.Stringify());
-
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryCreateSchedule(request, UserId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryCreateSchedule(request, _guid.Value, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
 	public async Task<Result<bool>> DeleteSchedule(Guid scheduleId)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryDeleteSchedule(scheduleId, UserId, Context.ConnectionAborted);
+			return new(result, HttpStatusCode.BadRequest, result);
 		}
-
-		var result = await _scheduleService.TryDeleteSchedule(scheduleId, _guid.Value, Context.ConnectionAborted);
-		return new(result, HttpStatusCode.BadRequest, result);
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
 	public async Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants)
 	{
-		if (!_guid.HasValue)
+		try
 		{
-			return new(HttpStatusCode.Unauthorized);
+			TryUpdateUserId();
+			var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, UserId, actualParticipants);
+			return new(result, HttpStatusCode.BadRequest, x => x);
 		}
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
+	}
 
-		var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, _guid.Value, actualParticipants);
-		return new(result, HttpStatusCode.BadRequest, x => x);
+	private void TryUpdateUserId()
+	{
+		if (UserId != default)
+		{
+			return;
+		}
+		var _ = Guid.TryParse(Context.UserIdentifier, out var parsed);
+		UserId = parsed;
 	}
 }

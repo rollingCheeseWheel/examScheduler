@@ -28,6 +28,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Key]
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
+	public Guid ClassroomId { get; set; }
+	[Required]
 	public required DateOnly StartDate { get; set; }
 	[NotMapped]
 	public DateOnly EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
