@@ -116,4 +116,8 @@ public static class LinqExtensions
 	public static IEnumerable<TSource> DistinctById<TSource>(this IEnumerable<TSource> source) where TSource : IGuidEntity => source.DistinctBy(x => x.Id);
 
 	public static IQueryable<TSource> DistinctById<TSource>(this IQueryable<TSource> source) where TSource : IGuidEntity => source.DistinctBy(x => x.Id);
+
+	public static IQueryable<TSource> OrderById<TSource>(this IQueryable<TSource> source) where TSource : IGuidEntity => source.OrderBy(x => x.Id);
+
+	public static IEnumerable<TSource> OrderById<TSource>(this IEnumerable<TSource> source) where TSource : IGuidEntity => source.OrderBy(x => x.Id);
 }

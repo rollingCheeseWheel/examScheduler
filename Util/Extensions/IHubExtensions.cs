@@ -14,4 +14,13 @@ public static class IHubExtensions
 	public static async Task AddToScheduleGroupAsync<THub>(this THub hub, Guid scheduleId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, $"schedule:{scheduleId}", ct);
 
 	public static async Task AddToClassroomGroupAsync<THub>(this THub hub, Guid classroomId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, $"classroom:{classroomId}", ct);
+	public static Task AddToScheduleGroupAsync<THub, TClient>(this IHubContext<THub, TClient> hubContext, string connectionId, Guid scheduleId, CancellationToken ct = default)
+		where THub : Hub<TClient>
+		where TClient : class
+		=> hubContext.Groups.AddToGroupAsync(connectionId, $"schedule:{scheduleId}", ct);
+
+	public static Task AddToClassroomGroupAsync<THub, TClient>(this IHubContext<THub, TClient> hubContext, string connectionId, Guid classroomId, CancellationToken ct = default)
+		where THub : Hub<TClient>
+		where TClient: class
+		=> hubContext.Groups.AddToGroupAsync(connectionId, $"classroom:{classroomId}", ct);
 }

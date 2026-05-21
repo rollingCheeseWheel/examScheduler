@@ -26,6 +26,7 @@ public interface IScheduleHub
 	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
 
 	Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request);
+	Task<Result<bool>> SubscribeSchedule(Guid scheduleId);
 	Task<Result<bool>> DeleteSchedule(Guid scheduleId);
 	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants);
 }
@@ -33,7 +34,8 @@ public interface IScheduleHub
 public interface IScheduleClient
 {
 	Task ReceiveInitialSchedules(IEnumerable<Schedule> schedules);
-	Task UpdateSchedule(Guid scheduleId, Schedule schedule);
+	Task ScheduleCreated(Guid scheduleId);
+	Task UpdateSchedule(Schedule schedule);
 	Task RemoveSchedule(Guid scheduleId);
 
 	Task ReceiveInitialClassrooms(IEnumerable<Classroom> classrooms);
@@ -52,8 +54,8 @@ public class ScheduleHub(
 	private readonly ILogger _logger = logger;
 
 	private Guid UserId { get; set; }
+	private CancellationToken _ct => Context.ConnectionAborted;
 
-	[Authorize]
 	public override async Task OnConnectedAsync()
 	{
 		try
@@ -69,12 +71,12 @@ public class ScheduleHub(
 				return;
 			}
 
-			var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(UserId, Context.ConnectionAborted);
-			var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(UserId, Context.ConnectionAborted);
+			var schedules = await _scheduleService.GetSchedulesForUserAsync_AsNoTracking(UserId, _ct);
+			var classrooms = await _classroomService.GetClassroomsForUserAsync_AsNoTracking(UserId, _ct);
 
 			foreach (var schedule in schedules)
 			{
-				await this.AddToScheduleGroupAsync(schedule.Id, Context.ConnectionAborted);
+				await this.AddToScheduleGroupAsync(schedule.Id, _ct);
 			}
 
 			foreach (var classroom in classrooms)
@@ -100,7 +102,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryEnlistStudentAsync(slotId, UserId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryEnlistStudentAsync(slotId, UserId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
 		}
 		catch (OperationCanceledException)
@@ -115,7 +117,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, UserId, examSlotId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, UserId, examSlotId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
 		}
 		catch (OperationCanceledException)
@@ -130,7 +132,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, UserId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, UserId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
 		}
 		catch (OperationCanceledException)
@@ -145,7 +147,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, UserId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, UserId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
 		}
 		catch (OperationCanceledException)
@@ -160,8 +162,28 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryCreateSchedule(request, UserId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryCreateSchedule(request, UserId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
+		}
+		catch (OperationCanceledException)
+		{
+			return new(HttpStatusCode.BadRequest);
+		}
+	}
+
+	public async Task<Result<bool>> SubscribeSchedule(Guid scheduleId)
+	{
+		try
+		{
+			TryUpdateUserId();
+			var schedule = await _scheduleService.GetScheduleAsync_AsNoTracking(UserId, scheduleId, _ct);
+			if (schedule is null)
+			{
+				return new(HttpStatusCode.Unauthorized);
+			}
+			await this.AddToScheduleGroupAsync(scheduleId, _ct);
+			await Clients.Caller.UpdateSchedule(schedule.ToDTO());
+			return new(true);
 		}
 		catch (OperationCanceledException)
 		{
@@ -175,7 +197,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryDeleteSchedule(scheduleId, UserId, Context.ConnectionAborted);
+			var result = await _scheduleService.TryDeleteSchedule(scheduleId, UserId, _ct);
 			return new(result, HttpStatusCode.BadRequest, result);
 		}
 		catch (OperationCanceledException)
@@ -190,7 +212,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, UserId, actualParticipants);
+			var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, UserId, actualParticipants, _ct);
 			return new(result, HttpStatusCode.BadRequest, x => x);
 		}
 		catch (OperationCanceledException)

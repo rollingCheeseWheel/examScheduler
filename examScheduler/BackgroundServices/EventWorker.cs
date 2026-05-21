@@ -18,6 +18,7 @@ namespace examScheduler.BackgroundServices;
 public interface IEvent;
 
 
+public sealed record ScheduleCreatedEvent(Guid ScheduleId, Guid ClassroomId) : IEvent;
 public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
 public sealed record ScheduleRemovedEvent(Guid ScheduleId) : IEvent;
 public sealed record ClassroomStudentCountChangedEvent(Guid ClassroomId) : IEvent;
@@ -47,6 +48,16 @@ public interface IEventWorker
 
 public class EventWorker : BackgroundService, IEventWorker
 {
+	[Event(typeof(ScheduleCreatedEvent))]
+	public async Task ScheduleCreated(ScheduleCreatedEvent @event, CancellationToken ct)
+	{
+		using var scope = ScopeFactory.CreateScope();
+		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
+		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+		await hub.ClassroomGroup(@event.ClassroomId).ScheduleCreated(@event.ScheduleId);
+	}
+
 	[Event(typeof(ScheduleUpdatedEvent))]
 	public async Task ScheduleUpdated(ScheduleUpdatedEvent @event, CancellationToken ct)
 	{
@@ -54,18 +65,17 @@ public class EventWorker : BackgroundService, IEventWorker
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-		var schedule = await context.Classrooms
+		var schedule = await context.Schedules
 			.AsNoTracking()
-			.SelectMany(c => c.Schedules)
 			.FindByIdAsync(@event.ScheduleId, ct);
 
 		if (schedule is null)
 		{
-			Logger.LogWarning("unable to get schedule ({id})", @event.ScheduleId);
+			Logger.LogWarning("unable to get schedule {id}", @event.ScheduleId);
 			return;
 		}
 
-		await hub.ScheduleGroup(@event.ScheduleId).UpdateSchedule(@event.ScheduleId, schedule.ToDTO()).WaitAsync(ct);
+		await hub.ScheduleGroup(@event.ScheduleId).UpdateSchedule(schedule.ToDTO());
 	}
 
 	[Event(typeof(ScheduleRemovedEvent))]
@@ -74,7 +84,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
 
-		await hub.ScheduleGroup(@event.ScheduleId).RemoveSchedule(@event.ScheduleId).WaitAsync(ct);
+		await hub.ScheduleGroup(@event.ScheduleId).RemoveSchedule(@event.ScheduleId);
 	}
 
 	[Event(typeof(ClassroomStudentCountChangedEvent))]
@@ -103,7 +113,7 @@ public class EventWorker : BackgroundService, IEventWorker
 
 		foreach (var schedule in classroom.Schedules)
 		{
-			Publish(new ScheduleUpdatedEvent(schedule.Id));
+			Publish(new ScheduleUpdatedEvent(schedule.Id), 1);
 		}
 		foreach (var createdSlot in concatedCreatedSlots)
 		{

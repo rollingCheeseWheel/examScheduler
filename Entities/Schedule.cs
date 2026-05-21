@@ -150,7 +150,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 			{
 				return true;
 			}
-			var tempStudents = studentsNotYetEnlisted.Take(slot.MaxParticipants - slot.Participants.Count);
+			var tempStudents = studentsNotYetEnlisted.OrderById().Take(slot.MaxParticipants - slot.Participants.Count);
 			slot.Participants.AddRange(tempStudents);
 			slot.HasBeenProcessed = true;
 			studentsNotYetEnlisted.RemoveRange(tempStudents);
