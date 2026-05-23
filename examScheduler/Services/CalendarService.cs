@@ -40,7 +40,7 @@ public sealed class CalendarService(
 			return false;
 		}
 
-		var calendar = await _context.Calendars
+		var calendar = await _context._Calendars
 			.Include(c => c.Lessons)
 				.ThenInclude(l => l.Subject)
 			.Include(c => c.Lessons)
@@ -222,7 +222,7 @@ public sealed class CalendarService(
 
 	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid actingTeacherId, Guid classroomId, DateTimeOffset date, CancellationToken ct = default)
 	{
-		var calendar = await _context.Calendars
+		var calendar = await _context._Calendars
 			.Where(c => c.Classroom.Id == classroomId)
 			.OrderById()
 			.FirstOrDefaultAsync(ct);

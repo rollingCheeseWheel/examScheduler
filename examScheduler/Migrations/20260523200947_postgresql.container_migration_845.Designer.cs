@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260523170824_postgresql.container_migration_662")]
-    partial class postgresqlcontainer_migration_662
+    [Migration("20260523200947_postgresql.container_migration_845")]
+    partial class postgresqlcontainer_migration_845
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -84,7 +84,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("ScheduleId");
 
-                    b.ToTable("_auditLogs");
+                    b.ToTable("_AuditLogs");
                 });
 
             modelBuilder.Entity("Entities.Calendar", b =>
@@ -103,7 +103,7 @@ namespace examScheduler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("_calendars");
+                    b.ToTable("_Calendars");
                 });
 
             modelBuilder.Entity("Entities.Classroom", b =>
@@ -179,7 +179,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("ScheduleId");
 
-                    b.ToTable("_examSlots");
+                    b.ToTable("_ExamSlots");
                 });
 
             modelBuilder.Entity("Entities.Lesson", b =>
@@ -220,7 +220,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("SubjectName");
 
-                    b.ToTable("_lessons");
+                    b.ToTable("_Lessons");
                 });
 
             modelBuilder.Entity("Entities.Schedule", b =>
@@ -256,7 +256,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("SubjectName");
 
-                    b.ToTable("_schedules");
+                    b.ToTable("_Schedules");
                 });
 
             modelBuilder.Entity("Entities.School", b =>
@@ -315,7 +315,7 @@ namespace examScheduler.Migrations
 
                     b.HasIndex("ClassroomId");
 
-                    b.ToTable("_studentProfiles");
+                    b.ToTable("_StudentProfiles");
                 });
 
             modelBuilder.Entity("Entities.Subject", b =>
@@ -405,7 +405,7 @@ namespace examScheduler.Migrations
                     b.HasIndex("TeacherId")
                         .IsUnique();
 
-                    b.ToTable("_teacherProfiles");
+                    b.ToTable("_TeacherProfiles");
                 });
 
             modelBuilder.Entity("Entities.UserProfile", b =>
@@ -747,7 +747,7 @@ namespace examScheduler.Migrations
 
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
-                    b.HasOne("Entities.Classroom", null)
+                    b.HasOne("Entities.Classroom", "Classroom")
                         .WithMany("Schedules")
                         .HasForeignKey("ClassroomId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -758,6 +758,8 @@ namespace examScheduler.Migrations
                         .HasForeignKey("SubjectName")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Classroom");
 
                     b.Navigation("Subject");
                 });

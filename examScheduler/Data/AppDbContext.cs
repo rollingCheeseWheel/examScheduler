@@ -14,22 +14,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	public DbSet<Subject> Subjects { get; set; }
 	public DbSet<Teacher> Teachers { get; set; }
 
-	public IQueryable<AuditLog> AuditLogs => _auditLogs.AsQueryable();
-	public IQueryable<Calendar> Calendars => _calendars.AsQueryable();
-	public IQueryable<ExamSlot> ExamSlots => _examSlots.AsQueryable();
-	public IQueryable<Lesson> Lessons => _lessons.AsQueryable();
-	public IQueryable<Schedule> Schedules => _schedules.AsQueryable();
-	public IQueryable<StudentProfile> StudentProfiles => _studentProfiles.AsQueryable();
-	public IQueryable<TeacherProfile> TeacherProfiles => _teacherProfiles.AsQueryable();
-
 	#region backing DbSets
-	private DbSet<AuditLog> _auditLogs { get; set; }
-	private DbSet<Calendar> _calendars { get; set; }
-	private DbSet<ExamSlot> _examSlots { get; set; }
-	private DbSet<Lesson> _lessons { get; set; }
-	private DbSet<Schedule> _schedules { get; set; }
-	private DbSet<StudentProfile> _studentProfiles { get; set; }
-	private DbSet<TeacherProfile> _teacherProfiles { get; set; }
+	public DbSet<AuditLog> _AuditLogs { get; set; }
+	public DbSet<Calendar> _Calendars { get; set; }
+	public DbSet<ExamSlot> _ExamSlots { get; set; }
+	public DbSet<Lesson> _Lessons { get; set; }
+	public DbSet<Schedule> _Schedules { get; set; }
+	public DbSet<StudentProfile> _StudentProfiles { get; set; }
+	public DbSet<TeacherProfile> _TeacherProfiles { get; set; }
 	#endregion
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -67,7 +59,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Classroom>()
 			.HasMany(c => c.Schedules)
-			.WithOne()
+			.WithOne(s => s.Classroom)
 			.HasForeignKey(s => s.ClassroomId);
 
 		modelBuilder.Entity<Classroom>()
@@ -76,6 +68,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		modelBuilder.Entity<Classroom>()
 			.Navigation(c => c.Teachers)
+			.AutoInclude();
+
+		modelBuilder.Entity<Classroom>()
+			.Navigation(c => c.Students)
 			.AutoInclude();
 		#endregion
 

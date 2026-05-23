@@ -72,10 +72,6 @@ public static class LinqExtensions
 
 	public static IEnumerable<TSource> WhereId<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, TItem> selector, Guid id) where TItem : IGuidEntity => source.Where(x => selector(x).Id == id);
 
-	public static IQueryable<TSource> WhereIds<TSource>(this IQueryable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
-
-	public static IEnumerable<TSource> WhereIds<TSource>(this IEnumerable<TSource> source, IEnumerable<Guid> ids) where TSource : IGuidEntity => source.Where(x => ids.Contains(x.Id));
-
 	public static TSource? FindById<TSource>(this IEnumerable<TSource> source, Guid id) where TSource : IGuidEntity => source.FirstOrDefault(x => x.Id == id);
 
 	public static async Task<TSource?> FindByIdAsync<TSource>(this IQueryable<TSource> source, Guid id, CancellationToken ct = default) where TSource : IGuidEntity => await source.FirstOrDefaultAsync(x => x.Id == id, ct);

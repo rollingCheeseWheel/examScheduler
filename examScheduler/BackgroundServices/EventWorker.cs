@@ -51,7 +51,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
 		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-		var schedule = await context.Schedules
+		var schedule = await context._Schedules
 			.AsNoTracking()
 			.FindByIdAsync(@event.ScheduleId, ct);
 
@@ -83,7 +83,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		var classroom = await context.Classrooms
 			.AsNoTracking()
 			.JoinOnId(
-				context.Calendars,
+				context._Calendars,
 				c => c.CalendarId,
 				(o, i) => o
 			)
@@ -115,7 +115,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		var student = await context.StudentProfiles.FindByIdAsync(task.StudentProfileId, ct);
+		var student = await context._StudentProfiles.FindByIdAsync(task.StudentProfileId, ct);
 		if (student is null)
 		{
 			Logger.LogWarning("student with id {id} not found", task.StudentProfileId);
@@ -124,7 +124,7 @@ public class EventWorker : BackgroundService, IEventWorker
 
 		var calendar = await context.Classrooms
 			.Where(c => c.Students.Any(s => s.Id == task.StudentProfileId))
-			.JoinInnerOnId(context.Calendars, c => c.CalendarId)
+			.JoinInnerOnId(context._Calendars, c => c.CalendarId)
 			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (calendar is null)

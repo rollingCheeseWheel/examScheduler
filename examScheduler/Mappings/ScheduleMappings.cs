@@ -7,6 +7,7 @@ public static class ScheduleMappings
 	public static Models.API.Schedule ToDTO(this Schedule entity) => new()
 	{
 		Id = entity.Id,
+		ClassroomId = entity.ClassroomId,
 		Description = entity.Description,
 		StartDate = entity.StartDate,
 		EndDate = entity.EndDate,

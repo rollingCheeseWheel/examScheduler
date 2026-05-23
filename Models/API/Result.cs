@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Data;
 using System.Net;
 using System.Text.Json.Serialization;
 
@@ -44,6 +45,12 @@ public record Result<T> : IActionResult
 		Errors = errors;
 		StatusCode = errorCode;
 	}
+	protected Result(T? data, HttpStatusCode statusCode, string[ ]? errors)
+	{
+		Data = data;
+		StatusCode = statusCode;
+		Errors = errors;
+	}
 
 	public async Task ExecuteResultAsync(ActionContext context)
 	{
@@ -54,5 +61,10 @@ public record Result<T> : IActionResult
 		};
 
 		await objectResult.ExecuteResultAsync(context);
+	}
+
+	public Result<TNew> To<TNew>(TNew? data)
+	{
+		return new(data, StatusCode, Errors);
 	}
 }

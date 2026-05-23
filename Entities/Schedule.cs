@@ -30,6 +30,8 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Required]
 	public Guid ClassroomId { get; set; }
 	[Required]
+	public required Classroom Classroom { get; set; }
+	[Required]
 	public required DateOnly StartDate { get; set; }
 	[NotMapped]
 	public DateOnly EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;

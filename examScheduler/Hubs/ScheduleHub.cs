@@ -99,8 +99,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryEnlistStudentAsync(slotId, UserId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			return await _scheduleService.TryEnlistStudentAsync(slotId, UserId, _ct);
 		}
 		catch (OperationCanceledException)
 		{
@@ -114,8 +113,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryCreateSwapRequestAsync(scheduleId, UserId, examSlotId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			return await _scheduleService.TryCreateSwapRequestAsync(scheduleId, UserId, examSlotId, _ct);
 		}
 		catch (OperationCanceledException)
 		{
@@ -129,8 +127,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, UserId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			return await _scheduleService.TryDeleteSwapRequestAsync(swapRequestId, UserId, _ct);
 		}
 		catch (OperationCanceledException)
 		{
@@ -144,8 +141,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, UserId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			return await _scheduleService.TryAcceptSwapRequestAsync(swapRequestId, UserId, _ct);
 		}
 		catch (OperationCanceledException)
 		{
@@ -159,15 +155,12 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var scheduleId = await _scheduleService.TryCreateSchedule(request, UserId, _ct);
-			if (scheduleId is null)
+			var result = await _scheduleService.TryCreateSchedule(request, UserId, _ct);
+			if (result.Success)
 			{
-				return new(HttpStatusCode.BadRequest);
+				await Clients.ClassroomGroup(request.ClassroomId).ScheduleCreated(result.Data);
 			}
-
-			await Clients.ClassroomGroup(request.ClassroomId).ScheduleCreated(scheduleId.Value);
-
-			return new(true);
+			return result.To(true);
 		}
 		catch (OperationCanceledException)
 		{
@@ -201,8 +194,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryDeleteSchedule(scheduleId, UserId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			return await _scheduleService.TryDeleteSchedule(scheduleId, UserId, _ct);
 		}
 		catch (OperationCanceledException)
 		{
@@ -216,8 +208,7 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, UserId, actualParticipants, _ct);
-			return new(result, HttpStatusCode.BadRequest, x => x);
+			return await _scheduleService.TryReportActualStudentsForScheduleSlot(scheduleSlotId, UserId, actualParticipants, _ct);
 		}
 		catch (OperationCanceledException)
 		{

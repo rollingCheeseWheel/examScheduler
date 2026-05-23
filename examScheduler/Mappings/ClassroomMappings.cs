@@ -8,6 +8,7 @@ public static class ClassroomMappings
 	{
 		Id = entity.Id,
 		Name = entity.Name,
-		Teachers = entity.Teachers.Select(x => x.ToTeacherWithSubjectsDTO())
+		Teachers = entity.Teachers.Select(x => x.ToTeacherWithSubjectsDTO()),
+		Students = entity.Students.Select(x => x.ToDTO())
 	};
 }

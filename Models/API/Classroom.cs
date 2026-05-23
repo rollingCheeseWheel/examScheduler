@@ -10,4 +10,6 @@ public class Classroom
 	public required string Name { get; set; }
 	[Required]
 	public required IEnumerable<TeacherWithSubjects> Teachers { get; set; }
+	[Required]
+	public required IEnumerable<UserProfile> Students { get; set; }
 }

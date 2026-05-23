@@ -50,7 +50,7 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
-		var studentClassrooms = await _context.StudentProfiles
+		var studentClassrooms = await _context._StudentProfiles
 			.AsNoTracking()
 			.WhereId(userId)
 			.Select(sp => sp.Classroom)

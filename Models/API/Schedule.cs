@@ -11,6 +11,8 @@ public class Schedule
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
+	public required Guid ClassroomId { get; set; }
+	[Required]
 	public required DateOnly StartDate { get; set; }
 	[Required, GreaterThan<DateOnly>(nameof(StartDate))]
 	public required DateOnly EndDate { get; set; }
