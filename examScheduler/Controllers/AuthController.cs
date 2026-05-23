@@ -32,10 +32,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 	public async Task<Result<UserProfile>> Me(CancellationToken ct)
 	{
 		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (userIdString is null || !Guid.TryParse(userIdString, out var parsedGuid))
-		{
-			return new(null, HttpStatusCode.Unauthorized);
-		}
-		return new(await _authService.TryGetUser_AsNoTrackingAsync(parsedGuid, ct), HttpStatusCode.Unauthorized, x => x is not null);
+		return userIdString is null || !Guid.TryParse(userIdString, out var parsedGuid)
+			? new(null, HttpStatusCode.Unauthorized)
+			: new(await _authService.TryGetUser_AsNoTrackingAsync(parsedGuid, ct), HttpStatusCode.Unauthorized, x => x is not null);
 	}
 }

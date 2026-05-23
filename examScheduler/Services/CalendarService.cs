@@ -1,7 +1,6 @@
 ﻿using Entities;
 using examScheduler.BackgroundServices;
 using examScheduler.Data;
-using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
 using Util.Extensions;
 
@@ -256,20 +255,7 @@ public sealed class CalendarService(
 			.OrderById()
 			.FirstOrDefaultAsync(ct);
 
-		if (classroom is null)
-		{
-			return false;
-		}
-
-		if (classroom.Students.Select(s => s.Id).Contains(userId))
-		{
-			return true;
-		}
-		if (classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(t => t.Id).Contains(userId))
-		{
-			return true;
-		}
-		return false;
+		return classroom is not null && ( classroom.Students.Select(s => s.Id).Contains(userId) || classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(t => t.Id).Contains(userId) );
 	}
 
 	private static bool EqualsModel(Lesson entity, Models.DigitalesRegister.Lesson model) =>

@@ -13,7 +13,7 @@ public class SameDayOfWeekAttribute : AssertTypeAttribute<IEnumerable<DateOnly>>
 			return ValidationResult.Success;
 		}
 
-		var first = dates[0].DayOfWeek;
+		var first = dates[ 0 ].DayOfWeek;
 		return value.All(d => d.DayOfWeek == first) ? ValidationResult.Success : new("Not all entries have the same day of week");
 	}
 }

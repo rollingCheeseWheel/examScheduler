@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Util.Converters;
@@ -22,11 +21,7 @@ public class EnumConverter<TEnum> : JsonConverter<TEnum>
 		{
 			var intValue = reader.GetInt32();
 			var parsed = (TEnum)Enum.ToObject(typeof(TEnum), intValue);
-			if (!Enum.IsDefined(parsed))
-			{
-				throw new JsonException($"Invalid integer value for {typeof(TEnum).Name}");
-			}
-			return parsed;
+			return !Enum.IsDefined(parsed) ? throw new JsonException($"Invalid integer value for {typeof(TEnum).Name}") : parsed;
 		}
 
 		throw new JsonException($"Unable to convert to {typeof(TEnum).Name}");

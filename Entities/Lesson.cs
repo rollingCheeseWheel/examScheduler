@@ -51,5 +51,5 @@ public class Lesson : EntityBase<Lesson>
 
 	public override int GetHashCode() => HashCode.Combine(FirstOccurance, Occurances.GetValueHashCode(), Teachers.GetValueHashCode(), FromHour, Duration, Subject);
 
-	public override int CompareTo(Lesson? b) => (FirstOccurance ?? default).CompareTo(b?.FirstOccurance ?? default);
+	public override int CompareTo(Lesson? b) => ( FirstOccurance ?? default ).CompareTo(b?.FirstOccurance ?? default);
 }

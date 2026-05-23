@@ -6,8 +6,6 @@ using examScheduler.Misc;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Polly;
-using Polly.Extensions.Http;
 using System.Text.Json;
 using Util;
 using Util.Extensions;

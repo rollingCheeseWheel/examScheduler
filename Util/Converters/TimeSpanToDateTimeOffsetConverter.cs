@@ -12,13 +12,10 @@ public class TimeSpanToDateTimeOffsetConverter : JsonConverter<TimeSpan>
 			throw new JsonException("Token is not a string representation of a date.");
 		}
 
-		string? value = reader.GetString();
-		if (string.IsNullOrEmpty(value) || !DateTimeOffset.TryParse(value, out var dto))
-		{
-			throw new JsonException("Unable to parse DateTimeOffset from string.");
-		}
-
-		return dto - DateTimeOffset.UnixEpoch;
+		var value = reader.GetString();
+		return string.IsNullOrEmpty(value) || !DateTimeOffset.TryParse(value, out var dto)
+			? throw new JsonException("Unable to parse DateTimeOffset from string.")
+			: dto - DateTimeOffset.UnixEpoch;
 	}
 
 	public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options) => writer.WriteStringValue(( DateTimeOffset.UnixEpoch + value ).ToString("O"));

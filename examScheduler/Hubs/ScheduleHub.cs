@@ -1,12 +1,9 @@
-﻿using examScheduler.BackgroundServices;
-using examScheduler.Mappings;
+﻿using examScheduler.Mappings;
 using examScheduler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Models.API;
-using OpenTelemetry.Exporter;
 using System.Net;
-using System.Security.Claims;
 using Util;
 using Util.Extensions;
 

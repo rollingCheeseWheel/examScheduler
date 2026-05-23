@@ -43,21 +43,9 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 			school,
 			_logger
 		);
-		if (!await client.AuthenticateAsync(ct))
-		{
-			return null;
-		}
-		else
-		{
-			if (!_sessions.TryAdd(client.Id, client))
-			{
-				return null;
-			}
-			else
-			{
-				return client;
-			}
-		}
+		return !await client.AuthenticateAsync(ct)
+			? null
+			: !_sessions.TryAdd(client.Id, client) ? null : (ILightWeightDigitalRegisterClient)client;
 	}
 
 	public IDigitalRegisterClient? TryGetClient(Guid clientId)
@@ -77,10 +65,7 @@ public class DigitalRegisterClientService(IHttpClientFactory httpClientFactory, 
 		return _schools.TryAdd(normalizedKey, new(school.RegisterUri.GetSchemeAndAuthority(), school.ClientId, school.Secret));
 	}
 
-	public IEnumerable<string> GetRegisteredSchoolIds()
-	{
-		return _schools.Keys;
-	}
+	public IEnumerable<string> GetRegisteredSchoolIds() => _schools.Keys;
 
 	private static string NormalizeKey(string schoolId) => schoolId.Trim().ToLowerInvariant();
 
@@ -122,10 +107,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 		_school = school;
 	}
 
-	internal LightWeightRegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school, ILogger logger) : this(configuredHttpClient, session, school)
-	{
-		_logger = logger;
-	}
+	internal LightWeightRegisterClient(HttpClient configuredHttpClient, ClientSession session, DigitalRegisterSchool school, ILogger logger) : this(configuredHttpClient, session, school) => _logger = logger;
 
 	public AuthStatus AuthStatus => _session.AuthStatus;
 	public DateTimeOffset SessionExpiration => _session.SessionExpiration;

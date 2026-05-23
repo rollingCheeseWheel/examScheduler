@@ -96,10 +96,7 @@ public class Teacher
 	[JsonIgnore]
 	public string Name => string.Join(" ", FirstName, LastName);
 
-	public static bool operator ==(Teacher? a, Teacher? b)
-	{
-		return ReferenceEquals(a, b) || ( a is not null && b is not null && a.Id == b.Id && a.Name == b.Name );
-	}
+	public static bool operator ==(Teacher? a, Teacher? b) => ReferenceEquals(a, b) || ( a is not null && b is not null && a.Id == b.Id && a.Name == b.Name );
 
 	public static bool operator !=(Teacher? a, Teacher? b) => !( a == b );
 	public override bool Equals(object? obj) => obj is Teacher other && this == other;

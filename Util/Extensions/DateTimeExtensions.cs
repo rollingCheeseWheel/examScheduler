@@ -60,7 +60,7 @@ public static class DateTimeExtensions
 
 	public static DateOnly ToDateOnly(this DateTime date) => DateOnly.FromDateTime(date);
 
-	public static DateTimeOffset ToDateTimeOffset(this DateOnly date) => new DateTimeOffset(date.ToDateTime(), TimeSpan.Zero);
+	public static DateTimeOffset ToDateTimeOffset(this DateOnly date) => new(date.ToDateTime(), TimeSpan.Zero);
 
 	public static DateTime ToDateTime(this DateOnly date) => date.ToDateTime(TimeOnly.MinValue);
 }

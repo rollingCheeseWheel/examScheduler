@@ -7,9 +7,7 @@ public sealed class WaitHandleCancellation : IDisposable
 	private readonly CancellationTokenSource _cts = new();
 	private readonly RegisteredWaitHandle _registration;
 
-	public WaitHandleCancellation(WaitHandle waitHandle)
-	{
-		_registration = ThreadPool.RegisterWaitForSingleObject(
+	public WaitHandleCancellation(WaitHandle waitHandle) => _registration = ThreadPool.RegisterWaitForSingleObject(
 			waitHandle,
 			static (state, _) =>
 			{
@@ -18,7 +16,6 @@ public sealed class WaitHandleCancellation : IDisposable
 			_cts,
 			Timeout.Infinite,
 			true);
-	}
 
 	public void Dispose()
 	{

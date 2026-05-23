@@ -44,12 +44,9 @@ public class AuthService(
 	private readonly IEventWorker _eventWorker = eventWorker;
 	private readonly SignInManager<Entities.UserProfile> _signInManager = signInManager;
 
-	public async Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default)
-	{
-		return ( await _context.Users
+	public async Task<UserProfile?> TryGetUser_AsNoTrackingAsync(Guid userId, CancellationToken ct = default) => ( await _context.Users
 			.AsNoTracking()
-			.FindByIdAsync(userId))?.ToDTO();
-	}
+			.FindByIdAsync(userId) )?.ToDTO();
 
 	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
 	{

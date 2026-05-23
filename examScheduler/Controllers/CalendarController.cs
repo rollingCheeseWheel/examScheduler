@@ -28,12 +28,9 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
 			return new(HttpStatusCode.BadRequest);
 		}
 
-		if (!User.TryGetId(out var userId))
-		{
-			return new(HttpStatusCode.BadRequest);
-		}
-
-		return new(
+		return !User.TryGetId(out var userId)
+			? new(HttpStatusCode.BadRequest)
+			: new(
 			( await _calendarService.TryGetWeekContaintingDateAsync(userId, classroomId, date) )
 				?.Select(x => x.ToDTO()),
 			HttpStatusCode.BadRequest,

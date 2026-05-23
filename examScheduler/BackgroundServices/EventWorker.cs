@@ -1,6 +1,4 @@
-﻿
-using Entities;
-using examScheduler.Data;
+﻿using examScheduler.Data;
 using examScheduler.Hubs;
 using examScheduler.Mappings;
 using examScheduler.Services;
@@ -252,10 +250,7 @@ public class EventWorker : BackgroundService, IEventWorker
 	public void Publish(IEvent @event) => Publish(@event, TimeSpan.Zero);
 	public void Publish(IEvent @event, int offsetSeconds) => Publish(@event, TimeSpan.FromSeconds(offsetSeconds));
 	public void Publish(IEvent @event, TimeSpan offset) => Publish(@event, DateTimeOffset.UtcNow + offset);
-	public void Publish(IEvent @event, DateTimeOffset deferUntil)
-	{
-		_events.Enqueue(@event, deferUntil);
-	}
+	public void Publish(IEvent @event, DateTimeOffset deferUntil) => _events.Enqueue(@event, deferUntil);
 
 	protected sealed override async Task ExecuteAsync(CancellationToken ct)
 	{

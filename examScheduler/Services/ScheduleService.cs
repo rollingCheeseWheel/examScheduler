@@ -3,7 +3,6 @@ using examScheduler.BackgroundServices;
 using examScheduler.Data;
 using examScheduler.Mappings;
 using Microsoft.EntityFrameworkCore;
-using System.Runtime.InteropServices;
 using Util.Extensions;
 
 namespace examScheduler.Services;
@@ -45,31 +44,10 @@ public class ScheduleService(
 			.Where(c => c.Schedules.Select(s => s.Id).Contains(scheduleId))
 			.OrderById()
 			.FirstOrDefaultAsync(ct);
-		if (classroom is null)
-		{
-			return false;
-		}
-
-		if (classroom.Students.Select(s => s.Id).Contains(userId))
-		{
-			return true;
-		}
-		if (classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(tp => tp.Id).Contains(userId))
-		{
-			return true;
-		}
-		return false;
+		return classroom is not null && ( classroom.Students.Select(s => s.Id).Contains(userId) || classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(tp => tp.Id).Contains(userId) );
 	}
 
-	public async Task<Schedule?> GetScheduleAsync_AsNoTracking(Guid actorId, Guid id, CancellationToken ct = default)
-	{
-		if (!await HasAccessToSchedule(actorId, id, ct))
-		{
-			return null;
-		}
-
-		return await _context.Schedules.AsNoTracking().FindByIdAsync(id, ct);
-	}
+	public async Task<Schedule?> GetScheduleAsync_AsNoTracking(Guid actorId, Guid id, CancellationToken ct = default) => !await HasAccessToSchedule(actorId, id, ct) ? null : await _context.Schedules.AsNoTracking().FindByIdAsync(id, ct);
 
 	public async Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)
 	{
