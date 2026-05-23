@@ -12,8 +12,8 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260520202601_postgresql.container_migration_107")]
-    partial class postgresqlcontainer_migration_107
+    [Migration("20260523170824_postgresql.container_migration_662")]
+    partial class postgresqlcontainer_migration_662
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,7 +43,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Action")
@@ -91,7 +90,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.Calendar", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("LastsUntil")
@@ -111,7 +109,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.Classroom", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CalendarId")
@@ -149,7 +146,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.ExamSlot", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateOnly>("Date")
@@ -189,7 +185,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.Lesson", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("CalendarId")
@@ -228,40 +223,9 @@ namespace examScheduler.Migrations
                     b.ToTable("_lessons");
                 });
 
-            modelBuilder.Entity("Entities.RefreshTokenSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("ExpirationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TokenValue")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("UserProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TokenValue")
-                        .IsUnique();
-
-                    b.ToTable("RefreshSessions");
-                });
-
             modelBuilder.Entity("Entities.Schedule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<TimeSpan>("AutoLockInOffset")
@@ -367,7 +331,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.SwapRequest", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RequestedSlotId")
@@ -400,7 +363,6 @@ namespace examScheduler.Migrations
             modelBuilder.Entity("Entities.Teacher", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")

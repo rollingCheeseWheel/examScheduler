@@ -10,7 +10,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<UserProfile, IdentityRole<Guid>, Guid>(options)
 {
 	public DbSet<Classroom> Classrooms { get; set; }
-	public DbSet<RefreshTokenSession> RefreshSessions { get; set; }
 	public DbSet<School> Schools { get; set; }
 	public DbSet<Subject> Subjects { get; set; }
 	public DbSet<Teacher> Teachers { get; set; }
@@ -44,6 +43,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#endregion
 
 		#region Classroom
+		modelBuilder.Entity<Classroom>()
+			.ConfigureIDGeneratedClientside();
+
 		modelBuilder.Entity<Classroom>()
 			.HasIndex(c => new { c.SchoolId, c.Name })
 			.IsUnique();
@@ -79,6 +81,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		#region Calendar
 		modelBuilder.Entity<Calendar>()
+			.ConfigureIDGeneratedClientside();
+
+		modelBuilder.Entity<Calendar>()
 			.HasMany(c => c.Lessons)
 			.WithOne();
 
@@ -88,6 +93,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#endregion
 
 		#region Lesson
+		modelBuilder.Entity<Lesson>()
+			.ConfigureIDGeneratedClientside();
+
 		modelBuilder.Entity<Lesson>()
 			.HasMany(l => l.Teachers)
 			.WithMany();
@@ -105,6 +113,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#endregion
 
 		#region Teacher
+		modelBuilder.Entity<Teacher>()
+			.ConfigureIDGeneratedClientside();
+
 		modelBuilder.Entity<Teacher>()
 			.HasMany(t => t.Subjects)
 			.WithMany();
@@ -124,6 +135,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#endregion
 
 		#region Schedule
+		modelBuilder.Entity<Schedule>()
+			.ConfigureIDGeneratedClientside();
+
 		modelBuilder.Entity<Schedule>()
 			.HasMany(s => s.ExamSlots)
 			.WithOne()
@@ -160,6 +174,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
 		#region ExamSlot
 		modelBuilder.Entity<ExamSlot>()
+			.ConfigureIDGeneratedClientside();
+
+		modelBuilder.Entity<ExamSlot>()
 			.HasMany(e => e.Participants)
 			.WithMany();
 
@@ -169,10 +186,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#endregion
 
 		#region AuditLog
-
+		modelBuilder.Entity<AuditLog>()
+			.ConfigureIDGeneratedClientside();
 		#endregion
 
 		#region SwapRequest
+		modelBuilder.Entity<SwapRequest>()
+			.ConfigureIDGeneratedClientside();
+
 		modelBuilder.Entity<SwapRequest>()
 			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedSlotId })
 			.IsUnique();
@@ -224,12 +245,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<TeacherProfile>()
 			.Navigation(tp => tp.Teacher)
 			.AutoInclude();
-		#endregion
-
-		#region RefreshSession
-		modelBuilder.Entity<RefreshTokenSession>()
-			.HasIndex(s => s.TokenValue)
-			.IsUnique();
 		#endregion
 	}
 

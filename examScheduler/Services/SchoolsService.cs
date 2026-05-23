@@ -20,5 +20,7 @@ public class SchoolsService(AppDbContext context) : ISchoolsService
 
 	public async Task<School?> GetSchoolBySchoolIdAsync_AsNoTracking(string schoolId, CancellationToken ct = default) => await _context.Schools
 		.AsNoTracking()
-		.FirstOrDefaultAsync(s => s.SchoolId == schoolId, ct);
+		.Where(s => s.SchoolId == schoolId)
+		.OrderBy(s => s.Name)
+		.FirstOrDefaultAsync(ct);
 }

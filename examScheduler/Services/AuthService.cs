@@ -48,8 +48,7 @@ public class AuthService(
 	{
 		return ( await _context.Users
 			.AsNoTracking()
-			.WhereId(userId)
-			.FirstOrDefaultAsync(ct) )?.ToDTO();
+			.FindByIdAsync(userId))?.ToDTO();
 	}
 
 	public async Task<Result<DateTimeOffset>> AuthenticateAsync(OAuthRequest request, CancellationToken ct = default)
@@ -179,7 +178,6 @@ public class AuthService(
 		}
 		else
 		{
-			_eventWorker.Publish(new ClassroomStudentCountChangedEvent(classroom.Id), 10);
 			_logger.LogDebug("Successfully registered user {Name}, logging them in", userProfile.Name);
 			return await LoginAsync(userProfile, ct);
 		}
@@ -210,6 +208,7 @@ public class AuthService(
 		var existingTeacherProfile = await _context.Teachers
 			.Where(t => t.SchoolId == school.SchoolId)
 			.Where(t => t.Name == userProfile.Name)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 
 		var teacherProfile = new Entities.TeacherProfile
@@ -278,6 +277,7 @@ public class AuthService(
 		var teacher = await _context.Teachers
 			.Where(t => t.SchoolId == profile.UserProfile.SchoolId)
 			.Where(t => t.Name == profile.UserProfile.Name)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 
 		if (teacher is null)

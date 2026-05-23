@@ -41,9 +41,11 @@ public class ClassroomService(AppDbContext context) : IClassroomService
 	}
 
 	public async Task<Classroom?> GetClassroomByRegisterIdAsync(School school, int registerId, CancellationToken ct = default) => await _context.Classrooms
-			.FirstOrDefaultAsync(c =>
+		.Where(c =>
 				c.SchoolId == school.SchoolId &&
-				c.RegisterId.Contains(registerId), ct
+				c.RegisterId.Contains(registerId))
+		.OrderById()
+			.FirstOrDefaultAsync(ct
 			);
 
 	public async Task<IEnumerable<Classroom>> GetClassroomsForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default)

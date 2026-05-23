@@ -5,7 +5,7 @@ namespace Entities;
 public class StudentProfile : EntityBase<StudentProfile>
 {
 	[Key]
-	public override Guid Id { get; set; } = Guid.CreateVersion7();
+	public override Guid Id { get; set; }
 	[Required]
 	public required UserProfile UserProfile { get; set; }
 	[Required]

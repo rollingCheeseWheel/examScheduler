@@ -33,13 +33,13 @@ public interface IScheduleHub
 
 public interface IScheduleClient
 {
-	Task ReceiveInitialSchedules(IEnumerable<Schedule> schedules);
+	Task InitialSchedules(IEnumerable<Schedule> schedules);
 	Task ScheduleCreated(Guid scheduleId);
-	Task UpdateSchedule(Schedule schedule);
-	Task RemoveSchedule(Guid scheduleId);
+	Task ScheduleUpdated(Schedule schedule);
+	Task ScheduleRemoved(Guid scheduleId);
 
-	Task ReceiveInitialClassrooms(IEnumerable<Classroom> classrooms);
-	Task UpdateClassroom(Classroom classroom);
+	Task InitialClassrooms(IEnumerable<Classroom> classrooms);
+	Task ClassroomUpdated(Classroom classroom);
 }
 
 [Authorize]
@@ -84,8 +84,8 @@ public class ScheduleHub(
 				await this.AddToClassroomGroupAsync(classroom.Id);
 			}
 
-			await Clients.Caller.ReceiveInitialSchedules(schedules.Select(x => x.ToDTO()));
-			await Clients.Caller.ReceiveInitialClassrooms(classrooms.Select(x => x.ToDTO()));
+			await Clients.Caller.InitialSchedules(schedules.Select(x => x.ToDTO()));
+			await Clients.Caller.InitialClassrooms(classrooms.Select(x => x.ToDTO()));
 
 			await base.OnConnectedAsync();
 
@@ -162,8 +162,15 @@ public class ScheduleHub(
 		try
 		{
 			TryUpdateUserId();
-			var result = await _scheduleService.TryCreateSchedule(request, UserId, _ct);
-			return new(result, HttpStatusCode.BadRequest, result);
+			var scheduleId = await _scheduleService.TryCreateSchedule(request, UserId, _ct);
+			if (scheduleId is null)
+			{
+				return new(HttpStatusCode.BadRequest);
+			}
+
+			await Clients.ClassroomGroup(request.ClassroomId).ScheduleCreated(scheduleId.Value);
+
+			return new(true);
 		}
 		catch (OperationCanceledException)
 		{
@@ -182,7 +189,7 @@ public class ScheduleHub(
 				return new(HttpStatusCode.Unauthorized);
 			}
 			await this.AddToScheduleGroupAsync(scheduleId, _ct);
-			await Clients.Caller.UpdateSchedule(schedule.ToDTO());
+			await Clients.Caller.ScheduleUpdated(schedule.ToDTO());
 			return new(true);
 		}
 		catch (OperationCanceledException)
@@ -227,7 +234,11 @@ public class ScheduleHub(
 		{
 			return;
 		}
-		var _ = Guid.TryParse(Context.UserIdentifier, out var parsed);
-		UserId = parsed;
+		if (Context.User is null)
+		{
+			return;
+		}
+		Context.User.TryGetId(out var id);
+		UserId = id;
 	}
 }

@@ -18,10 +18,8 @@ namespace examScheduler.BackgroundServices;
 public interface IEvent;
 
 
-public sealed record ScheduleCreatedEvent(Guid ScheduleId, Guid ClassroomId) : IEvent;
 public sealed record ScheduleUpdatedEvent(Guid ScheduleId) : IEvent;
 public sealed record ScheduleRemovedEvent(Guid ScheduleId) : IEvent;
-public sealed record ClassroomStudentCountChangedEvent(Guid ClassroomId) : IEvent;
 public sealed record CalendarUpdatedEvent(Guid CalendarId) : IEvent;
 public sealed record ApplicationStartedEvent : IEvent;
 
@@ -48,16 +46,6 @@ public interface IEventWorker
 
 public class EventWorker : BackgroundService, IEventWorker
 {
-	[Event(typeof(ScheduleCreatedEvent))]
-	public async Task ScheduleCreated(ScheduleCreatedEvent @event, CancellationToken ct)
-	{
-		using var scope = ScopeFactory.CreateScope();
-		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
-		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-		await hub.ClassroomGroup(@event.ClassroomId).ScheduleCreated(@event.ScheduleId);
-	}
-
 	[Event(typeof(ScheduleUpdatedEvent))]
 	public async Task ScheduleUpdated(ScheduleUpdatedEvent @event, CancellationToken ct)
 	{
@@ -75,7 +63,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		await hub.ScheduleGroup(@event.ScheduleId).UpdateSchedule(schedule.ToDTO());
+		await hub.ScheduleGroup(@event.ScheduleId).ScheduleUpdated(schedule.ToDTO());
 	}
 
 	[Event(typeof(ScheduleRemovedEvent))]
@@ -84,43 +72,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		using var scope = ScopeFactory.CreateScope();
 		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
 
-		await hub.ScheduleGroup(@event.ScheduleId).RemoveSchedule(@event.ScheduleId);
-	}
-
-	[Event(typeof(ClassroomStudentCountChangedEvent))]
-	public async Task ClassroomStudentCountChanged(ClassroomStudentCountChangedEvent @event, CancellationToken ct)
-	{
-		using var scope = ScopeFactory.CreateScope();
-		var hub = scope.ServiceProvider.GetRequiredService<IHubContext<ScheduleHub, IScheduleClient>>();
-		var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-		var classroom = await context.Classrooms.FindByIdAsync(@event.ClassroomId, ct);
-		if (classroom is null)
-		{
-			Logger.LogWarning("unable to get classroom ({id})", @event.ClassroomId);
-			return;
-		}
-
-		var concatedCreatedSlots = new List<ExamSlot>();
-		foreach (var schedule in classroom.Schedules)
-		{
-			schedule.TryExtend(classroom.Students.Count, out var createdSlots);
-			concatedCreatedSlots.AddRange(createdSlots);
-
-		}
-
-		await context.SaveChangesAsync(ct);
-
-		foreach (var schedule in classroom.Schedules)
-		{
-			Publish(new ScheduleUpdatedEvent(schedule.Id), 1);
-		}
-		foreach (var createdSlot in concatedCreatedSlots)
-		{
-			Publish(new LockScheduleTask(createdSlot.ScheduleId), createdSlot.LockInDate);
-		}
-
-		await hub.ClassroomGroup(@event.ClassroomId).UpdateClassroom(classroom.ToDTO());
+		await hub.ScheduleGroup(@event.ScheduleId).ScheduleRemoved(@event.ScheduleId);
 	}
 
 	[Event(typeof(CalendarUpdatedEvent))]
@@ -137,6 +89,7 @@ public class EventWorker : BackgroundService, IEventWorker
 				c => c.CalendarId,
 				(o, i) => o
 			)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (classroom is null)
 		{
@@ -144,7 +97,7 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		await hub.ClassroomGroup(classroom.Id).UpdateClassroom(classroom.ToDTO());
+		await hub.ClassroomGroup(classroom.Id).ClassroomUpdated(classroom.ToDTO());
 	}
 
 	[Event(typeof(ExtendCalendarTask))]
@@ -174,6 +127,7 @@ public class EventWorker : BackgroundService, IEventWorker
 		var calendar = await context.Classrooms
 			.Where(c => c.Students.Any(s => s.Id == task.StudentProfileId))
 			.JoinInnerOnId(context.Calendars, c => c.CalendarId)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (calendar is null)
 		{

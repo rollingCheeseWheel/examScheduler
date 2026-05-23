@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_112 : Migration
+    public partial class postgresqlcontainer_migration_662 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -37,21 +37,6 @@ namespace examScheduler.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetRoles", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RefreshSessions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ExpirationDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    TokenValue = table.Column<string>(type: "text", nullable: false),
-                    UserProfileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RefreshSessions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -305,12 +290,12 @@ namespace examScheduler.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: false),
                     StartDate = table.Column<DateOnly>(type: "date", nullable: false),
                     AutoLockInOffset = table.Column<TimeSpan>(type: "interval", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     SubjectName = table.Column<string>(type: "text", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    ClassroomId = table.Column<Guid>(type: "uuid", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -319,7 +304,8 @@ namespace examScheduler.Migrations
                         name: "FK__schedules_Classrooms_ClassroomId",
                         column: x => x.ClassroomId,
                         principalTable: "Classrooms",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK__schedules_Subjects_SubjectName",
                         column: x => x.SubjectName,
@@ -687,12 +673,6 @@ namespace examScheduler.Migrations
                 column: "TeachersId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RefreshSessions_TokenValue",
-                table: "RefreshSessions",
-                column: "TokenValue",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ScheduleTeacher_TeachersId",
                 table: "ScheduleTeacher",
                 column: "TeachersId");
@@ -752,9 +732,6 @@ namespace examScheduler.Migrations
 
             migrationBuilder.DropTable(
                 name: "LessonTeacher");
-
-            migrationBuilder.DropTable(
-                name: "RefreshSessions");
 
             migrationBuilder.DropTable(
                 name: "ScheduleTeacher");

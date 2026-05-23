@@ -11,7 +11,9 @@ public interface ICalendarService
 {
 	Task<bool> TryExtendCalendarAsync(Guid calendarId, string schoolId, IEnumerable<Models.DigitalesRegister.Lesson> lessons, CancellationToken ct = default);
 
-	Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default);
+	Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid actingTeacherId, Guid classroomId, DateTimeOffset date, CancellationToken ct = default);
+
+	Task<bool> HasAccessToCalendarAsync(Guid userId, Guid calendarId, CancellationToken ct = default);
 }
 
 public sealed class CalendarService(
@@ -30,6 +32,7 @@ public sealed class CalendarService(
 
 		var classroom = await _context.Classrooms
 			.Where(c => c.CalendarId == calendarId)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 
 		if (classroom is null)
@@ -218,28 +221,55 @@ public sealed class CalendarService(
 		return true;
 	}
 
-	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid classroomId, DateTimeOffset date, CancellationToken ct = default)
+	public async Task<IEnumerable<Lesson>?> TryGetWeekContaintingDateAsync(Guid actingTeacherId, Guid classroomId, DateTimeOffset date, CancellationToken ct = default)
 	{
-		var classroom = await _context.Classrooms
-			.Include(c => c.Calendar)
-				.ThenInclude(c => c.Lessons)
-					.ThenInclude(l => l.Subject)
-			.Include(c => c.Calendar)
-				.ThenInclude(c => c.Lessons)
-					.ThenInclude(l => l.Teachers)
-			.FirstOrDefaultAsync(c => c.Id == classroomId, ct);
+		var calendar = await _context.Calendars
+			.Where(c => c.Classroom.Id == classroomId)
+			.OrderById()
+			.FirstOrDefaultAsync(ct);
 
-		if (classroom?.Calendar is null)
+		if (calendar is null)
+		{
+			return null;
+		}
+
+		if (!await HasAccessToCalendarAsync(actingTeacherId, calendar.Id, ct))
 		{
 			return null;
 		}
 
 		var monday = date.RoundDownToMonday();
 
-		return classroom.Calendar
+		return calendar
 			.NormalizeOrDefaultToMostCommonLesson_CreatesNewInstances(new(monday, monday.RoundUpTo(DayOfWeek.Sunday)))
 			.SelectMany(x => x)
 			.ToList();
+	}
+
+	public async Task<bool> HasAccessToCalendarAsync(Guid userId, Guid calendarId, CancellationToken ct = default)
+	{
+		var classroom = await _context.Classrooms
+			.Include(c => c.Students)
+			.Include(c => c.Teachers.Where(t => t.TeacherProfile != null))
+				.ThenInclude(t => t.TeacherProfile!)
+			.Where(c => c.CalendarId == calendarId)
+			.OrderById()
+			.FirstOrDefaultAsync(ct);
+
+		if (classroom is null)
+		{
+			return false;
+		}
+
+		if (classroom.Students.Select(s => s.Id).Contains(userId))
+		{
+			return true;
+		}
+		if (classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(t => t.Id).Contains(userId))
+		{
+			return true;
+		}
+		return false;
 	}
 
 	private static bool EqualsModel(Lesson entity, Models.DigitalesRegister.Lesson model) =>

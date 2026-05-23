@@ -13,7 +13,7 @@ public interface IScheduleService
 	Task<Schedule?> GetScheduleAsync_AsNoTracking(Guid actorId, Guid id, CancellationToken ct = default);
 	Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 
-	Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
+	Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
 	Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
 	Task<bool> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid actingTeacherId, IEnumerable<Guid> actualParticipants, CancellationToken ct = default);
 
@@ -40,22 +40,21 @@ public class ScheduleService(
 	{
 		var classroom = await _context.Classrooms
 			.Include(c => c.Students)
-				.ThenInclude(s => s.UserProfile)
 			.Include(c => c.Teachers.Where(t => t.TeacherProfile != null))
 				.ThenInclude(t => t.TeacherProfile!)
-					.ThenInclude(tp => tp.UserProfile)
 			.Where(c => c.Schedules.Select(s => s.Id).Contains(scheduleId))
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (classroom is null)
 		{
 			return false;
 		}
 
-		if (classroom.Students.Select(s => s.UserProfile.Id).Contains(userId))
+		if (classroom.Students.Select(s => s.Id).Contains(userId))
 		{
 			return true;
 		}
-		if (classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(tp => tp.UserProfile.Id).Contains(userId))
+		if (classroom.Teachers.Select(t => t.TeacherProfile).WhereNotNull().Select(tp => tp.Id).Contains(userId))
 		{
 			return true;
 		}
@@ -101,29 +100,30 @@ public class ScheduleService(
 		return teacherSchedules;
 	}
 
-	public async Task<bool> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default)
+	public async Task<Guid?> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default)
 	{
 		var hasOverLappingSlots = request.Generator.Slots
 			.GroupBy(s => s.DayOfWeek)
 			.Any(g => g.Count() > 1);
 		if (hasOverLappingSlots)
 		{
-			return false;
+			return null;
 		}
 
 		var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == request.SubjectName, ct);
 		if (subject is null)
 		{
-			return false;
+			return null;
 		}
 
 		var teacher = await _context.Teachers
 			.Include(t => t.Classrooms)
 			.Where(t => t.TeacherProfile != null && t.TeacherProfile.Id == teacherId)
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (teacher is null)
 		{
-			return false;
+			return null;
 		}
 
 		var classroom = await _context.Classrooms
@@ -131,20 +131,20 @@ public class ScheduleService(
 			.FindByIdAsync(request.ClassroomId, ct);
 		if (classroom is null || !teacher.Classrooms.Contains(classroom))
 		{
-			return false;
+			return null;
 		}
 
 		var calendar = classroom.Calendar;
 		if (calendar is null)
 		{
-			return false;
+			return null;
 		}
 
 		var maxCapacity = request.Generator.Slots.Sum(g => g.MaxParticipants);
 		// TODO even if the student count is lower than the min capacity it should probably still be considered valid
 		if (classroom.Students.Count > maxCapacity)
 		{
-			return false;
+			return null;
 		}
 
 		// check if generatorslots match the calendar
@@ -156,7 +156,7 @@ public class ScheduleService(
 				.Any();
 			if (!exists)
 			{
-				return false;
+				return null;
 			}
 		}
 
@@ -187,19 +187,18 @@ public class ScheduleService(
 		var isExtendSuccess = newSchedule.TryExtend(classroomStudentCount, out var newSlots);
 		if (!isExtendSuccess)
 		{
-			return false;
+			return null;
 		}
 
 		_context.Add(newSchedule);
 		classroom.Schedules.Add(newSchedule);
 		await _context.SaveChangesAsync(ct);
 
-		_eventWorker.Publish(new ScheduleUpdatedEvent(newSchedule.Id), 2);
 		foreach (var slot in newSlots)
 		{
 			_eventWorker.Publish(new LockScheduleTask(newScheduleId), slot.LockInDate);
 		}
-		return true;
+		return newSchedule.Id;
 	}
 
 	public async Task<bool> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default)
@@ -230,6 +229,7 @@ public class ScheduleService(
 
 		var schedule = await _context.Schedules
 			.Where(s => s.ExamSlots.Any(s => s.Id == examSlotId))
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
@@ -271,18 +271,15 @@ public class ScheduleService(
 
 	public async Task<bool> TryEnlistStudentAsync(Guid slotId, Guid studentId, CancellationToken ct = default)
 	{
-		var student = await _context.Users
-			.Select(u => u.StudentProfile)
-			.WhereNotNull()
-			.FindByIdAsync(studentId, ct);
+		var student = await _context.StudentProfiles.FindByIdAsync(studentId, ct);
 		if (student is null)
 		{
 			return false;
 		}
-		_context.Attach(student);
 
 		var schedule = await _context.Schedules
 			.Where(s => s.ExamSlots.Any(s => s.Id == slotId))
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
@@ -292,7 +289,6 @@ public class ScheduleService(
 		{
 			return false;
 		}
-		_context.Attach(schedule);
 
 		if (student.ClassroomId != schedule.ClassroomId)
 		{
@@ -304,7 +300,14 @@ public class ScheduleService(
 		{
 			return false;
 		}
-		await _context.SaveChangesAsync(ct);
+		try
+		{
+			await _context.SaveChangesAsync(ct);
+		}
+		catch (DbUpdateConcurrencyException ex)
+		{
+			_logger.LogError(ex, "exception during save, affected entries: {@entries}", ex.Entries);
+		}
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
 		return true;
 	}
@@ -354,6 +357,7 @@ public class ScheduleService(
 		var schedule = await _context.Classrooms
 			.SelectMany(c => c.Schedules)
 			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{
@@ -378,9 +382,9 @@ public class ScheduleService(
 
 	public async Task<bool> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
-		var schedule = await _context.Classrooms
-			.SelectMany(c => c.Schedules)
+		var schedule = await _context.Schedules
 			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
+			.OrderById()
 			.FirstOrDefaultAsync(ct);
 		if (schedule is null)
 		{

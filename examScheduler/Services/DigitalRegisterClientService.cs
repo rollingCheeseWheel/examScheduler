@@ -317,29 +317,22 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 
 	private async Task<T?> PostJsonAsync<T>(RegisterPath path, object? data, bool authRequest = false, CancellationToken ct = default)
 	{
+		var response = await PostJsonAsync(path, data, authRequest, ct);
+
+		if (response is null)
+		{
+			return default;
+		}
+
+		var content = await response.ReadContentAsStringAsync(ct);
 		try
 		{
-			var response = await PostJsonAsync(path, data, authRequest, ct);
-
-			if (response is null)
-			{
-				return default;
-			}
-
-			var content = await response.ReadContentAsStringAsync(ct);
-			if (!response.IsSuccessStatusCode)
-			{
-				throw new Exception($"Response unsuccessful ({response.StatusCode}): {content}");
-			}
-			else
-			{
-				var deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
-				return deserialized is not null && deserialized.TryValidate() ? deserialized : default;
-			}
+			var deserialized = JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
+			return deserialized is not null && deserialized.TryValidate() ? deserialized : default;
 		}
 		catch (Exception ex)
 		{
-			_logger?.LogWarning(ex, "Exception caught");
+			_logger?.LogWarning(ex, "Exception caught - response contents: {content}", content);
 			return default;
 		}
 	}
@@ -368,8 +361,7 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 				"application/json"
 			);
 
-			var response = await SendAsync(request, ct);
-			return response;
+			return await SendAsync(request, ct);
 		}
 		catch
 		{
@@ -385,18 +377,17 @@ public class LightWeightRegisterClient : ILightWeightDigitalRegisterClient, IDis
 		{
 			return default;
 		}
-		else
+		var content = await response.ReadContentAsStringAsync(ct);
+		try
 		{
-			try
-			{
-				return JsonSerializer.Deserialize<T>(await response.ReadContentAsStringAsync(ct), Constants.SerializerOptions);
-			}
-			catch (Exception ex)
-			{
-				_logger?.LogWarning(ex, "Exception caught");
-				return default;
-			}
+			return JsonSerializer.Deserialize<T>(content, Constants.SerializerOptions);
 		}
+		catch (Exception ex)
+		{
+			_logger?.LogError(ex, "Exception caught - response content: {content}", content);
+			return default;
+		}
+
 	}
 
 	private async Task<HttpResponseMessage?> GetAsync(RegisterPath path, Dictionary<string, string?>? uriArgs = null, CancellationToken ct = default)

@@ -4,23 +4,16 @@ namespace Util.Extensions;
 
 public static class IHubExtensions
 {
-	public static IClientProxy ScheduleGroup<THub>(this IHubContext<THub> hub, Guid scheduleId) where THub : Hub => hub.Clients.Group($"schedule:{scheduleId}");
+	private static string SK(Guid scheduleId) => $"schedule:{scheduleId}";
+	private static string CK(Guid classroomId) => $"classroom:{classroomId}";
 
-	public static TClient ScheduleGroup<THub, TClient>(this IHubContext<THub, TClient> hub, Guid scheduleId) where THub : Hub<TClient> where TClient : class => hub.Clients.Group($"schedule:{scheduleId}");
-	public static IClientProxy ClassroomGroup<THub>(this IHubContext<THub> hub, Guid classroomId) where THub : Hub => hub.Clients.Group($"classroom:{classroomId}");
+	public static TClient ScheduleGroup<TClient>(this IHubClients<TClient> clients, Guid scheduleId) => clients.Group(SK(scheduleId));
+	public static TClient ClassroomGroup<TClient>(this IHubClients<TClient> clients, Guid classroomId) => clients.Group(CK(classroomId));
 
-	public static TClient ClassroomGroup<THub, TClient>(this IHubContext<THub, TClient> hub, Guid classroomId) where THub : Hub<TClient> where TClient : class => hub.Clients.Group($"classroom:{classroomId}");
+	public static TClient ScheduleGroup<THub, TClient>(this IHubContext<THub, TClient> hub, Guid scheduleId) where THub : Hub<TClient> where TClient : class => hub.Clients.ScheduleGroup(scheduleId);
+	public static TClient ClassroomGroup<THub, TClient>(this IHubContext<THub, TClient> hub, Guid classroomId) where THub : Hub<TClient> where TClient : class => hub.Clients.ClassroomGroup(classroomId);
 
-	public static async Task AddToScheduleGroupAsync<THub>(this THub hub, Guid scheduleId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, $"schedule:{scheduleId}", ct);
+	public static async Task AddToScheduleGroupAsync<THub>(this THub hub, Guid scheduleId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, SK(scheduleId), ct);
 
-	public static async Task AddToClassroomGroupAsync<THub>(this THub hub, Guid classroomId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, $"classroom:{classroomId}", ct);
-	public static Task AddToScheduleGroupAsync<THub, TClient>(this IHubContext<THub, TClient> hubContext, string connectionId, Guid scheduleId, CancellationToken ct = default)
-		where THub : Hub<TClient>
-		where TClient : class
-		=> hubContext.Groups.AddToGroupAsync(connectionId, $"schedule:{scheduleId}", ct);
-
-	public static Task AddToClassroomGroupAsync<THub, TClient>(this IHubContext<THub, TClient> hubContext, string connectionId, Guid classroomId, CancellationToken ct = default)
-		where THub : Hub<TClient>
-		where TClient: class
-		=> hubContext.Groups.AddToGroupAsync(connectionId, $"classroom:{classroomId}", ct);
+	public static async Task AddToClassroomGroupAsync<THub>(this THub hub, Guid classroomId, CancellationToken ct = default) where THub : Hub => await hub.Groups.AddToGroupAsync(hub.Context.ConnectionId, CK(classroomId), ct);
 }
