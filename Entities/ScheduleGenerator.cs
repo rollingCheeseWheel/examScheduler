@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Util.DataStructures;
 using Util.Extensions;
 using Util.Validation;
 
@@ -7,19 +6,20 @@ namespace Entities;
 
 public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 {
-	[Key]
+	[Key, DefinedGuid]
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 
-	[Required, DistinctBy<DayOfWeek>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
+	[Required]
+	public required Guid ScheduleId { get; set; }
+
+	[Required, ICollectionDistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];
-	[Required, Distinct<DateOnly>, MaxLength(20)]
+	[Required, ICollectionDistinct<DateOnly>, MaxLength(20)]
 	public required ICollection<DateOnly> BlacklistedDays { get; set; } = [ ];
 
 
 	[Timestamp]
 	public override uint Version { get; set; }
-
-	public LoopingEnumerable<ScheduleGeneratorSlot> GetLoopingEnumerable(int maxIterations = -1) => new([ .. GeneratorSlots ], maxIterations);
 
 	public override bool EqualsCore(ScheduleGenerator b) => GeneratorSlots.ValueEquals(b.GeneratorSlots) && BlacklistedDays.ValueEquals(b.BlacklistedDays);
 	public override int GetHashCode() => HashCode.Combine(GeneratorSlots.GetValueHashCode(), BlacklistedDays.GetValueHashCode());
@@ -27,8 +27,8 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 
 public class ScheduleGeneratorSlot : EntityBase<ScheduleGeneratorSlot>
 {
-	[Key]
-	public override Guid Id { get; set; }
+	[Key, DefinedGuid]
+	public override Guid Id { get; set; } = Guid.CreateVersion7();
 
 	[Required, DefinedEnum]
 	public required DayOfWeek DayOfWeek { get; set; }

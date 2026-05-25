@@ -12,6 +12,7 @@ public class Teacher : EntityBase<Teacher>
 	[Required]
 	public required string SchoolId { get; set; }
 
+	public Guid? TeacherProfileId { get; set; }
 	public TeacherProfile? TeacherProfile { get; set; }
 
 	[Required]

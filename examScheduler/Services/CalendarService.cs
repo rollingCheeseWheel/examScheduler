@@ -214,6 +214,7 @@ public sealed class CalendarService(
 			.Max()
 			.ToDateTimeOffset();
 		calendar.LastsUntil = lastLessonDate;
+		calendar.LastExtended = DateTimeOffset.UtcNow;
 
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new CalendarUpdatedEvent(calendarId), 3);

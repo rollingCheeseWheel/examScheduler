@@ -152,6 +152,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithOne();
 
 		modelBuilder.Entity<Schedule>()
+			.HasOne(s => s.ScheduleGenerator)
+			.WithOne()
+			.HasForeignKey<ScheduleGenerator>(s => s.ScheduleId);
+
+		modelBuilder.Entity<Schedule>()
 			.Navigation(s => s.ExamSlots)
 			.AutoInclude();
 		modelBuilder.Entity<Schedule>()
@@ -165,6 +170,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 			.AutoInclude();
 		modelBuilder.Entity<Schedule>()
 			.Navigation(s => s.SwapRequests)
+			.AutoInclude();
+		modelBuilder.Entity<Schedule>()
+			.Navigation(s => s.ScheduleGenerator)
 			.AutoInclude();
 		#endregion
 
@@ -193,6 +201,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		modelBuilder.Entity<SwapRequest>()
 			.HasIndex(sr => new { sr.ScheduleId, sr.RequestedSlotId })
 			.IsUnique();
+		#endregion
+
+		#region ScheduleGenerator
+		modelBuilder.Entity<ScheduleGenerator>()
+			.HasMany(s => s.GeneratorSlots)
+			.WithOne();
+
+		modelBuilder.Entity<ScheduleGenerator>()
+			.Navigation(s => s.GeneratorSlots)
+			.AutoInclude();
+		#endregion
+
+		#region ScheduleGeneratorSlot
+
 		#endregion
 
 		#region UserProfile
@@ -236,7 +258,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 		#region TeacherProfile
 		modelBuilder.Entity<TeacherProfile>()
 			.HasOne(tp => tp.Teacher)
-			.WithOne(t => t.TeacherProfile);
+			.WithOne(t => t.TeacherProfile)
+			.HasForeignKey<Teacher>(t => t.TeacherProfileId);
 
 		modelBuilder.Entity<TeacherProfile>()
 			.Navigation(tp => tp.Teacher)

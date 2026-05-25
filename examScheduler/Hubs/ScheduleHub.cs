@@ -16,16 +16,16 @@ namespace examScheduler.Hubs;
 
 public interface IScheduleHub
 {
-	Task<Result<bool>> RegisterForSlot(Guid slotId);
+	Task<Result> RegisterForSlot(Guid slotId);
 
-	Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid examSlotId);
-	Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId);
-	Task<Result<bool>> DeleteSwapRequest(Guid swaprequestId);
+	Task<Result> CreateSwapRequest(Guid scheduleId, Guid examSlotId);
+	Task<Result> AcceptSwapRequest(Guid swapRequestId);
+	Task<Result> DeleteSwapRequest(Guid swaprequestId);
 
-	Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request);
-	Task<Result<bool>> SubscribeSchedule(Guid scheduleId);
-	Task<Result<bool>> DeleteSchedule(Guid scheduleId);
-	Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants);
+	Task<Result> CreateSchedule(ScheduleCreateRequest request);
+	Task<Result> SubscribeSchedule(Guid scheduleId);
+	Task<Result> DeleteSchedule(Guid scheduleId);
+	Task<Result> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants);
 }
 
 public interface IScheduleClient
@@ -94,7 +94,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
-	public async Task<Result<bool>> RegisterForSlot(Guid slotId)
+	public async Task<Result> RegisterForSlot(Guid slotId)
 	{
 		try
 		{
@@ -108,7 +108,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
-	public async Task<Result<bool>> CreateSwapRequest(Guid scheduleId, Guid examSlotId)
+	public async Task<Result> CreateSwapRequest(Guid scheduleId, Guid examSlotId)
 	{
 		try
 		{
@@ -122,7 +122,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
-	public async Task<Result<bool>> DeleteSwapRequest(Guid swapRequestId)
+	public async Task<Result> DeleteSwapRequest(Guid swapRequestId)
 	{
 		try
 		{
@@ -136,7 +136,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Student))]
-	public async Task<Result<bool>> AcceptSwapRequest(Guid swapRequestId)
+	public async Task<Result> AcceptSwapRequest(Guid swapRequestId)
 	{
 		try
 		{
@@ -150,7 +150,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
-	public async Task<Result<bool>> CreateSchedule(ScheduleCreateRequest request)
+	public async Task<Result> CreateSchedule(ScheduleCreateRequest request)
 	{
 		try
 		{
@@ -168,7 +168,7 @@ public class ScheduleHub(
 		}
 	}
 
-	public async Task<Result<bool>> SubscribeSchedule(Guid scheduleId)
+	public async Task<Result> SubscribeSchedule(Guid scheduleId)
 	{
 		try
 		{
@@ -176,11 +176,11 @@ public class ScheduleHub(
 			var schedule = await _scheduleService.GetScheduleAsync_AsNoTracking(UserId, scheduleId, _ct);
 			if (schedule is null)
 			{
-				return new(HttpStatusCode.Unauthorized);
+				return new(HttpStatusCode.NotFound);
 			}
 			await this.AddToScheduleGroupAsync(scheduleId, _ct);
 			await Clients.Caller.ScheduleUpdated(schedule.ToDTO());
-			return new(true);
+			return new(HttpStatusCode.OK);
 		}
 		catch (OperationCanceledException)
 		{
@@ -189,7 +189,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
-	public async Task<Result<bool>> DeleteSchedule(Guid scheduleId)
+	public async Task<Result> DeleteSchedule(Guid scheduleId)
 	{
 		try
 		{
@@ -203,7 +203,7 @@ public class ScheduleHub(
 	}
 
 	[Authorize(Roles = nameof(UserRoles.Teacher))]
-	public async Task<Result<bool>> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants)
+	public async Task<Result> ReportStudents(Guid scheduleSlotId, IEnumerable<Guid> actualParticipants)
 	{
 		try
 		{

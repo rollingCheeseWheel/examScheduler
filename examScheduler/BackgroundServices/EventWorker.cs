@@ -132,6 +132,11 @@ public class EventWorker : BackgroundService, IEventWorker
 			Logger.LogWarning("calendar not found");
 			return;
 		}
+		if (calendar.LastExtended.ToDateOnly() >= DateTimeOffset.UtcNow.ToDateOnly())
+		{
+			Logger.LogDebug("not required to extend calendar");
+			return;
+		}
 
 		var digitalRegisterLessons = await client.GetCalendarAsync(DateTimeOffset.UtcNow, DateUtils.Min(calendar.LastsUntil.AddMonths(1), DateTimeOffset.UtcNow), ct);
 		if (digitalRegisterLessons is null || !digitalRegisterLessons.Any())
@@ -173,8 +178,8 @@ public class EventWorker : BackgroundService, IEventWorker
 			return;
 		}
 
-		var isSuccess = schedule.TryFillSlots(students);
-		if (!isSuccess)
+		var fillResult = schedule.TryFillSlots(students);
+		if (!fillResult.Success)
 		{
 			Logger.LogWarning("failed to fill slots ({id})", task.ScheduleId);
 			return;

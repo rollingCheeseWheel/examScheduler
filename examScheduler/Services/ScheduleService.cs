@@ -14,14 +14,14 @@ public interface IScheduleService
 	Task<IEnumerable<Schedule>> GetSchedulesForUserAsync_AsNoTracking(Guid userId, CancellationToken ct = default);
 
 	Task<Models.API.Result<Guid>> TryCreateSchedule(Models.API.ScheduleCreateRequest request, Guid teacherId, CancellationToken ct = default);
-	Task<Models.API.Result<bool>> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
-	Task<Models.API.Result<bool>> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid actingTeacherId, IEnumerable<Guid> actualParticipants, CancellationToken ct = default);
+	Task<Models.API.Result> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default);
+	Task<Models.API.Result> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid actingTeacherId, IEnumerable<Guid> actualParticipants, CancellationToken ct = default);
 
-	Task<Models.API.Result<bool>> TryEnlistStudentAsync(Guid slotId, Guid actingStudentId, CancellationToken ct = default);
+	Task<Models.API.Result> TryEnlistStudentAsync(Guid slotId, Guid actingStudentId, CancellationToken ct = default);
 
-	Task<Models.API.Result<bool>> TryCreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedSlotId, CancellationToken ct = default);
-	Task<Models.API.Result<bool>> TryDeleteSwapRequestAsync(Guid swapRequestId, Guid owningStudentId, CancellationToken ct = default);
-	Task<Models.API.Result<bool>> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid acceptingStudentId, CancellationToken ct = default);
+	Task<Models.API.Result> TryCreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedSlotId, CancellationToken ct = default);
+	Task<Models.API.Result> TryDeleteSwapRequestAsync(Guid swapRequestId, Guid owningStudentId, CancellationToken ct = default);
+	Task<Models.API.Result> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid acceptingStudentId, CancellationToken ct = default);
 
 	Task<bool> HasAccessToSchedule(Guid userId, Guid scheduleId, CancellationToken ct = default);
 }
@@ -137,6 +137,7 @@ public class ScheduleService(
 			Description = request.Description,
 			ScheduleGenerator = new()
 			{
+				ScheduleId = newScheduleId,
 				GeneratorSlots = request.Generator.Slots.Select(x => x.ToEntity()).ToList(),
 				BlacklistedDays = request.Generator.BlacklistedDays.ToList()
 			},
@@ -147,20 +148,31 @@ public class ScheduleService(
 			Teachers = classroom.Teachers.Where(t => t.Subjects.Contains(subject)).ToList(),
 			ExamSlots = [ ]
 		};
+		_context.Add(newSchedule);
 
-		var classroomStudentCount = await _context.Classrooms
-			.WhereId(classroom.Id)
-			.SelectMany(c => c.Students)
-			.CountAsync(ct);
-
-		var isExtendSuccess = newSchedule.TryExtend(classroomStudentCount, out var newSlots);
-		if (!isExtendSuccess)
+		var students = classroom.Students;
+		var classroomStudentCount = students.Count;
+		if (classroomStudentCount == 0)
 		{
-			return new(HttpStatusCode.BadRequest, "Unable to generate schedule slots");
+			students = await _context.Classrooms
+				.WhereId(classroom.Id)
+				.SelectMany(c => c.Students)
+				.ToListAsync(ct);
+			classroomStudentCount = students.Count;
 		}
 
-		_context.Add(newSchedule);
-		classroom.Schedules.Add(newSchedule);
+		var extendResult = newSchedule.TryExtend(classroomStudentCount, out var newSlots);
+		if (!extendResult.Success)
+		{
+			return extendResult.To<Guid>();
+		}
+
+		var fillResult = newSchedule.TryFillSlots(students);
+		if (!fillResult.Success)
+		{
+			return fillResult.To<Guid>();
+		}
+
 		await _context.SaveChangesAsync(ct);
 
 		foreach (var slot in newSlots)
@@ -170,7 +182,7 @@ public class ScheduleService(
 		return new(newSchedule.Id);
 	}
 
-	public async Task<Models.API.Result<bool>> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryDeleteSchedule(Guid scheduleId, Guid actingTeacherId, CancellationToken ct = default)
 	{
 		if (!await HasAccessToSchedule(actingTeacherId, scheduleId, ct))
 		{
@@ -185,10 +197,10 @@ public class ScheduleService(
 		_context.Remove(schedule);
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleRemovedEvent(scheduleId));
-		return new(true);
+		return new(HttpStatusCode.OK);
 	}
 
-	public async Task<Models.API.Result<bool>> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid actingTeacherId, IEnumerable<Guid> participants, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryReportActualStudentsForScheduleSlot(Guid examSlotId, Guid actingTeacherId, IEnumerable<Guid> participants, CancellationToken ct = default)
 	{
 		if (!participants.Any())
 		{
@@ -221,10 +233,18 @@ public class ScheduleService(
 			return new(HttpStatusCode.NotFound, "Students not found");
 		}
 
-		var isSuccess = schedule.TryReportStudents(examSlotId, actingTeacherId, students, out var createdExamSlots);
-		if (!isSuccess)
+		var containsAlreadyReportedStudents = students
+			.Intersect(schedule.ExamSlots.Where(s => s.IsTeacherConfirmed).SelectMany(s => s.Participants))
+			.Any();
+		if (containsAlreadyReportedStudents)
 		{
-			return new(HttpStatusCode.BadRequest, "Failed to report students");
+			return new(HttpStatusCode.BadRequest, "Trying to report already reported students");
+		}
+
+		var reportResult = schedule.TryReportStudents(examSlotId, actingTeacherId, students, out var createdExamSlots);
+		if (!reportResult.Success)
+		{
+			return reportResult;
 		}
 
 		await _context.SaveChangesAsync(ct);
@@ -234,10 +254,10 @@ public class ScheduleService(
 			_eventWorker.Publish(new LockScheduleTask(createdSlot.Id), createdSlot.LockInDate);
 		}
 
-		return new(true);
+		return new(HttpStatusCode.OK);
 	}
 
-	public async Task<Models.API.Result<bool>> TryEnlistStudentAsync(Guid slotId, Guid studentId, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryEnlistStudentAsync(Guid slotId, Guid studentId, CancellationToken ct = default)
 	{
 		var student = await _context._StudentProfiles.FindByIdAsync(studentId, ct);
 		if (student is null)
@@ -263,24 +283,18 @@ public class ScheduleService(
 			return new(HttpStatusCode.Unauthorized);
 		}
 
-		var isSuccess = schedule.TryEnlistStudent(slotId, student);
-		if (!isSuccess)
+		var result = schedule.TryEnlistStudent(slotId, student);
+		if (!result.Success)
 		{
-			return new(HttpStatusCode.BadRequest, "Unable to enlist students");
+			return result;
 		}
-		try
-		{
-			await _context.SaveChangesAsync(ct);
-		}
-		catch (DbUpdateConcurrencyException ex)
-		{
-			_logger.LogError(ex, "exception during save, affected entries: {@entries}", ex.Entries);
-		}
+
+		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
-		return new(true);
+		return result;
 	}
 
-	public async Task<Models.API.Result<bool>> TryCreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedSlotId, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryCreateSwapRequestAsync(Guid scheduleId, Guid requestingStudentId, Guid requestedSlotId, CancellationToken ct = default)
 	{
 		if (!await HasAccessToSchedule(requestingStudentId, scheduleId, ct))
 		{
@@ -312,10 +326,10 @@ public class ScheduleService(
 
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
-		return new(true);
+		return new(HttpStatusCode.OK);
 	}
 
-	public async Task<Models.API.Result<bool>> TryDeleteSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryDeleteSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
 		var schedule = await _context._Schedules
 			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
@@ -331,18 +345,18 @@ public class ScheduleService(
 		}
 		_context.Attach(schedule);
 
-		var isSuccess = schedule.TryDeleteSwapRequest(swapRequestId);
-		if (!isSuccess)
+		var deleteResult = schedule.TryDeleteSwapRequest(swapRequestId);
+		if (!deleteResult.Success)
 		{
-			return new(HttpStatusCode.BadRequest, "Unable to delete swap request");
+			return deleteResult;
 		}
 
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
-		return new(true);
+		return new(HttpStatusCode.OK);
 	}
 
-	public async Task<Models.API.Result<bool>> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
+	public async Task<Models.API.Result> TryAcceptSwapRequestAsync(Guid swapRequestId, Guid actingStudentId, CancellationToken ct = default)
 	{
 		var schedule = await _context._Schedules
 			.Where(s => s.SwapRequests.Any(s => s.Id == swapRequestId))
@@ -359,14 +373,14 @@ public class ScheduleService(
 		_context.Attach(schedule);
 
 		var swappingResult = schedule.TryAcceptSwapRequest(swapRequestId, actingStudentId);
-		if (!swappingResult)
+		if (!swappingResult.Success)
 		{
-			return new(HttpStatusCode.BadRequest, "Unable to accept swap request");
+			return swappingResult;
 		}
 
 		await _context.SaveChangesAsync(ct);
 		_eventWorker.Publish(new ScheduleUpdatedEvent(schedule.Id));
-		return new(true);
+		return new(HttpStatusCode.OK);
 	}
 
 	private async Task<IEnumerable<StudentProfile>?> GetAllStudentsExactAsync(IEnumerable<Guid> ids, CancellationToken ct = default)

@@ -10,7 +10,9 @@ public class Calendar : EntityBase<Calendar>
 	[Key]
 	public override Guid Id { get; set; } = Guid.CreateVersion7();
 	[Required]
-	public DateTimeOffset LastsUntil { get; set; } = DateTimeOffset.UtcNow;
+	public DateTimeOffset LastsUntil { get; set; }
+	[Required]
+	public DateTimeOffset LastExtended { get; set; }
 	[Required]
 	public ICollection<Lesson> Lessons { get; set; } = [ ];
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using examScheduler.Data;
@@ -11,9 +12,11 @@ using examScheduler.Data;
 namespace examScheduler.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524201725_postgresql.container_migration_438")]
+    partial class postgresqlcontainer_migration_438
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -259,62 +262,6 @@ namespace examScheduler.Migrations
                     b.ToTable("_Schedules");
                 });
 
-            modelBuilder.Entity("Entities.ScheduleGenerator", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.PrimitiveCollection<DateOnly[]>("BlacklistedDays")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("date[]");
-
-                    b.Property<Guid>("ScheduleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ScheduleId")
-                        .IsUnique();
-
-                    b.ToTable("ScheduleGenerator");
-                });
-
-            modelBuilder.Entity("Entities.ScheduleGeneratorSlot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MaxParticipants")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ScheduleGeneratorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ScheduleGeneratorId");
-
-                    b.ToTable("ScheduleGeneratorSlot");
-                });
-
             modelBuilder.Entity("Entities.School", b =>
                 {
                     b.Property<string>("SchoolId")
@@ -429,9 +376,6 @@ namespace examScheduler.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("TeacherProfileId")
-                        .HasColumnType("uuid");
-
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -441,9 +385,6 @@ namespace examScheduler.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SchoolId");
-
-                    b.HasIndex("TeacherProfileId")
-                        .IsUnique();
 
                     b.ToTable("Teachers");
                 });
@@ -463,6 +404,9 @@ namespace examScheduler.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TeacherId")
+                        .IsUnique();
 
                     b.ToTable("_TeacherProfiles");
                 });
@@ -823,22 +767,6 @@ namespace examScheduler.Migrations
                     b.Navigation("Subject");
                 });
 
-            modelBuilder.Entity("Entities.ScheduleGenerator", b =>
-                {
-                    b.HasOne("Entities.Schedule", null)
-                        .WithOne("ScheduleGenerator")
-                        .HasForeignKey("Entities.ScheduleGenerator", "ScheduleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Entities.ScheduleGeneratorSlot", b =>
-                {
-                    b.HasOne("Entities.ScheduleGenerator", null)
-                        .WithMany("GeneratorSlots")
-                        .HasForeignKey("ScheduleGeneratorId");
-                });
-
             modelBuilder.Entity("Entities.StudentProfile", b =>
                 {
                     b.HasOne("Entities.Classroom", "Classroom")
@@ -874,12 +802,6 @@ namespace examScheduler.Migrations
                         .HasForeignKey("SchoolId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Entities.TeacherProfile", "TeacherProfile")
-                        .WithOne("Teacher")
-                        .HasForeignKey("Entities.Teacher", "TeacherProfileId");
-
-                    b.Navigation("TeacherProfile");
                 });
 
             modelBuilder.Entity("Entities.TeacherProfile", b =>
@@ -889,6 +811,12 @@ namespace examScheduler.Migrations
                         .HasForeignKey("Entities.TeacherProfile", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Entities.Teacher", "Teacher")
+                        .WithOne("TeacherProfile")
+                        .HasForeignKey("Entities.TeacherProfile", "TeacherId");
+
+                    b.Navigation("Teacher");
 
                     b.Navigation("UserProfile");
                 });
@@ -1034,20 +962,12 @@ namespace examScheduler.Migrations
 
                     b.Navigation("ExamSlots");
 
-                    b.Navigation("ScheduleGenerator")
-                        .IsRequired();
-
                     b.Navigation("SwapRequests");
                 });
 
-            modelBuilder.Entity("Entities.ScheduleGenerator", b =>
+            modelBuilder.Entity("Entities.Teacher", b =>
                 {
-                    b.Navigation("GeneratorSlots");
-                });
-
-            modelBuilder.Entity("Entities.TeacherProfile", b =>
-                {
-                    b.Navigation("Teacher");
+                    b.Navigation("TeacherProfile");
                 });
 
             modelBuilder.Entity("Entities.UserProfile", b =>

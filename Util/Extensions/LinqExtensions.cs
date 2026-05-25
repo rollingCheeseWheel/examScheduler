@@ -39,9 +39,7 @@ public static class LinqExtensions
 		return source;
 	}
 
-	public static ICollection<TSource> RemoveRange<TSource>(this ICollection<TSource> source, params TSource[ ] items) => source.RemoveRange(items.ToList());
-
-	public static ICollection<TSource> RemoveRange<TSource>(this ICollection<TSource> source, IEnumerable<TSource> items)
+	public static ICollection<TSource> RemoveRange<TSource>(this ICollection<TSource> source, params TSource[ ] items)
 	{
 		foreach (var item in items)
 		{

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Net;
 using Util.Extensions;
 using Util.Validation;
 
@@ -18,14 +19,16 @@ public class ExamSlot : EntityBase<ExamSlot>
 	public required DateTimeOffset LockInDate { get; set; }
 
 	[NotMapped]
-	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow;
+	public bool IsLocked => LockInDate <= DateTimeOffset.UtcNow || IsTeacherConfirmed;
 	[NotMapped]
-	public bool ShouldBeFilled => IsLocked && Date >= DateTimeOffset.UtcNow.ToDateOnly() && !HasBeenProcessed;
+	public bool ShouldBeFilled => IsLocked && !HasBeenAutoFilled;
+	[Required, EditorBrowsable(EditorBrowsableState.Never)]
+	public bool HasBeenAutoFilled { get; set; } = false;
+
+	[Required]
+	public bool IsTeacherConfirmed { get; set; } = false;
 	[NotMapped]
 	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow.ToDateOnly();
-
-	[Required, EditorBrowsable(EditorBrowsableState.Never)]
-	public bool HasBeenProcessed { get; set; } = false;
 
 	[Required]
 	public bool IsGenerated { get; set; }
@@ -34,53 +37,53 @@ public class ExamSlot : EntityBase<ExamSlot>
 
 	[Required]
 	public ICollection<StudentProfile> Participants { get; private set; } = [ ];
-	[Required]
-	public bool IsTeacherConfirmed { get; set; } = false;
 
 	[Timestamp]
 	public override uint Version { get; set; }
 
-	internal bool TryReportStudents(IEnumerable<StudentProfile> students, out IEnumerable<StudentProfile> previousStudents)
+	internal Models.API.Result TryReportStudents(IEnumerable<StudentProfile> students, out IEnumerable<StudentProfile> misplacedStudents)
 	{
-		previousStudents = [ ];
+		misplacedStudents = [ ];
 
 		if (!CanTeacherReportStudents)
 		{
-			return false;
+			return new(HttpStatusCode.Unauthorized);
 		}
 
-		previousStudents = [ .. Participants ];
+		misplacedStudents = Participants.Except(students).ToList();
 		Participants.Clear();
 		Participants.AddRange(students);
 
-		return true;
+		return new(HttpStatusCode.OK);
 	}
 
-	internal bool TrySwapStudents(StudentProfile replaced, StudentProfile replacement)
+	internal Models.API.Result TrySwapStudents(StudentProfile replaced, StudentProfile replacement)
 	{
 		if (IsLocked)
 		{
-			return false;
+			return new(HttpStatusCode.BadRequest, "Slot is locked");
 		}
 
-		if (!Participants.Contains(replaced))
+		if (!Participants.Remove(replaced))
 		{
-			return false;
+			return new(HttpStatusCode.BadRequest, "Student not present in participants");
 		}
-
-		Participants.Remove(replaced);
 		Participants.Add(replacement);
-		return true;
+		return new(HttpStatusCode.OK);
 	}
 
-	internal bool TryEnlistStudent(StudentProfile student)
+	internal Models.API.Result TryEnlistStudent(StudentProfile student)
 	{
-		if (IsLocked || Participants.Contains(student))
+		if (IsLocked)
 		{
-			return false;
+			return new(HttpStatusCode.BadRequest, "Slot is locked");
+		}
+		if (Participants.Contains(student))
+		{
+			return new(HttpStatusCode.BadRequest, "Student is already enlisted");
 		}
 		Participants.Add(student);
-		return true;
+		return new(HttpStatusCode.OK);
 	}
 
 	public override bool EqualsCore(ExamSlot b) =>

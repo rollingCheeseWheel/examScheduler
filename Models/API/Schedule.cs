@@ -70,10 +70,10 @@ public class ScheduleCreateRequest
 
 public class ScheduleGenerator
 {
-	[Required, DistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
-	public required IEnumerable<ScheduleGeneratorSlot> Slots { get; set; }
-	[Required, Distinct<DateOnly>, MaxLength(20)]
-	public required IEnumerable<DateOnly> BlacklistedDays { get; set; }
+	[Required, ICollectionDistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
+	public required ICollection<ScheduleGeneratorSlot> Slots { get; set; }
+	[Required, ICollectionDistinct<DateOnly>, MaxLength(20)]
+	public required ICollection<DateOnly> BlacklistedDays { get; set; }
 }
 
 public class ScheduleGeneratorSlot

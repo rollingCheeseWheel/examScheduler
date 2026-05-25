@@ -2,9 +2,14 @@
 
 namespace Util.DataStructures;
 
-public class LoopingEnumerable<T>(IList<T> items, int maxIterations = -1) : IEnumerable<T>
+public class LoopingEnumerable
 {
-	private readonly IList<T> _items = items;
+	public static LoopingEnumerable<TSource> From<TSource>(IEnumerable<TSource> items, int maxIterations = byte.MaxValue) => new(items, maxIterations);
+}
+
+public class LoopingEnumerable<T>(IEnumerable<T> items, int maxIterations = byte.MaxValue) : LoopingEnumerable, IEnumerable<T>
+{
+	private readonly List<T> _items = items.ToList();
 	private readonly int _maxIterations = maxIterations;
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -18,15 +23,11 @@ public class LoopingEnumerable<T>(IList<T> items, int maxIterations = -1) : IEnu
 		var index = 0;
 		var remaining = _maxIterations;
 
-		while (remaining != 0)
+		while (remaining > 1)
 		{
 			yield return _items[ index ];
 			index = ( index + 1 ) % _items.Count;
-
-			if (remaining > 0)
-			{
-				remaining--;
-			}
+			remaining--;
 		}
 	}
 }
