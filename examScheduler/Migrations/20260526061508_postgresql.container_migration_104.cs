@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace examScheduler.Migrations
 {
     /// <inheritdoc />
-    public partial class postgresqlcontainer_migration_845 : Migration
+    public partial class postgresqlcontainer_migration_104 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,6 +18,7 @@ namespace examScheduler.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     LastsUntil = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LastExtended = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
@@ -152,26 +153,6 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Teachers",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    SchoolId = table.Column<string>(type: "text", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Teachers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Teachers_Schools_SchoolId",
-                        column: x => x.SchoolId,
-                        principalTable: "Schools",
-                        principalColumn: "SchoolId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "_Lessons",
                 columns: table => new
                 {
@@ -198,6 +179,25 @@ namespace examScheduler.Migrations
                         column: x => x.CalendarId,
                         principalTable: "_Calendars",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "_TeacherProfiles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeacherId = table.Column<Guid>(type: "uuid", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK__TeacherProfiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK__TeacherProfiles_AspNetUsers_Id",
+                        column: x => x.Id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -340,99 +340,29 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "_TeacherProfiles",
+                name: "Teachers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeacherId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    SchoolId = table.Column<string>(type: "text", nullable: false),
+                    TeacherProfileId = table.Column<Guid>(type: "uuid", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__TeacherProfiles", x => x.Id);
+                    table.PrimaryKey("PK_Teachers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK__TeacherProfiles_AspNetUsers_Id",
-                        column: x => x.Id,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
+                        name: "FK_Teachers_Schools_SchoolId",
+                        column: x => x.SchoolId,
+                        principalTable: "Schools",
+                        principalColumn: "SchoolId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK__TeacherProfiles_Teachers_TeacherId",
-                        column: x => x.TeacherId,
-                        principalTable: "Teachers",
+                        name: "FK_Teachers__TeacherProfiles_TeacherProfileId",
+                        column: x => x.TeacherProfileId,
+                        principalTable: "_TeacherProfiles",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ClassroomTeacher",
-                columns: table => new
-                {
-                    ClassroomsId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ClassroomTeacher", x => new { x.ClassroomsId, x.TeachersId });
-                    table.ForeignKey(
-                        name: "FK_ClassroomTeacher_Classrooms_ClassroomsId",
-                        column: x => x.ClassroomsId,
-                        principalTable: "Classrooms",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ClassroomTeacher_Teachers_TeachersId",
-                        column: x => x.TeachersId,
-                        principalTable: "Teachers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SubjectTeacher",
-                columns: table => new
-                {
-                    SubjectsName = table.Column<string>(type: "text", nullable: false),
-                    TeacherId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SubjectTeacher", x => new { x.SubjectsName, x.TeacherId });
-                    table.ForeignKey(
-                        name: "FK_SubjectTeacher_Subjects_SubjectsName",
-                        column: x => x.SubjectsName,
-                        principalTable: "Subjects",
-                        principalColumn: "Name",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_SubjectTeacher_Teachers_TeacherId",
-                        column: x => x.TeacherId,
-                        principalTable: "Teachers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LessonTeacher",
-                columns: table => new
-                {
-                    LessonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LessonTeacher", x => new { x.LessonId, x.TeachersId });
-                    table.ForeignKey(
-                        name: "FK_LessonTeacher_Teachers_TeachersId",
-                        column: x => x.TeachersId,
-                        principalTable: "Teachers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_LessonTeacher__Lessons_LessonId",
-                        column: x => x.LessonId,
-                        principalTable: "_Lessons",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -469,10 +399,10 @@ namespace examScheduler.Migrations
                     ScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
                     LockInDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    HasBeenProcessed = table.Column<bool>(type: "boolean", nullable: false),
+                    HasBeenAutoFilled = table.Column<bool>(type: "boolean", nullable: false),
+                    IsTeacherConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     IsGenerated = table.Column<bool>(type: "boolean", nullable: false),
                     MaxParticipants = table.Column<int>(type: "integer", nullable: false),
-                    IsTeacherConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
@@ -487,23 +417,19 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ScheduleTeacher",
+                name: "ScheduleGenerator",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
+                    BlacklistedDays = table.Column<DateOnly[]>(type: "date[]", maxLength: 20, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ScheduleTeacher", x => new { x.ScheduleId, x.TeachersId });
+                    table.PrimaryKey("PK_ScheduleGenerator", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ScheduleTeacher_Teachers_TeachersId",
-                        column: x => x.TeachersId,
-                        principalTable: "Teachers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ScheduleTeacher__Schedules_ScheduleId",
+                        name: "FK_ScheduleGenerator__Schedules_ScheduleId",
                         column: x => x.ScheduleId,
                         principalTable: "_Schedules",
                         principalColumn: "Id",
@@ -533,6 +459,102 @@ namespace examScheduler.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ClassroomTeacher",
+                columns: table => new
+                {
+                    ClassroomsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ClassroomTeacher", x => new { x.ClassroomsId, x.TeachersId });
+                    table.ForeignKey(
+                        name: "FK_ClassroomTeacher_Classrooms_ClassroomsId",
+                        column: x => x.ClassroomsId,
+                        principalTable: "Classrooms",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ClassroomTeacher_Teachers_TeachersId",
+                        column: x => x.TeachersId,
+                        principalTable: "Teachers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LessonTeacher",
+                columns: table => new
+                {
+                    LessonId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LessonTeacher", x => new { x.LessonId, x.TeachersId });
+                    table.ForeignKey(
+                        name: "FK_LessonTeacher_Teachers_TeachersId",
+                        column: x => x.TeachersId,
+                        principalTable: "Teachers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_LessonTeacher__Lessons_LessonId",
+                        column: x => x.LessonId,
+                        principalTable: "_Lessons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ScheduleTeacher",
+                columns: table => new
+                {
+                    ScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeachersId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ScheduleTeacher", x => new { x.ScheduleId, x.TeachersId });
+                    table.ForeignKey(
+                        name: "FK_ScheduleTeacher_Teachers_TeachersId",
+                        column: x => x.TeachersId,
+                        principalTable: "Teachers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ScheduleTeacher__Schedules_ScheduleId",
+                        column: x => x.ScheduleId,
+                        principalTable: "_Schedules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SubjectTeacher",
+                columns: table => new
+                {
+                    SubjectsName = table.Column<string>(type: "text", nullable: false),
+                    TeacherId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubjectTeacher", x => new { x.SubjectsName, x.TeacherId });
+                    table.ForeignKey(
+                        name: "FK_SubjectTeacher_Subjects_SubjectsName",
+                        column: x => x.SubjectsName,
+                        principalTable: "Subjects",
+                        principalColumn: "Name",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SubjectTeacher_Teachers_TeacherId",
+                        column: x => x.TeacherId,
+                        principalTable: "Teachers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ExamSlotStudentProfile",
                 columns: table => new
                 {
@@ -554,6 +576,26 @@ namespace examScheduler.Migrations
                         principalTable: "_StudentProfiles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ScheduleGeneratorSlot",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DayOfWeek = table.Column<int>(type: "integer", nullable: false),
+                    MaxParticipants = table.Column<int>(type: "integer", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    ScheduleGeneratorId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ScheduleGeneratorSlot", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ScheduleGeneratorSlot_ScheduleGenerator_ScheduleGeneratorId",
+                        column: x => x.ScheduleGeneratorId,
+                        principalTable: "ScheduleGenerator",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -590,12 +632,6 @@ namespace examScheduler.Migrations
                 name: "IX__StudentProfiles_ClassroomId",
                 table: "_StudentProfiles",
                 column: "ClassroomId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX__TeacherProfiles_TeacherId",
-                table: "_TeacherProfiles",
-                column: "TeacherId",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -673,6 +709,17 @@ namespace examScheduler.Migrations
                 column: "TeachersId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ScheduleGenerator_ScheduleId",
+                table: "ScheduleGenerator",
+                column: "ScheduleId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ScheduleGeneratorSlot_ScheduleGeneratorId",
+                table: "ScheduleGeneratorSlot",
+                column: "ScheduleGeneratorId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ScheduleTeacher_TeachersId",
                 table: "ScheduleTeacher",
                 column: "TeachersId");
@@ -698,6 +745,12 @@ namespace examScheduler.Migrations
                 name: "IX_Teachers_SchoolId",
                 table: "Teachers",
                 column: "SchoolId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Teachers_TeacherProfileId",
+                table: "Teachers",
+                column: "TeacherProfileId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -705,9 +758,6 @@ namespace examScheduler.Migrations
         {
             migrationBuilder.DropTable(
                 name: "_AuditLogs");
-
-            migrationBuilder.DropTable(
-                name: "_TeacherProfiles");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
@@ -734,6 +784,9 @@ namespace examScheduler.Migrations
                 name: "LessonTeacher");
 
             migrationBuilder.DropTable(
+                name: "ScheduleGeneratorSlot");
+
+            migrationBuilder.DropTable(
                 name: "ScheduleTeacher");
 
             migrationBuilder.DropTable(
@@ -755,13 +808,16 @@ namespace examScheduler.Migrations
                 name: "_Lessons");
 
             migrationBuilder.DropTable(
+                name: "ScheduleGenerator");
+
+            migrationBuilder.DropTable(
                 name: "Teachers");
 
             migrationBuilder.DropTable(
                 name: "_Schedules");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "_TeacherProfiles");
 
             migrationBuilder.DropTable(
                 name: "Classrooms");
@@ -770,10 +826,13 @@ namespace examScheduler.Migrations
                 name: "Subjects");
 
             migrationBuilder.DropTable(
-                name: "Schools");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "_Calendars");
+
+            migrationBuilder.DropTable(
+                name: "Schools");
         }
     }
 }
