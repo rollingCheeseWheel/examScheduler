@@ -9,7 +9,7 @@ public class Lesson
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public required DateOnly Date { get; set; }
+	public required DateTimeOffset Date { get; set; }
 	[Required, MinValue(0)]
 	public required int FromHour { get; set; }
 	[Required, GreaterThanOrEqual<int>(nameof(FromHour))]

@@ -22,9 +22,9 @@ public class Lesson : EntityBase<Lesson>
 	[NotMapped]
 	public DayOfWeek? DayOfWeek => FirstOccurance?.DayOfWeek;
 	[NotMapped]
-	public DateOnly? FirstOccurance => Occurances.Count == 0 ? null : Occurances.Order().FirstOrDefault();
+	public DateTimeOffset? FirstOccurance => Occurances.Count == 0 ? null : Occurances.Order().FirstOrDefault();
 	[Required, SameDayOfWeek]
-	public required ICollection<DateOnly> Occurances { get; set; } = [ ];
+	public required ICollection<DateTimeOffset> Occurances { get; set; } = [ ];
 	[Required]
 	public required string LessonName { get; set; }
 

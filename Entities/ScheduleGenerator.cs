@@ -14,8 +14,8 @@ public class ScheduleGenerator : EntityBase<ScheduleGenerator>
 
 	[Required, ICollectionDistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> GeneratorSlots { get; set; } = [ ];
-	[Required, ICollectionDistinct<DateOnly>, MaxLength(20)]
-	public required ICollection<DateOnly> BlacklistedDays { get; set; } = [ ];
+	[Required, ICollectionDistinct<DateTimeOffset>, MaxLength(20)]
+	public required ICollection<DateTimeOffset> BlacklistedDays { get; set; } = [ ];
 
 
 	[Timestamp]

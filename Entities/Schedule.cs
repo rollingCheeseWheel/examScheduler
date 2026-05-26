@@ -35,9 +35,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 	[Required]
 	public required Classroom Classroom { get; set; }
 	[Required]
-	public required DateOnly StartDate { get; set; }
+	public required DateTimeOffset StartDate { get; set; }
 	[NotMapped]
-	public DateOnly EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
+	public DateTimeOffset EndDate => ExamSlots.Order().LastOrDefault()?.Date ?? StartDate;
 	//[Required, DefinedEnum]
 	//public required AutoLockIn AutoLockIn { get; set; } = AutoLockIn.TimeBeforeExamination;
 	// AutoLockIn.FixedDate = StartDate + AutoLockInOffset
@@ -170,9 +170,9 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 
 	public Result TryExtend(int studentCount, out IEnumerable<ExamSlot> createdSlots)
 	{
-		DateTimeOffset GetLockInDate(DateOnly slotDate)
+		DateTimeOffset GetLockInDate(DateTimeOffset slotDate)
 		{
-			return new DateTimeOffset(slotDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) - AutoLockInOffset;
+			return slotDate - AutoLockInOffset;
 			//return AutoLockIn switch
 			//{
 			//	AutoLockIn.FixedDate => new DateTimeOffset(StartDate.ToDateTime(TimeOnly.MinValue), AutoLockInOffset),
@@ -191,7 +191,7 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 				break;
 			}
 
-			nextDate = nextDate.RoundUpTo(generatorSlot.DayOfWeek);
+			nextDate = nextDate.RoundUpTo(generatorSlot.DayOfWeek, false);
 			if (ScheduleGenerator.BlacklistedDays.Contains(nextDate))
 			{
 				continue;
@@ -467,5 +467,5 @@ public class Schedule : EntityBase<Schedule>, ISchedule
 		return combiner.CombinedHash;
 	}
 
-	public override int CompareTo(Schedule? other) => StartDate.CompareTo(other?.StartDate ?? DateOnly.MinValue);
+	public override int CompareTo(Schedule? other) => StartDate.CompareTo(other?.StartDate ?? DateTimeOffset.MinValue);
 }

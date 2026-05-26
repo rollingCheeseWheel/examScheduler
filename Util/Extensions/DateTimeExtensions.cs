@@ -29,10 +29,10 @@ public static class DateTimeExtensions
 
 	public static DateOnly RoundDownToMonday(this DateOnly date) => date.ToDateTimeOffset().RoundDownToMonday().ToDateOnly();
 
-	public static DateTimeOffset RoundUpTo(this DateTimeOffset date, DayOfWeek dayOfWeek)
+	public static DateTimeOffset RoundUpTo(this DateTimeOffset date, DayOfWeek dayOfWeek, bool roundToNextWeekIfSameDay = true)
 	{
 		var daysToAdd = ( (int)dayOfWeek - (int)date.DayOfWeek + 7 ) % 7;
-		if (daysToAdd is 0)
+		if (daysToAdd is 0 && roundToNextWeekIfSameDay)
 		{
 			daysToAdd = 7; // always round *up* to the next occurrence
 		}

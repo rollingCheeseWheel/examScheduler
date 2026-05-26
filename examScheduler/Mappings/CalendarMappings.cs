@@ -21,7 +21,7 @@ public static class CalendarMappings
 		FromHour = entity.FromHour,
 		ToHour = entity.ToHour,
 		LessonName = entity.LessonName,
-		Date = entity.FirstOccurance ?? DateTime.UnixEpoch.ToDateOnly(),
+		Date = entity.FirstOccurance ?? DateTimeOffset.UnixEpoch,
 		Subject = entity.Subject.ToDTO(),
 		Teachers = entity.Teachers.Select(ToTeacherOnlyDTO)
 	};

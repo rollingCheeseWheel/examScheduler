@@ -14,7 +14,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Required]
 	public required Guid ScheduleId { get; set; }
 	[Required]
-	public required DateOnly Date { get; set; }
+	public required DateTimeOffset Date { get; set; }
 	[Required]
 	public required DateTimeOffset LockInDate { get; set; }
 
@@ -28,7 +28,7 @@ public class ExamSlot : EntityBase<ExamSlot>
 	[Required]
 	public bool IsTeacherConfirmed { get; set; } = false;
 	[NotMapped]
-	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow.ToDateOnly();
+	public bool CanTeacherReportStudents => IsLocked && Date <= DateTimeOffset.UtcNow;
 
 	[Required]
 	public bool IsGenerated { get; set; }

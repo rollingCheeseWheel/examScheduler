@@ -13,9 +13,9 @@ public class Schedule
 	[Required]
 	public required Guid ClassroomId { get; set; }
 	[Required]
-	public required DateOnly StartDate { get; set; }
-	[Required, GreaterThan<DateOnly>(nameof(StartDate))]
-	public required DateOnly EndDate { get; set; }
+	public required DateTimeOffset StartDate { get; set; }
+	[Required, GreaterThan<DateTimeOffset>(nameof(StartDate))]
+	public required DateTimeOffset EndDate { get; set; }
 	//[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
 	//public required AutoLockIn AutoLockIn { get; set; }
 	//[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
@@ -38,7 +38,7 @@ public class ExamSlot
 	[Required]
 	public required Guid Id { get; set; }
 	[Required]
-	public required DateOnly Date { get; set; }
+	public required DateTimeOffset Date { get; set; }
 	[Required]
 	public required DateTimeOffset LockInDate { get; set; }
 	[Required]
@@ -61,7 +61,7 @@ public class ScheduleCreateRequest
 	//[Required, DefinedEnum, JsonConverter(typeof(EnumConverter<AutoLockIn>))]
 	//public required AutoLockIn AutoLockIn { get; set; }
 	[Required]
-	public required DateOnly StartDate { get; set; }
+	public required DateTimeOffset StartDate { get; set; }
 	[Required, PositiveTimeSpan, JsonConverter(typeof(TimeSpanToDateTimeOffsetConverter))]
 	public required TimeSpan LockInOffset { get; set; }
 	[Required]
@@ -72,8 +72,8 @@ public class ScheduleGenerator
 {
 	[Required, ICollectionDistinctBy<ScheduleGeneratorSlot>(nameof(ScheduleGeneratorSlot.DayOfWeek))]
 	public required ICollection<ScheduleGeneratorSlot> Slots { get; set; }
-	[Required, ICollectionDistinct<DateOnly>, MaxLength(20)]
-	public required ICollection<DateOnly> BlacklistedDays { get; set; }
+	[Required, ICollectionDistinct<DateTimeOffset>, MaxLength(20)]
+	public required ICollection<DateTimeOffset> BlacklistedDays { get; set; }
 }
 
 public class ScheduleGeneratorSlot

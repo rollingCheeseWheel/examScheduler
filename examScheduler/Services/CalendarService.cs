@@ -179,7 +179,7 @@ public sealed class CalendarService(
 			var existingLesson = calendar.Lessons
 				.FirstOrDefault(l => EqualsModel(l, modelLesson));
 
-			var occurrence = modelLesson.Date.ToDateOnly();
+			var occurrence = modelLesson.Date;
 
 			if (existingLesson is null)
 			{
@@ -210,9 +210,8 @@ public sealed class CalendarService(
 
 		var lastLessonDate = calendar.Lessons
 			.SelectMany(l => l.Occurances)
-			.Concat([ DateOnly.MinValue ]) // only a safeguard, might not be needed
-			.Max()
-			.ToDateTimeOffset();
+			.Concat([ DateTimeOffset.MinValue ]) // only a safeguard, might not be needed
+			.Max();
 		calendar.LastsUntil = lastLessonDate;
 		calendar.LastExtended = DateTimeOffset.UtcNow;
 
